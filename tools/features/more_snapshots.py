@@ -4,7 +4,13 @@ next footswitch press picks that bank's snapshot (src/m4/more_snapshots.s); in
 footswitches and MIDI CC 69 run through all six: next on 3 goes to 4, next on 6 to 1, previous on 1 to 6, previous on 4 to 3.
 MIDI CC 69's values 0..2 select snapshots 1..3 and 3..5 snapshots 4..6, from either bank."""
 
+from features import Setting
+
 FLAG = 'HX_MORE_SNAPSHOTS'
+MENU = 'Displays'                   # in Global Settings > Displays, with Model Pictures
+SETTINGS = (     # a label's last line shows on top: "Snapshot" over "Names"
+    Setting('home', b'Names\nSnapshot', (b'Off', b'On'), default=1),
+)
 
 SELECT = 0x28de2f90                 # (manager, index): recalls a snapshot
 # The tail calls of select (b.w) a footswitch press reaches: the footswitch functions' (0x28dd14a0: 14 snapshot k for footswitch k,
@@ -29,6 +35,7 @@ FILE_CALLS = ((0x28df20f2, 0x28deacf4, 'snaps_file_serialize'), (0x28df210a, 0x2
               (0x28deb53c, 0x28def9a8, 'snaps_file_section'))
 TOP_PAINT_LIT, TOP_PAINT = 0x28d96d90, 0x28dca359              # the top view's paint (preset number, name, snapshot icon), as registered
 HOME_PAINT_LIT, HOME_PAINT = 0x28d96e28, 0x28dc8d39            # the Home view's paint (footswitch labels), as registered
+ICON_DRAW_CALL, IMG_DRAW = 0x28dca406, 0x28e24a00              # the top view paint's draw of its snapshot icon
 
 
 def apply(p):
@@ -50,3 +57,5 @@ def apply(p):
         p.chain_entry(fn, stock, before=m['snaps_saving'], after=m['snaps_saved'])
     p.chain_ptr(TOP_PAINT_LIT, TOP_PAINT, after=m['snaps_paint'])
     p.chain_ptr(HOME_PAINT_LIT, HOME_PAINT, after=m['snaps_home_paint'])
+    p.own_call(ICON_DRAW_CALL, IMG_DRAW, "the top view's draw of the snapshot icon, none while the six names show",
+               m['snaps_icon_draw'])

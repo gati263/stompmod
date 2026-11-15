@@ -69,6 +69,7 @@ VIRTUAL = (   # (virtual ID, container ID, first bit, bits, the '<feature>.<key>
     (0xde, 110, 16, 4, 'long_press.fs10_function', ''),
     (0xdf, 111, 0, 4, 'tap_color.color', ''),
     (0xe0, 112, 0, 2, 'model_pictures.show', ''),
+    (0xe1, 113, 0, 2, 'more_snapshots.home', ''),
 )
 
 

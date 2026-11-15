@@ -33,6 +33,10 @@ WIDGET_LOCK, WIDGET_UNLOCK, REDRAW, FILL, TEXT = 0x28e24970, 0x28e24ae8, 0x28db8
 HOME, LABEL_TEXT, LABELS_BUILD = 0x2812a05c, 0x2812a0c0, 0x28dc87cc     # the Home view, label i's upper text at + 0x30 i
 REBUILT = [('labels built', HOME, 0), ('redraw', 0, 1)]   # the first Home paint after a flip: the stock labels from the live bank
 REC, RECS, CUR, PREV, BUSY = 0x260, 0xc, 0x743, 0x744, 0x9a9
+GET_VALUE, TFONT, TPOS, COLOUR_OBJ, COLOUR, IMG_DRAW = 0x28e1f844, 0x28e249e8, 0x28e24a68, 0x28d96084, 0x28dd8110, 0x28e24a00
+TOP = 0x2812aae0
+NAMED, STATE = 0x24c, 0x254
+HOME_NAMES = IDS['more_snapshots.home']
 VALID, NAME = 0x24b, 0x255            # in a record: set once it holds a sound; its name, 11 bytes
 
 
@@ -83,6 +87,14 @@ class Manager:
                                                         *m.stack_args(3))))
         self.m.stub(TEXT, lambda m: self.events.append(('text', m.reg('r0'), m.read(m.reg('r1'), 32).split(b'\0')[0], m.reg('r3'),
                                                         *m.stack_args(5))))     # the renderer draws to the NUL
+        self.settings = {}          # virtual ID -> value; Home Names reads 0 (Off) unless a test sets it
+        self.m.stub(GET_VALUE, lambda m: (m.write(m.reg('r1'), struct.pack('<II', 2, self.settings.get(m.reg('r0'), 0))),
+                                          m.reg('r0', 0)))
+        self.m.stub(TFONT, lambda m: self.events.append(('font', m.reg('r0'), m.reg('r1'))))
+        self.m.stub(TPOS, lambda m: self.events.append(('place', m.reg('r0'), m.reg('r1'), m.reg('r2'))))
+        self.m.stub(COLOUR_OBJ, lambda m: m.reg('r0', 0x28720000))
+        self.m.stub(COLOUR, lambda m: m.reg('r0', 0x110000 * m.reg('r1') + (0xff if m.reg('r2') else 0x80)))
+        self.m.stub(IMG_DRAW, lambda m: self.events.append(('draw', m.reg('r2'))))
         self.icon_style = 'white'
         self.camera(ICON, 262, 237, 6, NODE)                             # the top view's, at its stock place
         for i in range(3):
@@ -732,7 +744,8 @@ def test_a_preset_load_forgets_the_last_presets_bank_b(mgr):
 
 
 def test_feature_flag():
-    assert ms.FLAG == 'HX_MORE_SNAPSHOTS' and not getattr(ms, 'SETTINGS', ())
+    assert ms.FLAG == 'HX_MORE_SNAPSHOTS' and ms.MENU == 'Displays'
+    assert [(st.key, st.values, st.default) for st in ms.SETTINGS] == [('home', (b'Off', b'On'), 1)]
 
 
 @pytest.mark.firmware
@@ -948,3 +961,76 @@ def test_a_preview_ends_on_a_select_from_elsewhere(mgr, how):
     assert mgr.preview() == 0
     if how != 'load':
         assert not mgr.bank_b_live() and mgr.cur() == 1, 'stock, within bank A'
+
+
+
+def plain(mgr):
+    """The live records unnamed and of no colour (the fixture's have a name and colour bytes)."""
+    for i in range(3):
+        mgr.m.write(record(i) + NAMED, b'\0')
+        mgr.m.write(record(i) + STATE, b'\0')
+
+
+def home_names(mgr):
+    """The top view's paint with Home Names on: the texts it draws, each (text, x, y, colour), and the boxes, each (x, y, colour)."""
+    mgr.settings[HOME_NAMES] = 1
+    mgr.events.clear()
+    mgr.call('snaps_paint', FB, TOP)
+    texts = [(e[2].decode(), e[3], e[4], e[6]) for e in mgr.events if e[0] == 'text']
+    boxes = [(e[2], e[3], e[6]) for e in mgr.events if e[0] == 'fill' and e[4] == 100]
+    return texts, boxes
+
+
+def test_home_names_off_keeps_the_stock_top_view(mgr):
+    mgr.events.clear()
+    mgr.call('snaps_paint', FB, TOP)
+    assert not any(e[0] in ('font', 'place', 'text') for e in mgr.events)
+    mgr.call('snaps_icon_draw', FB, FB, ICON)
+    assert ('draw', ICON) in mgr.events, 'the snapshot icon drawn as stock'
+
+
+def test_home_names_lay_out_the_top_view_once(mgr):
+    home_names(mgr)
+    assert [e for e in mgr.events if e[0] in ('font', 'place')] == [('font', TOP + 0x30, 0), ('place', TOP + 0x8c, 160, 214)]
+    assert ('redraw', 1, 0) in mgr.events, 'a full paint, so the stock pixels go'
+    home_names(mgr)
+    assert not any(e[0] in ('font', 'place') for e in mgr.events), 'laid out once'
+    mgr.settings[HOME_NAMES] = 0
+    mgr.events.clear()
+    mgr.call('snaps_paint', FB, TOP)
+    assert [e for e in mgr.events if e[0] in ('font', 'place')] == [('font', TOP + 0x30, 4), ('place', TOP + 0x8c, 160, 0xc5)]
+
+
+def test_home_names_show_six_names_the_playing_one_boxed(mgr):
+    """Bank A live and named: its names; bank B not made yet: the numbers 4-6, grey; snapshot 2 playing, boxed."""
+    plain(mgr)
+    for i, name in enumerate((b'INTRO', b'VERSE', b'CHORUS')):
+        mgr.m.write(record(i) + NAMED, b'\1')
+        mgr.m.write(record(i) + NAME, name.ljust(11, b'\0'))
+    mgr.m.write(record(2) + STATE, b'\3')               # CHORUS has a colour
+    mgr.m.u8(MGR + CUR, 1)
+    texts, boxes = home_names(mgr)
+    assert texts == [('INTRO', 53, 167, 0x666666), ('VERSE', 160, 167, 0x101010), ('CHORUS', 267, 167, 0x330080),
+                     ('4', 53, 144, 0x666666), ('5', 160, 144, 0x666666), ('6', 267, 144, 0x666666)]
+    assert boxes == [(160, 168, 0xffffff)], 'the playing one: a white box (no colour), its name dark'
+    mgr.call('snaps_icon_draw', FB, FB, ICON)
+    assert ('draw', ICON) not in mgr.events, 'no snapshot icon'
+
+
+def test_home_names_in_bank_b_read_bank_a_from_the_shadow(mgr):
+    plain(mgr)
+    mgr.m.write(record(0) + NAMED, b'\1')
+    mgr.m.write(record(0) + NAME, b'INTRO'.ljust(11, b'\0'))
+    mgr.press(0)                                         # snapshot 4, bank A waits in the shadow
+    mgr.m.write(record(0) + NAMED, b'\1')
+    mgr.m.write(record(0) + NAME, b'ELEVENCHARS')       # 11 characters: no NUL in the record
+    texts, boxes = home_names(mgr)
+    assert [t[:3] for t in texts] == [('INTRO', 53, 167), ('2', 160, 167), ('3', 267, 167),
+                                      ('ELEVENCHARS', 53, 144), ('5', 160, 144), ('6', 267, 144)]
+    assert boxes == [(53, 145, 0xffffff)]
+
+
+def test_home_names_only_in_snapshot_mode(mgr):
+    mgr.mode([2, 2, 2])
+    texts, _ = home_names(mgr)
+    assert texts == [] and not any(e[0] == 'font' for e in mgr.events)

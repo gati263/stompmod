@@ -4,6 +4,7 @@
 @ footswitch's snapshot through the stock select. tools/features/more_snapshots.py places the hooks.
 .syntax unified
 .thumb
+.include "hxtra.inc"
 .equ SELECT, 0x28de2f91             @ (manager, index): recalls a snapshot
 .equ RECORD_INIT, 0x28de14b5        @ (manager, record, name): a record's defaults; takes the manager's lock itself
 .equ LOCK, 0x28e24c01
@@ -42,8 +43,24 @@
 .equ DARK, 0x101010                 @ the digit on a lit camera's white circle; black would be the renderer's transparent
 .equ WRAP, 5                        @ in snaps_data: the select on its way is a next or previous past the bank's end
 .equ VALUE, 2                       @ in WRAP instead: the select on its way is CC 69's value, 0..5
+.equ NAME, 0x255                    @ in a record: its name, 11 bytes, NUL-padded (not ended when 11 long)
 .equ NAMED, 0x24c                   @ in a record: set once it is given a name (0x28de3874); the label shows the name, not a camera
 .equ STATE, 0x254                   @ in a record: the byte the labels test (0x28de2f80), then the name (11 bytes) to its end
+.equ TOP, 0x2812aae0                @ the top view (preset number and name, signal flow, snapshot icon; paint 0x28dca358)
+.equ TOP_NUMBER, TOP + 0x30         @ its preset number: hx35_boldFont (4) at (160, 0xed), anchor 7
+.equ TOP_NAME, TOP + 0x8c           @ its preset name: hx41_lightFont at (160, 0xc5), anchor 7
+.equ NAME_Y, 214                    @ the name's top while the six names show: under the number in hx21_boldFont (0)
+.equ TFONT, 0x28e249e9              @ (text widget, font)
+.equ TPOS, 0x28e24a69               @ (text widget, x, y)
+.equ IMG_DRAW, 0x28e24a01           @ (fb, fb, image widget)
+.equ COLOUR_OBJ, 0x28d96085         @ () -> what the colour lookup takes
+.equ COLOUR, 0x28dd8111             @ (that, a snapshot's colour byte, lit) -> 0xRRGGBB, as the labels take a coloured snapshot's
+.equ GREY, 0x666666                 @ the labels' text for a snapshot of no colour, not lit (white when lit)
+.equ ROWS_Y, 122                    @ the six names' area: y 122..169, where the signal flow was, under the name (bottom 173)
+.equ ROWS_H, 48
+.equ ROW1, 167                      @ the rows' tops: 1-3, then 4-6
+.equ ROW2, 144
+.equ LAYOUT, 10                     @ in snaps_data: the top view laid out for the six names (1) or stock (0)
 .equ STEP, 3                        @ in WRAP instead: the select on its way is a next or previous inside the bank
 .equ PREVIEW, 8                     @ in snaps_data: the labels show the other bank, the sound unchanged, until a footswitch picks
 .equ MODE, 9                        @ in snaps_data, while cameras are painted: bit 0 bank B's numbers, bit 1 none lit (a preview)
@@ -549,12 +566,221 @@ snaps_file_head_byte:
 snaps_file_none:
     pop {r4, r5, pc}
 
-snaps_paint:                        @ after the top view's paint (framebuffer, view): bank B's number over its snapshot icon's
+snaps_paint:                        @ after the top view's paint (framebuffer, view): the six names, or bank B's number over the
+    push {r4, lr}                   @ snapshot icon's
+    mov r4, r0
+    bl snaps_home_on
+    mov r1, r4
+    bl snaps_home_layout
+    cbz r0, snaps_paint_icon
+    mov r0, r4
+    bl snaps_home_names
+    pop {r4, pc}
+snaps_paint_icon:
+    mov r0, r4
     movs r1, #1
     adr.w r2, snaps_top
     adr.w r3, snaps_data
     ldrb r3, [r3]                   @ the live bank: the icon shows the snapshot playing, preview or not
+    pop {r4, lr}
     b snaps_cameras_paint
+
+snaps_icon_draw:                    @ in place of the top view paint's draw of the snapshot icon (fb, fb, icon): none while the
+    push {r0-r2, lr}                @ six names show
+    bl snaps_home_on
+    mov r3, r0
+    pop {r0-r2, lr}
+    cbnz r3, snaps_icon_none
+    ldr r12, =IMG_DRAW
+    bx r12
+snaps_icon_none:
+    bx lr
+
+snaps_home_on:                      @ -> r0 1 when the top view shows the six names: Home Names on, Footswitch Mode Snapshot
+    push {r3, lr}
+    ldr r0, =FS_FUNCTIONS
+    ldrb r0, [r0]
+    cmp r0, #FN_SNAPSHOT
+    bne snaps_home_off
+    movs r0, #SETTING_MORE_SNAPSHOTS_HOME
+    movs r1, #SETTING_MORE_SNAPSHOTS_HOME_MAX
+    movs r2, #SETTING_MORE_SNAPSHOTS_HOME_DEFAULT
+    bl hxtra_setting_get
+    pop {r3, pc}
+snaps_home_off:
+    movs r0, #0
+    pop {r3, pc}
+
+snaps_home_layout:                  @ (on, fb) -> on: the preset number small and the name higher while the six names show,
+    push {r4, r5, lr}               @ else stock; changed only on a change, then the whole UI painted again
+    mov r4, r0
+    adr.w r5, snaps_data
+    ldrb r1, [r5, #LAYOUT]
+    cmp r1, r4
+    beq snaps_home_laid
+    strb r4, [r5, #LAYOUT]
+    ldr r3, =WIDGET_LOCK
+    blx r3
+    ldr r0, =TOP_NUMBER
+    cmp r4, #0
+    ite ne
+    movne r1, #0                    @ hx21_boldFont, as the Edit view's (digits and A-D: all a preset number has)
+    moveq r1, #4
+    ldr r3, =TFONT
+    blx r3
+    ldr r0, =TOP_NAME
+    movs r1, #160
+    cmp r4, #0
+    ite ne
+    movne r2, #NAME_Y
+    moveq r2, #0xc5
+    ldr r3, =TPOS
+    blx r3
+    ldr r3, =WIDGET_UNLOCK
+    blx r3
+    movs r0, #1                     @ a full paint, as the top view's own event handler asks: the signal flow back, or not
+    movs r1, #0
+    ldr r3, =REDRAW
+    blx r3
+snaps_home_laid:
+    mov r0, r4
+    pop {r4, r5, pc}
+
+snaps_home_names:                   @ (fb) where the signal flow was: the six snapshots' names (or numbers, unnamed) in two rows,
+    push {r4-r11, lr}               @ in their colours, the one playing in a box of its colour
+    sub sp, #36                     @ 0..16 the stack arguments, 20..31 the text
+    mov r4, r0
+    ldr r3, =WIDGET_LOCK
+    blx r3
+    movs r0, #ROWS_H
+    str r0, [sp]
+    movs r0, #0
+    str r0, [sp, #4]
+    str r0, [sp, #8]                @ anchor 0: x, y the bottom left corner
+    mov r0, r4
+    movs r1, #0
+    movs r2, #ROWS_Y
+    mov.w r3, #320
+    ldr r12, =FILL
+    blx r12
+    adr.w r8, snaps_data
+    movs r5, #0                     @ i: snapshot i + 1
+snaps_names_each:
+    cmp r5, #3
+    ite hs
+    movhs r6, #1                    @ its bank
+    movlo r6, #0
+    sub.w r7, r5, r6, lsl #1
+    sub.w r7, r7, r6                @ its index in the bank
+    movs r9, #0                     @ its record, 0 for none yet
+    ldrb r0, [r8]
+    cmp r0, r6
+    bne snaps_names_other
+    ldr r9, =MANAGER + RECS         @ the live bank: the manager's records
+    b snaps_names_record
+snaps_names_other:
+    cbnz r0, snaps_names_shadow     @ bank B live: bank A waits in snaps_shadow
+    ldrb r1, [r8, #1]
+    cbz r1, snaps_names_found       @ no bank B yet: three unnamed snapshots of no colour
+snaps_names_shadow:
+    adr.w r9, snaps_shadow
+snaps_names_record:
+    mov.w r1, #REC
+    mla r9, r1, r7, r9
+snaps_names_found:
+    movs r10, #0                    @ playing
+    ldrb r0, [r8]
+    cmp r0, r6
+    bne snaps_names_text
+    ldr r1, =MANAGER
+    ldrb.w r1, [r1, #CUR]
+    cmp r1, r7
+    it eq
+    moveq r10, #1
+snaps_names_text:
+    adds r1, r5, #'1'
+    strh.w r1, [sp, #20]            @ the number, with its NUL
+    cmp.w r9, #0
+    beq snaps_names_colour
+    ldrb.w r1, [r9, #NAMED]
+    cbz r1, snaps_names_colour
+    add r0, sp, #20
+    addw r1, r9, #NAME
+    movs r2, #11
+    ldr r3, =MEMCPY
+    blx r3
+    movs r0, #0
+    strb.w r0, [sp, #31]
+snaps_names_colour:
+    movs r0, #0
+    cmp.w r9, #0
+    it ne
+    ldrbne.w r0, [r9, #STATE]
+    cmp r0, #0
+    it ne
+    cmpne r0, #0xb
+    beq snaps_names_plain
+    mov r11, r0
+    ldr r3, =COLOUR_OBJ
+    blx r3
+    mov r1, r11
+    mov r2, r10
+    ldr r3, =COLOUR
+    blx r3
+    mov r11, r0
+    b snaps_names_place
+snaps_names_plain:
+    cmp.w r10, #0
+    ite ne
+    mvnne r11, #0xff000000          @ white
+    ldreq.w r11, =GREY
+snaps_names_place:
+    cmp r5, #3
+    ite hs
+    movhs r6, #ROW2
+    movlo r6, #ROW1
+    adr.w r0, snaps_home_x
+    ldrh.w r7, [r0, r7, lsl #1]
+    cmp.w r10, #0
+    beq snaps_names_draw
+    movs r0, #23                    @ the box: 100 x 23, its top a row above the text's
+    str r0, [sp]
+    str.w r11, [sp, #4]
+    movs r0, #7                     @ anchor 7: x the centre, y the top
+    str r0, [sp, #8]
+    mov r0, r4
+    mov r1, r7
+    adds r2, r6, #1
+    movs r3, #100
+    ldr r12, =FILL
+    blx r12
+    ldr.w r11, =DARK
+snaps_names_draw:
+    str r6, [sp]
+    movs r0, #1                     @ hx21_regularFont
+    str r0, [sp, #4]
+    str.w r11, [sp, #8]
+    movs r0, #7
+    str r0, [sp, #12]
+    movs r0, #1                     @ mode 1: the glyphs' pixels only
+    str r0, [sp, #16]
+    ldrb.w r2, [sp, #21]
+    cmp r2, #0
+    ite eq
+    moveq r2, #1                    @ the renderer draws to the NUL; the length only tells 0 or 1 character apart
+    movne r2, #2
+    mov r0, r4
+    add r1, sp, #20
+    mov r3, r7
+    ldr r12, =TEXT
+    blx r12
+    adds r5, #1
+    cmp r5, #6
+    bne snaps_names_each
+    ldr r3, =WIDGET_UNLOCK
+    blx r3
+    add sp, #36
+    pop {r4-r11, pc}
 
 snaps_home_paint:                   @ after the Home view's paint (framebuffer, view): over its footswitch labels'
     ldr r3, =FS_FUNCTIONS
@@ -803,7 +1029,11 @@ snaps_copy:                         @ (to, from): a record
     ldr r3, =MEMCPY
     bx r3
 
+HXTRA_SETTING_GET
 .ltorg
+.balign 4
+snaps_home_x:                       @ the columns' centres, as the footswitch labels'
+    .hword 53, 160, 267
 .balign 4
 snaps_top:
     .word ICON, 0
