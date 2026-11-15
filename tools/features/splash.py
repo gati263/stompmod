@@ -18,7 +18,9 @@ import splash_hxtra
 
 TEXT = 'v1.1.0'
 INPUTS = (Input('HX_SPLASH', path=True), Input('HX_SPLASH_FIT', choices=('fill', 'fit'), default='fill'),
-          Input('HX_SPLASH_TEXT', default=TEXT), Input('HX_SPLASH_GLYPHS', path=True, mapping=True))
+          Input('HX_SPLASH_TEXT', default=TEXT), Input('HX_SPLASH_GLYPHS', path=True, mapping=True),
+          Input('HX_SPLASH_LINE', choices=('show', 'hide'), default='show'))
+ICON = b'Icon_Firmware'     # drawn next to the boot line's text; its name string has no other reader [verified offline]
 
 NAME_SITE = 0x28e24cf4                              # the boot view's image name, read only by the literal at 0x28d92924
 TEXT_SITE, TEXT_STOCK = 0x28e24d14, b'   Firmware  \0\0\0' + b'3.80.0\0\0'
@@ -104,11 +106,27 @@ def line(p, text):
     p.put(VERSION_LITERAL, (TEXT_SITE + len(raw)).to_bytes(4, 'little'), 'the boot text\'s version pointer')   # "" appended
 
 
+def hide_line(p):
+    """No boot line: its text a space (drawn without a box, so nothing) and Icon_Firmware painted in the boot picture's colour
+    under it. Data only: no code of the boot view changes."""
+    line(p, ' ')
+    e7, e8 = p.entry(7), p.entry(8)
+    pic = image_store.image(e7.data, e8.data, ps.FULL[0] if p.input('HX_SPLASH') else ps.SPLASH[0])
+    rows = ps.decode(e8.read(pic.offset, pic.length))
+    colour = rows[-1][0]                # the picture's bottom left: the background the icon sits on
+    icon = image_store.image(e7.data, e8.data, ICON)
+    e8.put(icon.offset, image_store.pixel(*colour).to_bytes(2, 'little') * (icon.width * icon.height),
+           f'{ICON.decode()}, painted as the background')
+
+
 def apply(p):
     if p.input('HX_SPLASH'):
         picture(p, *ps.load_picture(p.input('HX_SPLASH'), p.input('HX_SPLASH_FIT')))
     else:
         picture(p, ps.W, ps.SPLASH[1], splash_hxtra.relabel(stock_picture(p)))
-    line(p, p.input('HX_SPLASH_TEXT'))
+    if p.input('HX_SPLASH_LINE') == 'hide':
+        hide_line(p)
+    else:
+        line(p, p.input('HX_SPLASH_TEXT'))
     hook = p.own_entry(RENDER_FN, RENDER_STOCK, 'the text renderer')
     hook.to(p.add(transparent_text_cave(p.next(), hook.stock)))
