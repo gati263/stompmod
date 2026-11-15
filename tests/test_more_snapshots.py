@@ -90,8 +90,12 @@ class Manager:
         self.settings = {}          # virtual ID -> value; Home Names reads 0 (Off) unless a test sets it
         self.m.stub(GET_VALUE, lambda m: (m.write(m.reg('r1'), struct.pack('<II', 2, self.settings.get(m.reg('r0'), 0))),
                                           m.reg('r0', 0)))
-        self.m.stub(TFONT, lambda m: self.events.append(('font', m.reg('r0'), m.reg('r1'))))
-        self.m.stub(TPOS, lambda m: self.events.append(('place', m.reg('r0'), m.reg('r1'), m.reg('r2'))))
+        self.m.stub(TFONT, lambda m: (self.events.append(('font', m.reg('r0'), m.reg('r1'))), m.u32(m.reg('r0') + 0x18, m.reg('r1'))))
+        self.m.stub(TPOS, lambda m: (self.events.append(('place', m.reg('r0'), m.reg('r1'), m.reg('r2'))),
+                                     m.u32(m.reg('r0') + 8, m.reg('r1')), m.u32(m.reg('r0') + 0xc, m.reg('r2'))))
+        self.m.u32(TOP + 0x30 + 0x18, 4)                 # the top view's number and name as the constructor sets them
+        self.m.u32(TOP + 0x8c + 8, 160)
+        self.m.u32(TOP + 0x8c + 0xc, 0xc5)
         self.m.stub(COLOUR_OBJ, lambda m: m.reg('r0', 0x28720000))
         self.m.stub(COLOUR, lambda m: m.reg('r0', 0x110000 * m.reg('r1') + (0xff if m.reg('r2') else 0x80)))
         self.m.stub(IMG_DRAW, lambda m: self.events.append(('draw', m.reg('r2'))))
@@ -995,6 +999,12 @@ def test_home_names_lay_out_the_top_view_once(mgr):
     assert ('redraw', 1, 0) in mgr.events, 'a full paint, so the stock pixels go'
     home_names(mgr)
     assert not any(e[0] in ('font', 'place') for e in mgr.events), 'laid out once'
+    mgr.m.u32(TOP + 0x8c + 0xc, 0xc5)                    # a preset change puts the name back at its stock y
+    home_names(mgr)
+    assert [e for e in mgr.events if e[0] in ('font', 'place')] == [('font', TOP + 0x30, 0), ('place', TOP + 0x8c, 160, 214)]
+    mgr.m.u32(TOP + 0x30 + 0x18, 4)                      # a footswitch mode change rebuilds the number in its stock font
+    home_names(mgr)
+    assert ('font', TOP + 0x30, 0) in mgr.events
     mgr.settings[HOME_NAMES] = 0
     mgr.events.clear()
     mgr.call('snaps_paint', FB, TOP)

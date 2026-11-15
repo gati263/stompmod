@@ -612,12 +612,22 @@ snaps_home_off:
     pop {r3, pc}
 
 snaps_home_layout:                  @ (on, fb) -> on: the preset number small and the name higher while the six names show,
-    push {r4, r5, lr}               @ else stock; changed only on a change, then the whole UI painted again
-    mov r4, r0
+    push {r4, r5, lr}               @ else stock once; checked every paint, as a preset change puts the name back at its stock
+    mov r4, r0                      @ y and a footswitch mode change rebuilds both, then the whole UI painted again
     adr.w r5, snaps_data
+    cbz r4, snaps_home_check_off
+    ldr r0, =TOP_NUMBER
+    ldr r1, [r0, #0x18]             @ its font
+    cbnz r1, snaps_home_set
+    ldr r0, =TOP_NAME
+    ldr r1, [r0, #0xc]              @ its y
+    cmp r1, #NAME_Y
+    bne snaps_home_set
+    b snaps_home_laid
+snaps_home_check_off:
     ldrb r1, [r5, #LAYOUT]
-    cmp r1, r4
-    beq snaps_home_laid
+    cbz r1, snaps_home_laid         @ not laid out by us: stock as it is
+snaps_home_set:
     strb r4, [r5, #LAYOUT]
     ldr r3, =WIDGET_LOCK
     blx r3
