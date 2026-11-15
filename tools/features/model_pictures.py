@@ -21,7 +21,7 @@ SETTINGS = (     # a label's last line shows on top: "Model" over "Pictures"
     Setting('show', b'Pictures\nModel', (b'Off', b'On'), default=1),
 )
 
-BOX_W, BOX_H = 80, 48               # every picture fits this box: the Edit view's room between its title and its moved signal flow
+BOX_W, BOX_H = 80, 38               # every picture fits this box: the Edit view's room between its title and its moved signal flow
 HX_EDIT_RES = ('C:/Program Files (x86)/Line6/HX Edit/res', 'C:/Program Files/Line6/HX Edit/res',
                '/Applications/HX Edit.app/Contents/Resources')     # shortcut: the macOS path is a guess, not checked on a Mac
 LIKE = 0xeb                         # Icon_Amp: a stock 16-bit image whose record the new ones copy
@@ -44,20 +44,36 @@ EDIT_TITLE_PATCHES = (              # (address, stock movs, what): its imm8 is t
 )
 EDIT_NAME_X = (0x28dc2baa, bytes([0x45, 0x23]), "the Edit view's preset name x")
 # One row of blocks (no second path) sits at y 0xa5 (its line at 0xa6): the layout 0x28dc1634 and the slot update 0x28dc1510
-# place it, and nothing else in the Edit view's code does. EDIT_ROW_DROP moves it down into the empty room above the divider (y 120),
-# a lifted block (28x40, centred) still clear of it.
-EDIT_ROW_DROP = 24
+# place it, and nothing else in the Edit view's code does. Two rows sit at 0xb5 and 0x95 (32 apart; 24 px blocks). EDIT_ROWS2_DROP
+# moves both down until the second row's blocks stand on the divider (y 120: row 2 at 132, its blocks' bottom at 120), and
+# EDIT_ROW_DROP puts one row level with the first of two (164), so the picture has the same room above both.
+EDIT_ROW_DROP = 1
 EDIT_ROW_PATCHES = (
     (0x28dc1510, bytes([0xa5, 0x23]), "the Edit view's single-row block y (slot update)"),
     (0x28dc1826, bytes([0xa6, 0x23]), "the Edit view's single-row line y"),
     (0x28dc183c, bytes([0xa5, 0x23]), "the Edit view's single-row block y (layout)"),
 )
-EDIT_PIC_TOP = 211                  # below the hx21 title (y 234 down to 214), above a lifted block at the moved row (top y 161)
+EDIT_ROWS2_DROP = 17
+EDIT_ROWS2_PATCHES = (              # (address, stock bytes, the imm8's offset): every y the two-row layout sets
+    (0x28dc1572, bytes.fromhex('9523'), 0, "the Edit view's second-row block y (slot update)"),
+    (0x28dc1574, bytes.fromhex('b523'), 0, "the Edit view's first-row block y (slot update)"),
+    (0x28dc1650, bytes.fromhex('b623'), 0, "the Edit view's first-row line y"),
+    (0x28dc167e, bytes.fromhex('9623'), 0, "the Edit view's second-row line y"),
+    (0x28dc16ce, bytes.fromhex('b523'), 0, "the Edit view's first-row ends y"),
+    (0x28dc1702, bytes.fromhex('9523'), 0, "the Edit view's second-row end y"),
+    (0x28dc1732, bytes.fromhex('b427'), 0, "the Edit view's split y"),
+    (0x28dc1742, bytes.fromhex('b525'), 0, "the Edit view's join y"),
+    (0x28dc1790, bytes.fromhex('9523'), 0, "the Edit view's second-row join y"),
+    (0x28dc17a8, bytes.fromhex('4ff0b509'), 2, "the Edit view's first-row block y (layout)"),
+    (0x28dc17ac, bytes.fromhex('4ff09508'), 2, "the Edit view's second-row block y (layout)"),
+)
+EDIT_PIC_Y = 195                    # the picture's centre: between the hx21 title (y 234 down to 214) and the first row's blocks
+                                    # (top 176)
 BROWSER_NAMES_X, BROWSER_NAMES_X_DSP = 44, 60               # dsp_meter.py moves the names right to make room for its labels
 BROWSER_PIC_X, BROWSER_PIC_Y = 304 - BOX_W // 2, 110       # the picture's centre: right edge at x 304, left of the scrollbar
-# A tall picture (a pedal, at least TALL times as high as wide) is only 48 px high in BOX: the browser, which has the room
-# (y 70 to 150), gets a second, larger copy of it. Only these: a larger copy of every picture would not fit the image store.
-TALL = 1.4
+# A pedal (a picture at least TALL times as high as wide) is only 38 px high in BOX: the browser, which has the room (y 70 to
+# 150), gets a second, larger copy of it. Only these: a larger copy of every picture would not fit the image store.
+TALL = 0.8
 TALL_W, TALL_H = 64, 80
 
 
@@ -80,7 +96,7 @@ def edit_name_x(width):
 
 def edit_pic_y():
     """The Edit picture's centre y: a wide, thin picture (an amp) sits in the middle of the box, not at its top."""
-    return EDIT_PIC_TOP - BOX_H // 2
+    return EDIT_PIC_Y
 
 
 def browser_name_maxw(names_x):
@@ -278,6 +294,11 @@ def apply(p):
     p.put(EDIT_NAME_X[0], bytes([name_x, EDIT_NAME_X[1][1]]), EDIT_NAME_X[2])
     for at, stock, what in EDIT_ROW_PATCHES:
         p.put(at, bytes([stock[0] - EDIT_ROW_DROP, stock[1]]), what)
+    for at, stock, k, what in EDIT_ROWS2_PATCHES:
+        p.expect(at, stock, what)
+        new = bytearray(stock)
+        new[k] -= EDIT_ROWS2_DROP
+        p.put(at, bytes(new), what)
     names_x = BROWSER_NAMES_X_DSP if 'dsp_meter' in p.values else BROWSER_NAMES_X     # p.values: the enabled features
     inc = ''.join(f'.equ {k}, {v}\n' for k, v in (
         ('MP_TABLE', tab), ('MP_BTABLE', btab), ('MP_COUNT', nstr), ('MP_SEL', sel), ('MP_SEL_BITS', nbits),

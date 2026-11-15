@@ -1,7 +1,7 @@
 @ model_pictures.s - a picture of a model on two screens (tools/features/model_pictures.py adds the pictures, patches the Edit view's
 @ title fonts and single-row y, and chains these):
-@ mp_edit: the selected block's picture in the Edit view, centred between its (smaller) title and its (lower) row of blocks, while
-@   the preset has one row; a second row keeps the stock layout's room, so no picture then;
+@ mp_edit: the selected block's picture in the Edit view, centred between its (smaller) title and its first row of blocks
+@   (moved down: one row level with the first of two, two rows on the divider);
 @ mp_browser: the picture of the model under the cursor in the model browser, or of the favorite under it in Favorites, right
 @   of the names; mp_row_text shortens a name that would run into it.
 @ A block's model comes from the DSP model's block record (its name index), the selected block from the slot showing a selected
@@ -55,9 +55,6 @@ mp_edit:                            @ r0 the framebuffer, r1 the Edit view's top
     movs r6, #0
     bl shown
     cbz r0, edit_show
-    ldr r0, =SLOT_MODEL
-    ldrb r0, [r0, #0x23]
-    cbnz r0, edit_show              @ a second row: the stock layout, no room for a picture
     addw r0, r5, #EDIT_SLOTS
     bl selected_model
     ldr r1, =MP_TABLE

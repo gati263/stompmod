@@ -84,21 +84,21 @@ def test_sub_up_average_paeth_filters(tmp_path):
 
 
 def test_picture_trims_scales_into_the_box_and_keeps_its_orientation(tmp_path):
-    """A 200x100 red-over-blue picture in a transparent 256x256: trimmed, scaled to 80x40, red on top, column-major from the bottom."""
+    """A 200x100 red-over-blue picture in a transparent 256x256, in an 80x48 box: trimmed, scaled to 80x40, red on top, column-major from the bottom."""
     rgba = np.zeros((256, 256, 4), np.uint8)
     rgba[50:100, 20:220] = (255, 0, 0, 255)
     rgba[100:150, 20:220] = (0, 0, 255, 255)
     (tmp_path / 'p.png').write_bytes(png(rgba))
-    w, h, px = mp.picture(np, str(tmp_path / 'p.png'))
+    w, h, px = mp.picture(np, str(tmp_path / 'p.png'), 80, 48)
     assert (w, h) == (80, 40)
     v = unpack(w, h, px)
     assert (v[:20] == 0x001f).all() and (v[20:] == 0xf800).all()        # red is the low 5 bits, blue the high
     rgba = np.zeros((96, 24, 4), np.uint8)
     rgba[:, :, 3] = 255
     (tmp_path / 't.png').write_bytes(png(rgba))
-    assert mp.picture(np, str(tmp_path / 't.png'))[:2] == (12, 48)      # a tall one fits the height
+    assert mp.picture(np, str(tmp_path / 't.png'), 80, 48)[:2] == (12, 48)      # a tall one fits the height
     (tmp_path / 's.png').write_bytes(png(rgba[:40, :10]))
-    assert mp.picture(np, str(tmp_path / 's.png'))[:2] == (10, 40)      # never scaled up
+    assert mp.picture(np, str(tmp_path / 's.png'), 80, 48)[:2] == (10, 40)      # never scaled up
 
 
 def test_mono_and_stereo_share_the_plain_models_picture(tmp_path):
@@ -229,8 +229,8 @@ def test_edit_second_row_block_and_no_picture(m4emu):
     assert t.calls and not any(c[0] in ('erase', 'visible', 'lock') for c in t.calls)
 
 
-def test_edit_no_picture_with_a_second_row_or_when_off(m4emu):
-    """A preset with a second row keeps the stock layout (no moved row, no room): no picture; nor with Pictures Off."""
+def test_edit_picture_with_a_second_row_too_but_not_when_off(m4emu):
+    """Two rows move down onto the divider, so the picture has the same room as with one row; with Pictures Off, none."""
     t = Pics(m4emu)
     widget = CODE + t.sym['edit_pic']
     t.slot(0x4a4, 0, SELECTED)
@@ -240,10 +240,8 @@ def test_edit_no_picture_with_a_second_row_or_when_off(m4emu):
     assert t.shown(widget) == (0x303, 160, 187)
     t.m.u8(SLOT_MODEL + 0x23, 1)
     t.call('mp_edit', FB, VIEW)
-    assert t.shown(widget) is None
-    assert not any(c[0] == 'dsp lock' for c in t.calls)
+    assert t.shown(widget) == (0x303, 160, 187)
     t.m.u8(SLOT_MODEL + 0x23, 0)
-    t.call('mp_edit', FB, VIEW)
     t.settings[SHOW] = 0
     t.call('mp_edit', FB, VIEW)
     assert t.shown(widget) is None
@@ -368,3 +366,6 @@ def test_firmware_build(tmp_path):
     assert 40 < name_x < 0x45 and read(0x28dc2baa, 2) == bytes([name_x, 0x23])
     for at, stock, _ in mp.EDIT_ROW_PATCHES:
         assert read(at, 2) == bytes([stock[0] - mp.EDIT_ROW_DROP, 0x23])
+    for at, stock, k, _ in mp.EDIT_ROWS2_PATCHES:
+        got = read(at, len(stock))
+        assert got[k] == stock[k] - mp.EDIT_ROWS2_DROP and got[:k] + got[k + 1:] == stock[:k] + stock[k + 1:]

@@ -181,12 +181,12 @@ A gain-reduction meter on the Home screen, lit by the compressor you turn it on 
 
 A picture of the model, as HX Edit shows it, in the Edit view and the model browser. A first build (pictures in the browser, a smaller one in the Edit view's corner) ran on an HX Stomp from RAM; this layout is a test build. `tools/model_pictures_preview.py` draws it offline from your firmware file, to judge a change before a RAM run.
 
-- **Edit view:** the preset number and name at the top are smaller (hx21 instead of hx28), the row of blocks sits 24 px lower, and the selected block's picture shows centred between them. A preset with a second row of blocks keeps the stock layout and shows no picture. The smaller title and lower row stay in a build with this feature even with Pictures Off.
+- **Edit view:** the preset number and name at the top are smaller (hx21 instead of hx28), and the signal flow moves down: two rows until the second stands on the divider, one row level with the first of two. The selected block's picture shows centred between the title and the first row, with one row or two. The smaller title and moved rows stay in a build with this feature even with Pictures Off.
 - **Model browser:** the picture of the model in bold (the one the cursor is on) right of the list, in a model list and in Favorites (the favorite's model). A name that would run into the picture is shortened with `..`.
 - **Home screen:** stock. It shows no selected block, so there is no picture to show.
 - **Settings** (Global Settings > Displays, after Tap LED Color): **Model Pictures**, **On** (default) or Off. It has no section of its own, so no second eye icon in the section strip.
 - **Where the pictures come from:** HX Edit's own model images, read when you build from the HX Edit installed on your computer, so none is in this repository or on the setup page (the page doesn't build this feature). `HX_MODEL_PICTURES=1` looks for HX Edit in its usual place on Windows; otherwise give the path of its `res` folder (`HX_MODEL_PICTURES="path/to/HX Edit/res"`). 787 of the HX Stomp's 791 models have one (Mono and Stereo versions share one); the rest show none.
-- **Size:** each picture fits an 80x48 box; a tall one (a pedal, at least 1.4 times as high as wide) also gets a 64x80 copy for the block browser. About 2.5 MB in all in the image store, which leaves about 0.6 MB free.
+- **Size:** each picture is trimmed to its content (its transparent border cut) and scaled to fit an 80x38 box; a pedal (at least 0.8 times as high as wide) also gets a 64x80 copy for the block browser, so tall and square pedals show alike there. About 2.8 MB in all in the image store, which leaves about 0.36 MB free.
 
 ```sh
 HX_MODEL_PICTURES=1 python3 build.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf
