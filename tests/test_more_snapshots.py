@@ -155,9 +155,20 @@ class Manager:
     def name(self, i):
         return self.rec(i)[NAME:NAME + 11].rstrip(b'\0')
 
-    def press(self, i):
+    def fs(self, i):
         """The footswitch for snapshot i+1 (i 0..2), as the snapshot action calls select."""
         return self.m.call(self.at + self.sym['snaps_select'], MGR, i)
+
+    def preview(self):
+        return self.m.read(self.at + self.sym['snaps_data'] + 8, 1)[0]
+
+    def press(self, i):
+        """A footswitch press; the lit one is a flip: pressed once it only previews the other bank (no select), and pressed
+        again it picks that bank's snapshot i."""
+        if self.cur() == i and not self.preview() and not self.m.read(MGR + BUSY, 1)[0] and i <= 2:
+            n = len(self.selects)
+            assert self.fs(i) == 0 and len(self.selects) == n and self.preview() == 1, 'the first press only previews'
+        return self.fs(i)
 
     def call(self, sym, *args):
         return self.m.call(self.at + self.sym[sym], *args)
@@ -880,3 +891,50 @@ def test_without_the_flag_the_sites_stay_stock():
 def test_builds_alongside_the_other_features():
     _, on = built({'HX_MORE_SNAPSHOTS': '1', 'HX_BPM': '1', 'HX_DSP_METER': '1', 'HX_LONG_PRESS': '1'})
     assert {'bpm', 'dsp_meter', 'long_press', 'more_snapshots'} <= set(on)
+
+
+def preview_labels(base):
+    """A preview's labels: the other bank's numbers, none lit (base '1' or '4')."""
+    out = ['widget lock']
+    for i in range(3):
+        out += camera(LABEL_X[i] - 26, LABEL_Y - 35, chr(ord(base) + i))
+    return out + ['widget unlock', ('redraw', 0, 1)]
+
+
+def test_from_3_the_lit_switch_previews_and_the_first_switch_picks_4(mgr):
+    """The case a one-press flip got wrong: 3 to 4 went through 6. Now the lit switch only shows 4-6, and 3 plays on."""
+    mgr.m.u8(MGR + CUR, 2)
+    assert mgr.fs(2) == 0
+    assert mgr.selects == [] and mgr.cur() == 2 and not mgr.bank_b_live() and mgr.preview() == 1
+    assert [mgr.rec(i) for i in range(3)] == [bank_a(i) for i in range(3)], 'nothing swapped yet'
+    assert mgr.fs(0) == 1
+    (new, old, old_rec, _), = mgr.selects
+    assert (new, old_rec) == (0, bank_a(2)), 'snapshot 4, from the sound of snapshot 3'
+    assert mgr.bank_b_live() and mgr.preview() == 0 and mgr.name(0) == b'SNAPSHOT 4'
+
+
+def test_a_preview_shows_the_other_banks_numbers_none_lit(mgr):
+    mgr.m.u8(MGR + CUR, 1)
+    mgr.fs(1)
+    assert mgr.paint() == ([], []), 'the top icon shows the snapshot playing: 2, stock'
+    assert mgr.paint('home') == (preview_labels('4'), [1, 2, 3])
+    mgr.fs(1)                                            # 5
+    mgr.paint('home')
+    mgr.fs(1)                                            # a preview of bank A from bank B
+    assert mgr.paint() == (top('5'), [])
+    assert mgr.paint('home') == (preview_labels('1'), [1, 2, 3])
+
+
+@pytest.mark.parametrize('how', ['cc', 'next', 'load'])
+def test_a_preview_ends_on_a_select_from_elsewhere(mgr, how):
+    mgr.fs(0)
+    assert mgr.preview() == 1
+    if how == 'cc':
+        mgr.cc(1)
+    elif how == 'next':
+        mgr.step(1)
+    else:
+        mgr.call('snaps_loaded', MGR, 0, 0, 0)
+    assert mgr.preview() == 0
+    if how != 'load':
+        assert not mgr.bank_b_live() and mgr.cur() == 1, 'stock, within bank A'

@@ -1,4 +1,5 @@
-"""More snapshots: pressing the lit snapshot footswitch again flips between snapshots 1-3 and 4-6 (src/m4/more_snapshots.s); in
+"""More snapshots: pressing the lit snapshot footswitch again shows the other bank, snapshots 1-3 or 4-6, the sound unchanged, and the
+next footswitch press picks that bank's snapshot (src/m4/more_snapshots.s); in
 4-6 the snapshot icon at the top right and the footswitch labels show 4, 5 or 6. Once a preset has a bank B, the next and previous snapshot
 footswitches and MIDI CC 69 run through all six: next on 3 goes to 4, next on 6 to 1, previous on 1 to 6, previous on 4 to 3.
 MIDI CC 69's values 0..2 select snapshots 1..3 and 3..5 snapshots 4..6, from either bank."""

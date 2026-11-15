@@ -133,7 +133,7 @@ In Stomp footswitch mode, each of FS1–FS5 can have a Hold action (Global Setti
 <!-- demo: snapshots -->
 <img src="https://github.com/user-attachments/assets/8ce9d86c-cffb-491e-9c47-0430a02a4af7" width="100%" alt="Snapshots 1 to 3, the lit footswitch again for 4 to 6, and again back to 1 to 3">
 
-With Footswitch Mode on Snapshot, the three footswitches select snapshots 1–3 as usual. Press the lit one again and the same footswitches select snapshots 4–6; press the lit one again to come back.
+With Footswitch Mode on Snapshot, the three footswitches select snapshots 1–3 as usual. Press the lit one again and the labels show snapshots 4–6, none lit, while the snapshot you are on keeps playing: the next footswitch you press picks 4, 5 or 6, so from 3 you go straight to 4. From 4–6, the lit one again shows 1–3 the same way. Changing preset, MIDI, or the next and previous snapshot footswitches end the preview.
 
 - **Which bank you're in:** in 4–6, the camera icon at the top right and the footswitch labels show 4, 5 or 6.
 - **New snapshots:** the first time you flip to a preset's 4–6, each one starts as a copy of the snapshot you flipped from. Edit them as any snapshot: snapshot-controlled parameters, block bypass, tempo and names are kept per snapshot.

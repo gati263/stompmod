@@ -1,6 +1,7 @@
-@ more_snapshots.s - snapshots 4 to 6: pressing the lit snapshot footswitch again flips between bank A (snapshots 1-3) and bank B
-@ (4-6). The snapshot manager holds three 0x260-byte records; the other bank waits in snaps_shadow, and a flip swaps the two and
-@ recalls the same footswitch's snapshot through the stock select. tools/features/more_snapshots.py places the hooks.
+@ more_snapshots.s - snapshots 4 to 6: pressing the lit snapshot footswitch again shows the other bank (snapshots 1-3 or 4-6) on
+@ the footswitch labels, the sound unchanged (a preview); the next footswitch press picks that bank's snapshot. The snapshot
+@ manager holds three 0x260-byte records; the other bank waits in snaps_shadow, and the pick swaps the two and recalls the
+@ footswitch's snapshot through the stock select. tools/features/more_snapshots.py places the hooks.
 .syntax unified
 .thumb
 .equ SELECT, 0x28de2f91             @ (manager, index): recalls a snapshot
@@ -41,24 +42,53 @@
 .equ DARK, 0x101010                 @ the digit on a lit camera's white circle; black would be the renderer's transparent
 .equ WRAP, 5                        @ in snaps_data: the select on its way is a next or previous past the bank's end
 .equ VALUE, 2                       @ in WRAP instead: the select on its way is CC 69's value, 0..5
+.equ STEP, 3                        @ in WRAP instead: the select on its way is a next or previous inside the bank
+.equ PREVIEW, 8                     @ in snaps_data: the labels show the other bank, the sound unchanged, until a footswitch picks
+.equ MODE, 9                        @ in snaps_data, while cameras are painted: bit 0 bank B's numbers, bit 1 none lit (a preview)
+
+.macro UNPREVIEW                    @ (r2 snaps_data; r3 spoiled) a select other than a footswitch pick ends a preview
+    ldrb r3, [r2, #PREVIEW]
+    cbz r3, 1f
+    movs r3, #0
+    strb r3, [r2, #PREVIEW]
+    ldrb r3, [r2, #3]
+    orr r3, r3, #2                  @ the labels drawn again for the live bank
+    strb r3, [r2, #3]
+1:
+.endm
 
 snaps_select:                       @ a footswitch press's call of select (manager, index)
     adr.w r2, snaps_data
     ldrb r3, [r2, #WRAP]
-    cbnz r3, snaps_wrap
+    cbz r3, snaps_select_fs
+    UNPREVIEW
+    ldrb r3, [r2, #WRAP]
+    cmp r3, #STEP
+    bne snaps_wrap
+    movs r3, #0                     @ a next or previous inside the bank: stock
+    strb r3, [r2, #WRAP]
+    b snaps_stock
+snaps_select_fs:
     cmp r1, #2
-    bhi snaps_stock
-    ldrb.w r2, [r0, #CUR]
-    cmp r2, r1
-    bne snaps_stock
-    ldrb.w r2, [r0, #BUSY]
-    cbz r2, snaps_flip
+    bhi snaps_select_other
+    ldrb.w r3, [r0, #BUSY]
+    cbnz r3, snaps_stock            @ select held off: stock, the preview kept for the press after
+    ldrb r3, [r2, #PREVIEW]
+    cmp r3, #0
+    bne snaps_pick
+    ldrb.w r3, [r0, #CUR]
+    cmp r3, r1
+    beq snaps_preview
+    b snaps_stock
+snaps_select_other:
+    UNPREVIEW
 snaps_stock:
     ldr r12, =SELECT
     bx r12
 
 snaps_cc_select:                    @ MIDI CC 69's call of select (manager, index): stock, bar a value 0..5 or a next or previous past the bank's end
     adr.w r2, snaps_data
+    UNPREVIEW
     ldrb r3, [r2, #WRAP]
     cmp r3, #VALUE
     beq snaps_value
@@ -92,16 +122,18 @@ snaps_value:                        @ (manager, value, snaps_data): 0..2 snapsho
     beq snaps_stock
     b snaps_cc_cross
 
-snaps_next_cur:                    @ in place of footswitch next's read of the current snapshot (manager): marks a wrap past 3 or 6
-    ldrb.w r0, [r0, #CUR]
+snaps_next_cur:                    @ in place of footswitch next's read of the current snapshot (manager): marks a wrap past 3 or 6,
+    ldrb.w r0, [r0, #CUR]           @ else a step, so the select is not taken for a footswitch picking in a preview
     cmp r0, #2
     beq snaps_mark
-    bx lr
+    b snaps_mark_step
 
-snaps_prev_cur:                     @ in place of footswitch previous's read: marks a wrap past 1 or 4
+snaps_prev_cur:                     @ in place of footswitch previous's read: marks a wrap past 1 or 4, else a step
     ldrb.w r0, [r0, #CUR]
     cbz r0, snaps_mark
-    bx lr
+snaps_mark_step:
+    movs r2, #STEP
+    b snaps_mark_as
 
 snaps_cc_value:                     @ in place of CC 69's manager getter before its select of the value: marks it
     ldr r0, =MANAGER
@@ -117,7 +149,30 @@ snaps_mark_as:
     strb r2, [r1, #WRAP]
     bx lr
 
-snaps_flip:                         @ the lit one again: the other bank, then select(index) from the record the sound came from
+snaps_preview:                      @ (manager, index, snaps_data) the lit one again: the labels show the other bank; no select
+    movs r3, #1
+    strb r3, [r2, #PREVIEW]
+    ldrb r3, [r2, #3]
+    orr r3, r3, #2
+    strb r3, [r2, #3]
+    push {r4, lr}
+    movs r0, #0
+    movs r1, #1
+    ldr r3, =REDRAW
+    blx r3
+    movs r0, #0                     @ as select returns when it does nothing
+    pop {r4, pc}
+
+snaps_pick:                         @ (manager, index, snaps_data) a footswitch during a preview: that snapshot of the other bank
+    movs r3, #0
+    strb r3, [r2, #PREVIEW]
+    ldrb r3, [r2, #3]
+    bic r3, r3, #2                  @ the preview's redraw of the labels: the cross asks for the right one itself
+    strb r3, [r2, #3]
+    ldrb.w r2, [r0, #CUR]
+    b snaps_cross
+
+snaps_flip:                         @ (manager, index) the other bank, then select(index) from the record the sound came from
     mov r2, r1
 snaps_cross:                        @ (manager, index, the index being left)
     push {r3-r11, lr}
@@ -207,6 +262,8 @@ snaps_flipped:
 
 snaps_loaded:                       @ before the preset parser fills the records: bank A, and bank B from the file or anew
     adr.w r0, snaps_data
+    movs r1, #0
+    strb r1, [r0, #PREVIEW]
     ldrb r1, [r0]
     add.w r1, r1, r1, lsl #1
     lsls r1, r1, #24                @ bank B was live: the cameras must be drawn again (byte 3)
@@ -447,6 +504,8 @@ snaps_file_none:
 snaps_paint:                        @ after the top view's paint (framebuffer, view): bank B's number over its snapshot icon's
     movs r1, #1
     adr.w r2, snaps_top
+    adr.w r3, snaps_data
+    ldrb r3, [r3]                   @ the live bank: the icon shows the snapshot playing, preview or not
     b snaps_cameras_paint
 
 snaps_home_paint:                   @ after the Home view's paint (framebuffer, view): over its footswitch labels'
@@ -474,14 +533,20 @@ snaps_home_paint:                   @ after the Home view's paint (framebuffer, 
 snaps_home_labels:
     movs r1, #2
     adr.w r2, snaps_labels
+    adr.w r3, snaps_data
+    ldrb r12, [r3, #PREVIEW]
+    ldrb r3, [r3]
+    eor r3, r3, r12                 @ the bank the labels show: the other one in a preview
+    orr.w r3, r3, r12, lsl #1       @ and then none lit, as none of that bank is playing
 
-snaps_cameras_paint:                @ r0 the framebuffer, r1 this paint's bit in byte 3, r2 its cameras, a list ending in 0
+snaps_cameras_paint:                @ r0 the framebuffer, r1 this paint's bit in byte 3, r2 its cameras, a list ending in 0, r3 MODE
     push {r4-r8, lr}
     mov r4, r0
     mov r5, r1
     mov r6, r2
     adr.w r7, snaps_data
-    ldrb r0, [r7]
+    strb r3, [r7, #MODE]
+    mov r0, r3
     ldrb r1, [r7, #3]
     tst r1, r5
     it eq
@@ -505,7 +570,7 @@ snaps_cameras_dirty:
     strb.w r2, [r1, #0x24]
     b snaps_cameras_dirty
 snaps_cameras_draw:
-    ldrb r0, [r7]
+    ldrb r0, [r7, #MODE]
     cbz r0, snaps_cameras_unlock
 snaps_cameras_each:
     ldr r0, [r6], #4
@@ -524,7 +589,7 @@ snaps_cameras_unlock:
 snaps_cameras_done:
     pop {r4-r8, pc}
 
-snaps_camera:                       @ (camera, r4 the framebuffer): 4..6 over a visible stock camera's 1..3, where its image puts it
+snaps_camera:                       @ (camera, r4 the framebuffer): its number over a visible stock camera's 1..3, as MODE says
     push {r4-r7, lr}
     sub sp, #28                     @ 0..16 the stack arguments, 20 the digit
     mov r5, r0
@@ -559,7 +624,18 @@ snaps_camera_found:
     movs r1, #3
     udiv r7, r6, r1                 @ its style: 0 white, 1 red, 2 lit
     mls r6, r7, r1, r6
-    adds r6, #'4'
+    adr.w r2, snaps_data
+    ldrb r2, [r2, #MODE]
+    tst r2, #1
+    ite ne
+    addne r6, #'4'
+    addeq r6, #'1'
+    tst r2, #2
+    beq snaps_camera_style
+    cmp r7, #2
+    it eq
+    moveq r7, #0                    @ a preview: the lit camera drawn as a white one
+snaps_camera_style:
     strh r6, [sp, #20]              @ with its NUL: the renderer draws to the NUL, using the length only to spot 0 or 1
     ldrb r0, [r5, #0x1c]            @ the anchor: column (x at the left, centre, right) and row (y at the bottom, middle, top)
     udiv r2, r0, r1
@@ -692,7 +768,8 @@ snaps_names:                        @ bank B's default names, 16 bytes apart
 snaps_file_head:                    @ key 0x64, bin16 of FILE_LEN (big-endian), "HX6B", version 1, 3 spare
     .byte FILE_KEY, 0xc5, FILE_LEN >> 8, FILE_LEN & 0xff, 'H', 'X', '6', 'B', 1, 0, 0, 0
 snaps_data:                         @ 0 bank B live, 1 snaps_shadow holds bank B, 2 flipped to bank A for a save, 3 cameras to redraw,
-    .word 0, 0                      @ 4 bank B written to a file, 5 WRAP, 6 bank B read from a file, 7 the map's new count
+    .word 0, 0, 0                   @ 4 bank B written to a file, 5 WRAP, 6 bank B read from a file, 7 the map's new count,
+                                    @ 8 PREVIEW, 9 MODE
 snaps_temp:
     .space REC
 snaps_shadow:                       @ the bank not live: three records as the manager's
