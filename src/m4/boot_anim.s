@@ -6,7 +6,10 @@
 .thumb
 .include "boot_anim.inc"
 
-.equ CLOCK, 0x28da6459              @ the µs clock
+.equ DEMCR, 0xe000edfc             @ bit 24 TRCENA: the DWT on
+.equ DWT_CTRL, 0xe0001000           @ bit 0 CYCCNTENA: its cycle counter counting
+.equ DWT_CYCCNT, 0xe0001004
+.equ CPU_MHZ, 204                   @ the core clock the counter counts
 .equ IMG_SET, 0x28e24c19            @ (widget, image index)
 .equ IMG_DRAW, 0x28e24a01           @ (fb, 0, widget): draws it when its node is dirty, as the boot paint calls it
 .equ PICTURE, 0x2811ed30            @ the boot view's picture widget; its node at +0x20, dirty byte at node +0x24
@@ -15,8 +18,7 @@
 ba_paint:                           @ r0 the framebuffer, after the boot view's paint
     push {r4-r6, lr}
     mov r4, r0
-    ldr r3, =CLOCK
-    blx r3
+    bl ba_clock
     adr.w r5, ba_state
     ldr r1, [r5]
     cbnz r1, ba_started
@@ -68,8 +70,47 @@ ba_out:
     movs r0, #0
     pop {r4-r6, pc}
 
+.thumb_func
+ba_clock:                           @ -> r0 µs since the first call, from the core's cycle counter
+    @ Not the app's µs clock (0x28da6458, hardware timer 1): the boot view paints before the app sets that timer up, and its
+    @ register then faults when started by the stock bootloader (an installed build hung at the bootloader's picture
+    @ [verified on unit, 2026-11-15]; a RAM run's loader leaves it usable). The cycle counter is in the core: reading it never
+    @ faults. The app turns it on itself later (0x28dadd34); turning it on here as well changes nothing for it.
+    ldr r1, =DEMCR
+    ldr r2, [r1]
+    orr r2, r2, #0x1000000
+    str r2, [r1]
+    ldr r1, =DWT_CTRL
+    ldr r2, [r1]
+    orr r2, r2, #1
+    str r2, [r1]
+    ldr r1, =DWT_CYCCNT
+    ldr r0, [r1]
+    adr.w r3, ba_clock_state
+    ldr r1, [r3]
+    cbnz r1, clock_on
+    movs r1, #1
+    str r1, [r3]
+    str r0, [r3, #4]
+clock_on:
+    ldr r1, [r3, #4]
+    str r0, [r3, #4]
+    subs r0, r0, r1                 @ cycles since the last call (one wrap of the counter, 21 s, is harmless)
+    ldr r1, [r3, #8]
+    add r0, r1                      @ with the cycles left over from the last µs
+    movs r2, #CPU_MHZ
+    udiv r1, r0, r2
+    mls r0, r1, r2, r0
+    str r0, [r3, #8]
+    ldr r0, [r3, #12]
+    add r0, r1
+    str r0, [r3, #12]
+    bx lr
+
 .ltorg
 .balign 4
+ba_clock_state:                     @ started, the counter at the last call, cycles left over, µs so far
+    .word 0, 0, 0, 0
 ba_state:                           @ started, the intro's start (µs), the frame shown (image index, 0 for none yet), the last paint's time
     .word 0, 0, 0, 0
 ba_frames:

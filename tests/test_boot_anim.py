@@ -12,7 +12,7 @@ from features import boot_anim
 MODS = features.load()
 IDS = setting_ids.by_name()
 CODE, FB = 0x28e60000, 0x28d1ce98
-CLOCK, IMG_SET, IMG_DRAW, PICTURE, NODE = 0x28da6458, 0x28e24c18, 0x28e24a00, 0x2811ed30, 0x28400000
+DWT, IMG_SET, IMG_DRAW, PICTURE, NODE = 0xe0001000, 0x28e24c18, 0x28e24a00, 0x2811ed30, 0x28400000
 FRAMES = (0x301, 0x302, 0x303)
 INC = ('.equ BA_INTRO_US, 600000\n.equ BA_STEP_US, 300000\n.equ BA_GAP_US, 300000\n.equ BA_COUNT, 3\n.macro BA_FRAME_LIST\n'
        + ''.join(f'    .hword {i:#x}\n' for i in FRAMES) + '.endm\n')
@@ -22,22 +22,25 @@ class Boot:
     def __init__(self, m4emu):
         code, self.sym = m4emu.assemble('src/m4/boot_anim.s', MODS, IDS, inc={'boot_anim.inc': INC})
         self.m = m4emu.M4(code, CODE)
-        self.now, self.calls = 0, []
-        self.m.stub(CLOCK, lambda m: m.reg('r0', self.now))
+        self.m.map(DWT, 0x1000)
+        self.m.map(0xe000e000, 0x1000)
+        self.calls = []
         self.m.stub(IMG_SET, lambda m: self.calls.append(('image', m.reg('r0'), m.reg('r1'))))
         self.m.stub(IMG_DRAW, lambda m: self.calls.append(('draw', m.reg('r0'), m.reg('r1'), m.reg('r2'),
                                                            m.read(NODE + 0x24, 1)[0])))
         self.m.u32(PICTURE + 0x20, NODE)
 
     def paint(self, us):
-        self.now, self.calls = us & 0xffffffff, []
+        """A paint at us µs on the core's cycle counter (204 a µs, wrapping at 32 bits)."""
+        self.m.u32(DWT + 4, us * 204 & 0xffffffff)
+        self.calls = []
         self.m.call(CODE + self.sym['ba_paint'], FB)
         return self.calls
 
 
 def test_intro_then_frames_in_turn(m4emu):
     b = Boot(m4emu)
-    t0 = 0xfff00000                    # near the clock's wrap: the elapsed time still counts right
+    t0 = (1 << 32) // 204 - 100_000     # near the counter's wrap: the elapsed time still counts right
     for t in range(0, 600_000, 100_000):
         assert b.paint(t0 + t) == []
     assert b.paint(t0 + 600_000) == [('image', PICTURE, 0x301), ('draw', FB, 0, PICTURE, 1)]
@@ -82,3 +85,11 @@ def test_firmware_build(tmp_path):
         assert read(at, len(new)) == new
     assert struct.unpack('<I', read(boot_anim.PAINT_LIT, 4))[0] != boot_anim.PAINT, 'the paint is chained'
     assert struct.unpack_from('<I', entries[7], 0x18)[0] == 577 + 2
+
+
+def test_the_clock_is_the_cores_cycle_counter(m4emu):
+    """Turned on (DEMCR TRCENA, DWT CYCCNTENA), never the app's timer-1 clock, which faults before the app sets it up."""
+    b = Boot(m4emu)
+    b.paint(0)
+    assert b.m.u32(0xe000edfc) & 1 << 24 and b.m.u32(DWT) & 1
+    assert 0x28da6458 not in [a for a, _ in b.m.log]

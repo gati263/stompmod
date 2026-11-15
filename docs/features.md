@@ -217,6 +217,7 @@ HX_BOOT_ANIM=/abs/frame1.png,/abs/frame2.png,/abs/frame3.png python3 build.py pa
 ```
 
 - A frame changes only when the boot view paints, which the app does as the boot advances; how often it does is not measured yet, so the timing may be coarser than the 0.3 s steps.
+- Its timing comes from the processor's own cycle counter. A first version used the app's microsecond clock (hardware timer 1), which ran from RAM but hung an installed build at the bootloader's picture: the boot view paints before the app sets that timer up.
 - Each frame is a whole picture, 150 KB in the image store.
 - The bootloader's own copy of the stock picture still shows for a moment at power-on.
 
