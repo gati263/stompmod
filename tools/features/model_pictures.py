@@ -30,6 +30,7 @@ E8_WINDOW = 0x800000                # the app reads Entry 8 into an 8 MB window 
 EDIT_PAINT_LIT, EDIT_PAINT = 0x28d96da0, 0x28dc27f9         # the Edit view top half's paint (block slots)
 BROWSER_PAINT_LIT, BROWSER_PAINT = 0x28d96df0, 0x28dc4dd1   # the model browser's paint
 NAME_TEXT_CALL, SET_ROW_TEXT = 0x28dc34d4, 0x28e24c88       # the model list fill's setText(names, row, name)
+FAV_TEXT_CALL = 0x28dc326c          # the favorites fill's (0x28dc31d8)
 SLOT_TABLE = 0x28e3a8c0             # the Edit view's slot pictures, 6 a category
 SLOT_CATEGORIES = 0x13
 SELECTED_STATES = (2, 3, 4, 5)      # Move, Move Off, Sel, Sel Off: the selected block's pictures
@@ -286,3 +287,4 @@ def apply(p):
     p.chain_ptr(EDIT_PAINT_LIT, EDIT_PAINT, after=m['mp_edit'])
     p.chain_ptr(BROWSER_PAINT_LIT, BROWSER_PAINT, after=m['mp_browser'])
     p.own_call(NAME_TEXT_CALL, SET_ROW_TEXT, "the model list's name text, shortened to leave the picture room", m['mp_row_text'])
+    p.own_call(FAV_TEXT_CALL, SET_ROW_TEXT, "the favorites' name text, shortened to leave the picture room", m['mp_row_text'])

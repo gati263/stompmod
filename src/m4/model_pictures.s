@@ -2,8 +2,8 @@
 @ title fonts and single-row y, and chains these):
 @ mp_edit: the selected block's picture in the Edit view, centred between its (smaller) title and its (lower) row of blocks, while
 @   the preset has one row; a second row keeps the stock layout's room, so no picture then;
-@ mp_browser: the picture of the model under the cursor in the model browser, right of the names; mp_row_text shortens a name
-@   that would run into it.
+@ mp_browser: the picture of the model under the cursor in the model browser, or of the favorite under it in Favorites, right
+@   of the names; mp_row_text shortens a name that would run into it.
 @ A block's model comes from the DSP model's block record (its name index), the selected block from the slot showing a selected
 @ picture (MP_SEL: a bit per stock image), and a model's picture from MP_TABLE (an image index per name index, 0 for none;
 @ MP_BTABLE, the browser's, names a tall picture's larger copy).
@@ -40,6 +40,12 @@
 .equ W_ANCHOR, 0x54
 .equ EDIT_SLOTS, 0x4a4              @ the Edit view's eight block slots, image widgets of 0x24 bytes
 .equ MODELS, 2                      @ the browser level that lists models
+.equ FAVS, 0x28dd4f09               @ () -> the favorites (levels 4..6 of the browser list them, fill 0x28dc31d8)
+.equ FAV_COUNT, 0x28dd448d          @ (favorites) -> how many
+.equ FAV_GET, 0x28dd4549            @ (favorites, i, out): favorite i, its model's list at out + 0xc (category), + 0xd (subcategory)
+.equ FAV_CAT, 0xc                   @ and its index in that list at out + 0x10, as the fill reads them
+.equ FAV_SUB, 0xd
+.equ FAV_INDEX, 0x10
 
 .thumb_func
 mp_edit:                            @ r0 the framebuffer, r1 the Edit view's top half, after its stock paint
@@ -69,7 +75,7 @@ edit_show:
 .thumb_func
 mp_browser:                         @ r0 the framebuffer, r1 the model browser, after its stock paint
     push {r4-r7, lr}
-    sub sp, #12                     @ 0 the level, 4 the item under the cursor, 8 its descriptor
+    sub sp, #76                     @ 0 the level, 4 the item under the cursor, 8 its descriptor, 16.. a favorite
     mov r4, r0
     mov r5, r1
     movs r6, #0
@@ -77,6 +83,9 @@ mp_browser:                         @ r0 the framebuffer, r1 the model browser, 
     cmp r0, #0
     beq browser_show
     ldrb r0, [r5, #0x40]
+    subs r1, r0, #4
+    cmp r1, #2
+    bls browser_favorite
     cmp r0, #MODELS
     bne browser_show
     mov r0, sp
@@ -108,6 +117,34 @@ mp_browser:                         @ r0 the framebuffer, r1 the model browser, 
     ldr r1, =MP_BTABLE              @ a tall picture's larger copy
     bl image_of
     mov r6, r0
+    b browser_show
+browser_favorite:                   @ the favorite under the cursor: its model's list and index, then the item as for a model
+    ldr r3, =FAVS
+    blx r3
+    mov r7, r0
+    ldr r3, =FAV_COUNT
+    blx r3
+    ldr r2, [r5, #0x574]            @ the favorite the list shows in bold
+    cmp r2, r0
+    bhs browser_show
+    mov r0, r7
+    mov r1, r2
+    add r2, sp, #16
+    ldr r3, =FAV_GET
+    blx r3
+    ldrb.w r0, [sp, #(16 + FAV_CAT)]
+    ldrb.w r1, [sp, #(16 + FAV_SUB)]
+    ldr r2, [sp, #(16 + FAV_INDEX)]
+    add r3, sp, #8
+    ldr r12, =LIST_ITEM
+    blx r12
+    cmp r0, #0
+    blt browser_show
+    ldr r0, [sp, #8]
+    ldr r0, [r0, #4]
+    ldr r1, =MP_BTABLE
+    bl image_of
+    mov r6, r0
 browser_show:
     adr.w r0, browser_pic
     mov r1, r6
@@ -115,7 +152,7 @@ browser_show:
     movs r3, #MP_BROWSER_Y
     bl show
     movs r0, #0
-    add sp, #12
+    add sp, #76
     pop {r4-r7, pc}
 
 .thumb_func

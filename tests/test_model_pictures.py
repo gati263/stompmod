@@ -284,7 +284,40 @@ def test_browser_shows_the_bold_item(m4emu):
     assert t.shown(widget) is None
     t.m.u32(VIEW + 0x574 + 4, 3)
     t.call('mp_browser', FB, VIEW)
-    t.m.u8(VIEW + 0x40, 4)             # the category pages
+    t.m.u8(VIEW + 0x40, 7)             # the category pages
+    t.call('mp_browser', FB, VIEW)
+    assert t.shown(widget) is None
+
+
+
+@pytest.mark.parametrize('level', [4, 5, 6])
+def test_browser_shows_the_favorite_under_the_cursor(m4emu, level):
+    """Favorites (levels 4..6): favorite i names its model's list and index, the item there names the model."""
+    t = Pics(m4emu)
+    widget = CODE + t.sym['browser_pic']
+    favs, items = 0x28930000, 0x28900000
+    t.m.u8(VIEW + 0x40, level)
+    t.m.u32(VIEW + 0x574, 1)
+    for i in range(5):
+        t.m.u32(items + 0x30 * i + 4, 100 + i)
+    t.picture(102, 0x311, BTABLE)
+    got = []
+    t.m.stub(0x28dd4f08, lambda m: m.reg('r0', favs))
+    t.m.stub(0x28dd448c, lambda m: (got.append(('count', m.reg('r0'))), m.reg('r0', 2)))
+
+    def fav(m):
+        got.append(('favorite', m.reg('r0'), m.reg('r1')))
+        out = m.reg('r2')
+        m.u8(out + 0xc, 12)
+        m.u8(out + 0xd, 0)
+        m.u32(out + 0x10, 2)
+    t.m.stub(0x28dd4548, fav)
+    t.m.stub(ITEM, lambda m: (got.append(('item', m.reg('r0'), m.reg('r1'), m.reg('r2'))),
+                              m.u32(m.reg('r3'), items + 0x30 * m.reg('r2')), m.reg('r0', 0)))
+    t.call('mp_browser', FB, VIEW)
+    assert got == [('count', favs), ('favorite', favs, 1), ('item', 12, 0, 2)]
+    assert t.shown(widget) == (0x311, 264, 110)
+    t.m.u32(VIEW + 0x574, 2)            # past the last favorite
     t.call('mp_browser', FB, VIEW)
     assert t.shown(widget) is None
 
