@@ -76,7 +76,9 @@ class Manager:
         self.m.stub(WIDGET_LOCK, lambda m: self.events.append('widget lock'))
         self.m.stub(WIDGET_UNLOCK, lambda m: self.events.append('widget unlock'))
         self.m.stub(REDRAW, lambda m: self.events.append(('redraw', m.reg('r0'), m.reg('r1'))))
-        self.m.stub(LABELS_BUILD, lambda m: self.events.append(('labels built', m.reg('r0'), m.reg('r1'))))
+        self.built = []     # (current snapshot, the three names) at each label build
+        self.m.stub(LABELS_BUILD, lambda m: (self.events.append(('labels built', m.reg('r0'), m.reg('r1'))),
+                                             self.built.append((self.cur(), [self.name(i) for i in range(3)]))))
         self.m.stub(FILL, lambda m: self.events.append(('fill', m.reg('r0'), m.reg('r1'), m.reg('r2'), m.reg('r3'),
                                                         *m.stack_args(3))))
         self.m.stub(TEXT, lambda m: self.events.append(('text', m.reg('r0'), m.read(m.reg('r1'), 32).split(b'\0')[0], m.reg('r3'),
@@ -898,7 +900,7 @@ def preview_labels(base):
     out = ['widget lock']
     for i in range(3):
         out += camera(LABEL_X[i] - 26, LABEL_Y - 35, chr(ord(base) + i))
-    return out + ['widget unlock', ('redraw', 0, 1)]
+    return out + ['widget unlock']
 
 
 def test_from_3_the_lit_switch_previews_and_the_first_switch_picks_4(mgr):
@@ -913,16 +915,24 @@ def test_from_3_the_lit_switch_previews_and_the_first_switch_picks_4(mgr):
     assert mgr.bank_b_live() and mgr.preview() == 0 and mgr.name(0) == b'SNAPSHOT 4'
 
 
-def test_a_preview_shows_the_other_banks_numbers_none_lit(mgr):
+def test_a_preview_builds_the_labels_from_the_other_bank_none_lit(mgr):
+    """The stock build reads the names and the current snapshot: for it, bank B's label bytes and no current one; then back."""
     mgr.m.u8(MGR + CUR, 1)
     mgr.fs(1)
     assert mgr.paint() == ([], []), 'the top icon shows the snapshot playing: 2, stock'
-    assert mgr.paint('home') == (preview_labels('4'), [1, 2, 3])
-    mgr.fs(1)                                            # 5
+    assert mgr.paint('home') == (REBUILT + preview_labels('4'), [])
+    assert mgr.built == [(0xff, [b'SNAPSHOT 4', b'SNAPSHOT 5', b'SNAPSHOT 6'])]
+    assert [mgr.rec(i) for i in range(3)] == [bank_a(i) for i in range(3)] and mgr.cur() == 1, 'all put back'
+    assert mgr.paint('home') == (preview_labels('4'), []), 'built once a preview'
+    mgr.fs(0)                                            # 4
+    mgr.built.clear()
     mgr.paint('home')
-    mgr.fs(1)                                            # a preview of bank A from bank B
-    assert mgr.paint() == (top('5'), [])
-    assert mgr.paint('home') == (preview_labels('1'), [1, 2, 3])
+    assert mgr.built == [(0, [b'SNAPSHOT 4', b'SNAPSHOT 5', b'SNAPSHOT 6'])], 'then from the live bank, as a flip does'
+    mgr.fs(0)                                            # a preview of bank A from bank B
+    mgr.built.clear()
+    assert mgr.paint() == (top('4'), [])
+    assert mgr.paint('home') == (REBUILT + preview_labels('1'), [])
+    assert mgr.built == [(0xff, [bank_a(i)[NAME:NAME + 11].rstrip(b'\0') for i in range(3)])]
 
 
 @pytest.mark.parametrize('how', ['cc', 'next', 'load'])

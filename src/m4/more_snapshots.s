@@ -42,6 +42,8 @@
 .equ DARK, 0x101010                 @ the digit on a lit camera's white circle; black would be the renderer's transparent
 .equ WRAP, 5                        @ in snaps_data: the select on its way is a next or previous past the bank's end
 .equ VALUE, 2                       @ in WRAP instead: the select on its way is CC 69's value, 0..5
+.equ NAMED, 0x24c                   @ in a record: set once it is given a name (0x28de3874); the label shows the name, not a camera
+.equ STATE, 0x254                   @ in a record: the byte the labels test (0x28de2f80), then the name (11 bytes) to its end
 .equ STEP, 3                        @ in WRAP instead: the select on its way is a next or previous inside the bank
 .equ PREVIEW, 8                     @ in snaps_data: the labels show the other bank, the sound unchanged, until a footswitch picks
 .equ MODE, 9                        @ in snaps_data, while cameras are painted: bit 0 bank B's numbers, bit 1 none lit (a preview)
@@ -52,7 +54,7 @@
     movs r3, #0
     strb r3, [r2, #PREVIEW]
     ldrb r3, [r2, #3]
-    orr r3, r3, #2                  @ the labels drawn again for the live bank
+    orr r3, r3, #(STALE | 2)        @ the labels built again from the live bank
     strb r3, [r2, #3]
 1:
 .endm
@@ -150,25 +152,25 @@ snaps_mark_as:
     bx lr
 
 snaps_preview:                      @ (manager, index, snaps_data) the lit one again: the labels show the other bank; no select
+    push {r4-r6, lr}
+    mov r4, r0
+    mov r6, r2
+    bl snaps_bank_b
     movs r3, #1
-    strb r3, [r2, #PREVIEW]
-    ldrb r3, [r2, #3]
-    orr r3, r3, #2
-    strb r3, [r2, #3]
-    push {r4, lr}
+    strb r3, [r6, #PREVIEW]
+    ldrb r3, [r6, #3]
+    orr r3, r3, #STALE              @ the labels built from the other bank on the next Home paint
+    strb r3, [r6, #3]
     movs r0, #0
     movs r1, #1
     ldr r3, =REDRAW
     blx r3
     movs r0, #0                     @ as select returns when it does nothing
-    pop {r4, pc}
+    pop {r4-r6, pc}
 
 snaps_pick:                         @ (manager, index, snaps_data) a footswitch during a preview: that snapshot of the other bank
     movs r3, #0
     strb r3, [r2, #PREVIEW]
-    ldrb r3, [r2, #3]
-    bic r3, r3, #2                  @ the preview's redraw of the labels: the cross asks for the right one itself
-    strb r3, [r2, #3]
     ldrb.w r2, [r0, #CUR]
     b snaps_cross
 
@@ -180,29 +182,7 @@ snaps_cross:                        @ (manager, index, the index being left)
     mov r5, r1
     mov r11, r2
     adr.w r6, snaps_data
-    ldrb r0, [r6, #1]
-    cbnz r0, snaps_ready
-    adr.w r0, snaps_shadow          @ bank B since the preset loaded: three default records, which select fills from the sound
-    movs r1, #0
-    movw r2, #3 * REC
-    ldr r3, =MEMSET
-    blx r3
-    movs r7, #0
-snaps_init:
-    adr.w r1, snaps_shadow
-    mov.w r2, #REC
-    mla r1, r2, r7, r1
-    adr.w r2, snaps_names
-    add.w r2, r2, r7, lsl #4
-    mov r0, r4
-    ldr r3, =RECORD_INIT
-    blx r3
-    adds r7, #1
-    cmp r7, #3
-    bne snaps_init
-    movs r0, #1
-    strb r0, [r6, #1]
-snaps_ready:
+    bl snaps_bank_b
     add.w r0, r4, #4
     ldr r3, =LOCK
     blx r3
@@ -259,6 +239,74 @@ snaps_flipped:
     blx r3
     mov r0, r10
     pop {r3-r11, pc}
+
+snaps_bank_b:                       @ (r4 the manager, r6 snaps_data) bank B, if none since the preset loaded: three default
+    ldrb r0, [r6, #1]               @ records, which select fills from the sound
+    cbnz r0, snaps_bank_b_done
+    push {r7, lr}
+    adr.w r0, snaps_shadow
+    movs r1, #0
+    movw r2, #3 * REC
+    ldr r3, =MEMSET
+    blx r3
+    movs r7, #0
+snaps_init:
+    adr.w r1, snaps_shadow
+    mov.w r2, #REC
+    mla r1, r2, r7, r1
+    adr.w r2, snaps_names
+    add.w r2, r2, r7, lsl #4
+    mov r0, r4
+    ldr r3, =RECORD_INIT
+    blx r3
+    adds r7, #1
+    cmp r7, #3
+    bne snaps_init
+    movs r0, #1
+    strb r0, [r6, #1]
+    pop {r7, pc}
+snaps_bank_b_done:
+    bx lr
+
+snaps_preview_build:                @ the stock labels from the other bank, none lit: its records' label bytes traded in for the
+    push {r4-r6, lr}                @ build (the name, whether it was named, the state byte) and no current snapshot, then back
+    ldr r4, =MANAGER
+    bl snaps_label_swap
+    ldrb.w r6, [r4, #CUR]
+    movs r0, #0xff
+    strb.w r0, [r4, #CUR]
+    ldr r0, =HOME
+    movs r1, #0
+    ldr r3, =LABELS_BUILD           @ its text widgets copy the names into their own buffers
+    blx r3
+    strb.w r6, [r4, #CUR]
+    bl snaps_label_swap
+    pop {r4-r6, pc}
+
+snaps_label_swap:                   @ (r4 the manager) each record's label bytes and snaps_shadow's trade places
+    push {r4-r7, lr}
+    add.w r4, r4, #RECS
+    adr.w r5, snaps_shadow
+    movs r7, #3
+snaps_label_record:
+    ldrb.w r0, [r4, #NAMED]
+    ldrb.w r1, [r5, #NAMED]
+    strb.w r1, [r4, #NAMED]
+    strb.w r0, [r5, #NAMED]
+    movw r6, #STATE
+snaps_label_byte:
+    ldrb r0, [r4, r6]
+    ldrb r1, [r5, r6]
+    strb r1, [r4, r6]
+    strb r0, [r5, r6]
+    adds r6, #1
+    cmp.w r6, #REC
+    bne snaps_label_byte
+    add.w r4, r4, #REC
+    add.w r5, r5, #REC
+    subs r7, #1
+    bne snaps_label_record
+    pop {r4-r7, pc}
 
 snaps_loaded:                       @ before the preset parser fills the records: bank A, and bank B from the file or anew
     adr.w r0, snaps_data
@@ -521,10 +569,16 @@ snaps_home_paint:                   @ after the Home view's paint (framebuffer, 
     push {r0, lr}                   @ a flip since the last rebuild: the stock labels still show the other bank's names and cameras
     bic r2, r2, #STALE
     strb r2, [r3, #3]
+    ldrb r2, [r3, #PREVIEW]
+    cbz r2, snaps_home_live
+    bl snaps_preview_build
+    b snaps_home_built
+snaps_home_live:
     ldr r0, =HOME
     movs r1, #0
     ldr r3, =LABELS_BUILD           @ outside the widget lock, as the Home view's event handler calls it
     blx r3
+snaps_home_built:
     movs r0, #0
     movs r1, #1
     ldr r3, =REDRAW
