@@ -185,7 +185,7 @@ A picture of the model, as HX Edit shows it, in the Edit view and the model brow
 - **Home screen:** stock. It shows no selected block, so there is no picture to show.
 - **Settings** (Global Settings > Displays, after Tap LED Color): **Model Pictures**, **On** (default) or Off. It has no section of its own, so no second eye icon in the section strip.
 - **Where the pictures come from:** HX Edit's own model images, read when you build from the HX Edit installed on your computer, so none is in this repository or on the setup page (the page doesn't build this feature). `HX_MODEL_PICTURES=1` looks for HX Edit in its usual place on Windows; otherwise give the path of its `res` folder (`HX_MODEL_PICTURES="path/to/HX Edit/res"`). 787 of the HX Stomp's 791 models have one (Mono and Stereo versions share one); the rest show none.
-- **Size:** each picture fits an 80x48 box, about 1.8 MB in all in the image store.
+- **Size:** each picture fits an 80x48 box; a tall one (a pedal, at least 1.4 times as high as wide) also gets a 64x80 copy for the block browser. About 2.5 MB in all in the image store, which leaves about 0.6 MB free.
 
 ```sh
 HX_MODEL_PICTURES=1 python3 build.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf
