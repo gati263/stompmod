@@ -87,7 +87,7 @@ class Manager:
                                                         *m.stack_args(3))))
         self.m.stub(TEXT, lambda m: self.events.append(('text', m.reg('r0'), m.read(m.reg('r1'), 32).split(b'\0')[0], m.reg('r3'),
                                                         *m.stack_args(5))))     # the renderer draws to the NUL
-        self.settings = {}          # virtual ID -> value; Home Names reads 0 (Off) unless a test sets it
+        self.settings = {0x15: 3}   # setting ID -> value: Footswitch Mode Snapshot; Home Names 0 (Off) unless a test sets it
         self.m.stub(GET_VALUE, lambda m: (m.write(m.reg('r1'), struct.pack('<II', 2, self.settings.get(m.reg('r0'), 0))),
                                           m.reg('r0', 0)))
         self.m.stub(TFONT, lambda m: (self.events.append(('font', m.reg('r0'), m.reg('r1'))), m.u32(m.reg('r0') + 0x18, m.reg('r1'))))
@@ -1041,6 +1041,7 @@ def test_home_names_in_bank_b_read_bank_a_from_the_shadow(mgr):
 
 
 def test_home_names_only_in_snapshot_mode(mgr):
-    mgr.mode([2, 2, 2])
+    """The Footswitch Mode setting decides, as for the labels: the footswitch functions follow it only on a preset load."""
+    mgr.settings[0x15] = 1
     texts, _ = home_names(mgr)
     assert texts == [] and not any(e[0] == 'font' for e in mgr.events)

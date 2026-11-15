@@ -25,6 +25,8 @@
                                     @ as the Home view's own event handler calls it on a snapshot or mode change; no widget lock
 .equ STALE, 4                       @ in snaps_data byte 3: a flip since the labels were last rebuilt
 .equ FS_FUNCTIONS, 0x28128a74       @ each footswitch's function, two bytes apart
+.equ FS_MODE, 0x15                  @ the Footswitch Mode setting (0x28dc87d6): 3 Snapshot
+.equ FS_MODE_SNAPSHOT, 3
 .equ FN_SNAPSHOT, 14                @ snapshot k for footswitch k: Snapshot mode; other modes keep stale cameras in LABELS
 .equ WIDGET_LOCK, 0x28e24971
 .equ WIDGET_UNLOCK, 0x28e24ae9
@@ -597,10 +599,12 @@ snaps_icon_none:
     bx lr
 
 snaps_home_on:                      @ -> r0 1 when the top view shows the six names: Home Names on, Footswitch Mode Snapshot
-    push {r3, lr}
-    ldr r0, =FS_FUNCTIONS
-    ldrb r0, [r0]
-    cmp r0, #FN_SNAPSHOT
+    push {r3, lr}                   @ (the setting, as the labels read it: the footswitch functions follow it only on a preset load)
+    movs r0, #FS_MODE
+    movs r1, #0xff
+    movs r2, #0
+    bl hxtra_setting_get
+    cmp r0, #FS_MODE_SNAPSHOT
     bne snaps_home_off
     movs r0, #SETTING_MORE_SNAPSHOTS_HOME
     movs r1, #SETTING_MORE_SNAPSHOTS_HOME_MAX
