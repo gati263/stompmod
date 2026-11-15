@@ -23,8 +23,9 @@ IMG = {0x28e24ab0: 'init', 0x28e24c18: 'image', 0x28e24c68: 'pos', 0x28e24aa8: '
 TXT = {0x28e24a68: 'tpos', 0x28e249e8: 'tfont', 0x28e24ac8: 'tanchor'}
 SET_ROW_TEXT, LEVEL, LENGTH, ITEM = 0x28e24c88, 0x28df0280, 0x28e0edcc, 0x28e01204
 COUNT, NBITS, SELECTED, PLAIN = 600, 577, 0x104, 0x32        # a Sel picture and a plain one
-INC = ''.join(f'.equ {k}, {v}\n' for k, v in (('MP_TABLE', TABLE), ('MP_COUNT', COUNT), ('MP_SEL', SEL), ('MP_SEL_BITS', NBITS),
-                                             ('MP_EDIT_TOP', 211), ('MP_BROWSER_X', 264), ('MP_BROWSER_Y', 110),
+BTABLE = TABLE + 0x2000             # the browser's table: a tall picture's larger copy
+INC = ''.join(f'.equ {k}, {v}\n' for k, v in (('MP_TABLE', TABLE), ('MP_BTABLE', BTABLE), ('MP_COUNT', COUNT), ('MP_SEL', SEL),
+                                             ('MP_SEL_BITS', NBITS), ('MP_EDIT_Y', 187), ('MP_BROWSER_X', 264), ('MP_BROWSER_Y', 110),
                                              ('MP_NAME_MAXW', 100)))
 SHOW = IDS['model_pictures.show']
 
@@ -139,6 +140,7 @@ class Pics:
         self.m.write(SEL, bytes(NBITS // 8 + 1))
         self.m.u8(SEL + SELECTED // 8, 1 << SELECTED % 8)
         self.m.write(TABLE, bytes(2 * COUNT))
+        self.m.write(BTABLE, bytes(2 * COUNT))
         for font in range(6):            # every glyph 10 px wide but '.', 3; spacing 2
             base = GLYPHS + 0x604 * font
             self.m.u32(base, 2)
@@ -173,8 +175,8 @@ class Pics:
         self.m.u32(DSP + 0x14 + 0x54 * idx, handle)
         self.m.u32(DSP + 0x14 + 0x54 * idx + 8, name)
 
-    def picture(self, name, image):
-        self.m.write(TABLE + 2 * name, struct.pack('<H', image))
+    def picture(self, name, image, table=TABLE):
+        self.m.write(table + 2 * name, struct.pack('<H', image))
 
     def call(self, sym, *args):
         self.calls.clear()
@@ -199,10 +201,10 @@ def test_edit_shows_the_selected_blocks_picture(m4emu):
     t.block(2, 77)
     t.picture(77, 0x300)
     t.call('mp_edit', FB, VIEW)
-    assert t.shown(widget) == (0x300, 160, 211)
+    assert t.shown(widget) == (0x300, 160, 187)
     order = [c[0] for c in t.calls]
     assert order.index('dsp unlock') < order.index('lock'), 'the DSP model lock is never held with the widget lock'
-    assert any(c[:3] == ('anchor', widget, 7) for c in t.calls)      # top centre
+    assert any(c[:3] == ('anchor', widget, 4) for c in t.calls)      # centred
     assert order.index('pos') < order.index('image'), ('placed before it gets a size: a new widget is at (0, 0), and its first '
                                                        'damage rect blacked out the screen from there [verified on unit]')
     assert [c[0] for c in t.calls if c[0] in ('erase', 'draw')] == ['erase', 'draw']
@@ -219,7 +221,7 @@ def test_edit_second_row_block_and_no_picture(m4emu):
     t.picture(5, 0x301)
     t.picture(6, 0x302)
     t.call('mp_edit', FB, VIEW)
-    assert t.shown(widget) == (0x302, 160, 211)
+    assert t.shown(widget) == (0x302, 160, 187)
     t.picture(6, 0)                    # a model HX Edit has no picture of: hidden
     t.call('mp_edit', FB, VIEW)
     assert t.shown(widget) is None
@@ -235,7 +237,7 @@ def test_edit_no_picture_with_a_second_row_or_when_off(m4emu):
     t.block(0, 4)
     t.picture(4, 0x303)
     t.call('mp_edit', FB, VIEW)
-    assert t.shown(widget) == (0x303, 160, 211)
+    assert t.shown(widget) == (0x303, 160, 187)
     t.m.u8(SLOT_MODEL + 0x23, 1)
     t.call('mp_edit', FB, VIEW)
     assert t.shown(widget) is None
@@ -267,7 +269,8 @@ def test_browser_shows_the_bold_item(m4emu):
     t.m.u32(VIEW + 0x574 + 4, 3)
     for i in range(5):
         t.m.u32(items + 0x30 * i + 4, 100 + i)
-    t.picture(103, 0x310)
+    t.picture(103, 0x30f)               # the Edit view's copy: the browser takes its own table's
+    t.picture(103, 0x310, BTABLE)
     got = []
     t.m.stub(LEVEL, lambda m: m.u8(m.reg('r0'), 1))
     t.m.stub(LENGTH, lambda m: (got.append(('length', m.reg('r0'), m.reg('r1'))), m.reg('r0', 5)))

@@ -5,7 +5,8 @@
 @ mp_browser: the picture of the model under the cursor in the model browser, right of the names; mp_row_text shortens a name
 @   that would run into it.
 @ A block's model comes from the DSP model's block record (its name index), the selected block from the slot showing a selected
-@ picture (MP_SEL: a bit per stock image), and a model's picture from MP_TABLE (an image index per name index, 0 for none).
+@ picture (MP_SEL: a bit per stock image), and a model's picture from MP_TABLE (an image index per name index, 0 for none;
+@ MP_BTABLE, the browser's, names a tall picture's larger copy).
 @ Each picture is an image widget of our own, drawn after the stock paint, under the widget lock.
 .syntax unified
 .thumb
@@ -53,13 +54,14 @@ mp_edit:                            @ r0 the framebuffer, r1 the Edit view's top
     cbnz r0, edit_show              @ a second row: the stock layout, no room for a picture
     addw r0, r5, #EDIT_SLOTS
     bl selected_model
+    ldr r1, =MP_TABLE
     bl image_of
     mov r6, r0
 edit_show:
     adr.w r0, edit_pic
     mov r1, r6
     movs r2, #160
-    movs r3, #MP_EDIT_TOP
+    movs r3, #MP_EDIT_Y
     bl show
     movs r0, #0
     pop {r4-r6, pc}
@@ -103,6 +105,7 @@ mp_browser:                         @ r0 the framebuffer, r1 the model browser, 
     blt browser_show
     ldr r0, [sp, #8]
     ldr r0, [r0, #4]                @ its name index
+    ldr r1, =MP_BTABLE              @ a tall picture's larger copy
     bl image_of
     mov r6, r0
 browser_show:
@@ -239,13 +242,12 @@ sel_none:
     pop {r4-r6, pc}
 
 .thumb_func
-image_of:                           @ r0 a name index (-1 for none) -> r0 its picture's image index, 0 for none
+image_of:                           @ r0 a name index (-1 for none), r1 a picture table -> r0 its picture's image index, 0 for none
     cmp r0, #0
     blt no_image
-    movw r1, #MP_COUNT
-    cmp r0, r1
+    movw r2, #MP_COUNT
+    cmp r0, r2
     bhs no_image
-    ldr r1, =MP_TABLE
     ldrh.w r0, [r1, r0, lsl #1]
     bx lr
 no_image:
@@ -346,7 +348,7 @@ HXTRA_SETTING_GET
 .balign 4
 edit_pic:
     .space W_ANCHOR
-    .word 7                         @ top centre
+    .word 4                         @ centred: a thin picture in the middle of the box
 browser_pic:
     .space W_ANCHOR
     .word 4                         @ centred

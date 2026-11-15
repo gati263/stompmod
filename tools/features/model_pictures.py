@@ -3,7 +3,7 @@ and the signal flow (moved down), and of the model under the cursor in the model
 (src/m4/model_pictures.s). The Home screen stays stock: it shows no selected block.
 
 The pictures are HX Edit's own model images, read at build time from the HX Edit installed on this computer (HX_MODEL_PICTURES=1
-for its usual place, or the path of its res folder), scaled into an 80x48 box and added to the image store: none is in this repository.
+for its usual place, or the path of its res folder), scaled into an 80x48 box (a tall one also into 64x80, for the browser) and added to the image store: none is in this repository.
 HX Edit's catalog names each model's image by the model's internal name, which the firmware's Entry 3 string table gives every
 browser item and block record (a name index).
 tools/model_pictures_preview.py draws these layouts offline to judge them before a RAM run."""
@@ -54,6 +54,10 @@ EDIT_ROW_PATCHES = (
 EDIT_PIC_TOP = 211                  # below the hx21 title (y 234 down to 214), above a lifted block at the moved row (top y 161)
 BROWSER_NAMES_X, BROWSER_NAMES_X_DSP = 44, 60               # dsp_meter.py moves the names right to make room for its labels
 BROWSER_PIC_X, BROWSER_PIC_Y = 304 - BOX_W // 2, 110       # the picture's centre: right edge at x 304, left of the scrollbar
+# A tall picture (a pedal, at least TALL times as high as wide) is only 48 px high in BOX: the browser, which has the room
+# (y 70 to 150), gets a second, larger copy of it. Only these: a larger copy of every picture would not fit the image store.
+TALL = 1.4
+TALL_W, TALL_H = 64, 80
 
 
 FONTS = (b'hx21_boldFont', b'hx21_regularFont', b'hx28_boldFont', b'hx28_lightFont', b'hx35_boldFont', b'hx41_lightFont')
@@ -71,6 +75,11 @@ def text_width(e7, text, k):
 def edit_name_x(width):
     """The preset name's x after the widest preset number in EDIT_NUMBER_FONT; width(text, font) measures text."""
     return 7 + max(width(c * 3, EDIT_NUMBER_FONT) for c in '0123456789ABCD') + 8
+
+
+def edit_pic_y():
+    """The Edit picture's centre y: a wide, thin picture (an amp) sits in the middle of the box, not at its top."""
+    return EDIT_PIC_TOP - BOX_H // 2
 
 
 def browser_name_maxw(names_x):
@@ -238,21 +247,26 @@ def apply(p):
     res = res_dir(p.input(FLAG))
     images = catalog_images(res)
     models, nstr = name_indices(p)
-    by_file, table = {}, [0] * nstr
+    by_file, table, btable = {}, [0] * nstr, [0] * nstr
     for ni, name in sorted(models.items()):
         path = image_file(images, res, name)
         if path is None:
             continue
         if path not in by_file:
             w, h, px = picture(np, path)
-            by_file[path] = p.add_image(LIKE, w, h, px)
-        table[ni] = by_file[path]
+            small = p.add_image(LIKE, w, h, px)
+            big = small
+            if h >= TALL * w:
+                big = p.add_image(LIKE, *picture(np, path, TALL_W, TALL_H))
+            by_file[path] = small, big
+        table[ni], btable[ni] = by_file[path]
     added = sum(len(d) for d in p.entry(8).items)
     if len(p.entry(8).data) + added > E8_WINDOW:
         raise SystemExit(f'model_pictures: the image store would be {len(p.entry(8).data) + added:#x} bytes, more than the '
                          f'{E8_WINDOW:#x} the app reads')
     bits, nbits = selected_bitmap(p)
     tab = p.add(struct.pack(f'<{nstr}H', *table))
+    btab = p.add(struct.pack(f'<{nstr}H', *btable))
     sel = p.add(bits)
     for at, stock, what in EDIT_TITLE_PATCHES + ((EDIT_NAME_X[0], EDIT_NAME_X[1], EDIT_NAME_X[2]),) + EDIT_ROW_PATCHES:
         p.expect(at, stock, what)
@@ -265,7 +279,8 @@ def apply(p):
         p.put(at, bytes([stock[0] - EDIT_ROW_DROP, stock[1]]), what)
     names_x = BROWSER_NAMES_X_DSP if 'dsp_meter' in p.values else BROWSER_NAMES_X     # p.values: the enabled features
     inc = ''.join(f'.equ {k}, {v}\n' for k, v in (
-        ('MP_TABLE', tab), ('MP_COUNT', nstr), ('MP_SEL', sel), ('MP_SEL_BITS', nbits), ('MP_EDIT_TOP', EDIT_PIC_TOP),
+        ('MP_TABLE', tab), ('MP_BTABLE', btab), ('MP_COUNT', nstr), ('MP_SEL', sel), ('MP_SEL_BITS', nbits),
+        ('MP_EDIT_Y', edit_pic_y()),
         ('MP_BROWSER_X', BROWSER_PIC_X), ('MP_BROWSER_Y', BROWSER_PIC_Y), ('MP_NAME_MAXW', browser_name_maxw(names_x))))
     m = p.module('src/m4/model_pictures.s', inc={'model_pictures.inc': inc})
     p.chain_ptr(EDIT_PAINT_LIT, EDIT_PAINT, after=m['mp_edit'])

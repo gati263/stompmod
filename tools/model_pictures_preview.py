@@ -115,7 +115,7 @@ def edit_view(scr, u32, pic, v2, title=('009', 'Holy Forever'), selected=2):
         img = u32(EDIT_SLOT_TABLE + 4 * (6 * c + (4 if k == selected else 0)))
         scr.image(img, 0x29 + 0x22 * k, y, 4)
     if v2 and pic:
-        scr.picture(*pic, 160, mp.EDIT_PIC_TOP, 7)
+        scr.picture(*pic, 160, mp.edit_pic_y(), 4)
     scr.hline(0, W, 120, RED, 2)
     scr.text('Matchstick Ch1', 2, 40, 116, 6)
 
@@ -159,16 +159,18 @@ def main():
     icons = os.path.join(mp.res_dir(a.res), 'icons_models')
     amp = mp.picture(np, os.path.join(icons, 'AMP_HX_GTR_MatchstickCh1.png'))
     pedal = mp.picture(np, os.path.join(icons, 'FX_HX_DIST_Scream808.png'))
+    tall = mp.picture(np, os.path.join(icons, 'FX_HX_DIST_Scream808.png'), mp.TALL_W, mp.TALL_H)
     names = ('A30 Fawn Nrm', 'A30 Fawn Brt', 'Matchstick Ch1', 'Matchstick Ch2', 'Matchstick Jump')
     panels = []
     for v2 in (False, True):
         for draw in (lambda s: edit_view(s, u32, amp, v2), lambda s: edit_view(s, u32, pedal, v2, selected=0),
-                     lambda s: browser(s, amp, v2, names)):
+                     lambda s: browser(s, amp, v2, names),
+                     lambda s: browser(s, tall, v2, names)):
             s = Screen(e7, e8)
             draw(s)
             panels.append(s.px)
     gap = np.full((H, 8, 3), 60, np.uint8)
-    rows = [np.concatenate([panels[i], gap, panels[i + 1], gap, panels[i + 2]], 1) for i in (0, 3)]
+    rows = [np.concatenate([panels[i], gap, panels[i + 1], gap, panels[i + 2], gap, panels[i + 3]], 1) for i in (0, 4)]
     write_png(a.out, np.concatenate([rows[0], np.full((8, rows[0].shape[1], 3), 60, np.uint8), rows[1]], 0), a.scale)
     print(f'[+] wrote {a.out}: top stock, bottom Model Pictures')
 
