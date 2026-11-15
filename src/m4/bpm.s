@@ -7,7 +7,7 @@
 .thumb
 .include "hxtra.inc"
 .include "tap.inc"                  @ TAP_NOW: Tap LED Color's shown colour, or 0 in a build without it
-.equ BPM_DOTS, 18                   @ rectangles: 9 a dot
+.equ BPM_DOTS, 22                   @ rectangles: 9 a big dot (Left, Right), 4 the small one after the tempo (Tempo)
 .equ BPM_DOT_TOP, 237               @ the dots' top (y counts up from the bottom)
 .equ FS_FUNCTIONS, 0x28128a74       @ each footswitch's function, two bytes apart: 1 is TAP
 .equ BPM_TEMPO, 9                   @ Color Tempo: the TAP footswitch's colour
@@ -206,14 +206,15 @@ bpm_before:                         @ before the Home paint (framebuffer, Home v
     movs r1, #SETTING_BPM_DOT_MAX
     movs r2, #SETTING_BPM_DOT_DEFAULT
     bl hxtra_setting_get
-    add.w r9, r0, #1                @ the dots shown: 1 left, 2 right, 3 both, 4 (Off) neither
+    adr.w r1, bpm_dotmask
+    ldrb r9, [r1, r0]               @ the dots shown, as bpm_dotshape's bits: 1 left, 2 right, 4 after the tempo
     movs r0, #SETTING_BPM_FONT
     movs r1, #SETTING_BPM_FONT_MAX
     movs r2, #SETTING_BPM_FONT_DEFAULT
     bl hxtra_setting_get
     adr.w r1, bpm_fonts
     ldrb r5, [r1, r0]
-    and r0, r9, #3
+    and r0, r9, #7
     orrs r0, r5
     adr.w r1, bpm_data
     strb r0, [r1, #7]
@@ -252,6 +253,13 @@ bpm_textshow:
     mov r0, r7
     ldr r3, =0x28e24bc9             @ setVisible
     blx r3
+    movs r4, #2                     @ where the Tempo dot starts: 4 px after the tempo, as setText measured it, or at its left
+    cbz r5, bpm_textend
+    adr.w r0, bpm_widget
+    ldr r0, [r0, #0x10]
+    add r4, r0
+    adds r4, #4
+bpm_textend:
     adr.w r1, bpm_data
     ldrb r0, [r1, #5]
     cmp r0, #0
@@ -269,6 +277,10 @@ bpm_dotplace:                       @ placed before sized: a first erase then co
     beq bpm_dothide                 @ each dot has its own widgets: a move would erase the box spanning both places
     mov r0, r7
     ldrb r1, [r5, #0]
+    ldrb r3, [r5, #4]
+    cmp r3, #4
+    it eq
+    addeq r1, r4                    @ the Tempo dot's x is after the tempo
     ldrb r2, [r5, #1]
     rsb.w r2, r2, #BPM_DOT_TOP
     ldr r3, =0x28e24af1             @ setPos
@@ -461,6 +473,12 @@ bpm_dotshape:                       @ x, y below the dots' top, w, h, Dot Positi
     .byte 223, 7, 26, 16, 2, 0
     .byte 222, 8, 28, 14, 2, 0
     .byte 221, 11, 30, 8, 2, 0
+    .byte 4, 2, 4, 12, 4, 0         @ Tempo: a 12 px dot from the tempo's end, level with S's capitals (rows 1..16 under y 238)
+    .byte 2, 3, 8, 10, 4, 0
+    .byte 1, 4, 10, 8, 4, 0
+    .byte 0, 6, 12, 4, 4, 0
+bpm_dotmask:                        @ Dot Position: Left, Right, Both, Off, Tempo, as bpm_dotshape's bits
+    .byte 1, 2, 3, 0, 4
 .balign 4
 bpm_data:                           @ 0 painted, 4 dot lit, 5 tapped red, 6 Tap Tempo LED on, 7 shown, 8 ms since first paint, 12 last turn (µs), 16 period (ms)
     .word 0, 0x01010000, 0, 0, 0

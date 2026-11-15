@@ -25,9 +25,10 @@ def test_settings_values_defaults_and_ids():
     assert s['font'].values == (b'XL', b'L', b'M', b'S', b'Off')
     assert s['color'].values == (b'White', b'Gray', b'Red', b'Orange', b'Yellow', b'Green', b'Cyan', b'Blue', b'Purple',
                                  b'Tempo')
-    assert s['dot'].values == (b'Left', b'Right', b'Both', b'Off')
-    assert [x.label for x in bpm.SETTINGS] == [b'Size\nFont', b'Color', b'Position\nDot'], 'Font over Size, Dot over Position'
-    assert (s['font'].default, s['color'].default, s['dot'].default) == (1, 0, 0), 'L, White, Left'
+    assert s['dot'].values == (b'Left', b'Right', b'Both', b'Off', b'Tempo')
+    assert [x.label for x in bpm.SETTINGS] == [b'Size\nBPM', b'Color\nBPM', b'Dot\nBPM'], 'BPM over each: in Displays'
+    assert (s['font'].default, s['color'].default, s['dot'].default) == (3, 0, 4), 'S, White, Tempo'
+    assert bpm.MENU == 'Displays'
     assert len(FONTS) == s['font'].max and len(COLOURS) == len(s['color'].values)
     ids = setting_ids.by_name()
     assert (ids['bpm.font'], ids['bpm.color'], ids['bpm.dot']) == (0xce, 0xcf, 0xd0), 'virtual: a unit keeps a value by ID, so never move them'
@@ -464,7 +465,7 @@ def test_before_sets_the_font_bpm_font_says(m4, value):
 @pytest.mark.parametrize('value', [None, 5, 255])
 def test_before_takes_the_default_font_when_unset_or_out_of_range(m4, value):
     before(m4, font=value)
-    assert [r[1] for r in m4.called(SET_FONT)] == [FONTS[1]] == [5], 'L, 41 Lite'
+    assert [r[1] for r in m4.called(SET_FONT)] == [FONTS[3]] == [1], 'S, 21 Reg'
 
 
 @pytest.mark.parametrize('value', [*range(10), None, 10])
@@ -501,16 +502,33 @@ def test_a_build_with_tap_led_color_hands_bpm_its_shown_colour(monkeypatch):
 
 
 @pytest.mark.parametrize('value, xs', [(0, range(69, 99)), (1, range(221, 251)), (2, [*range(69, 99), *range(221, 251)]),
-                                       (3, []), (None, range(69, 99)), (4, range(69, 99))])
+                                       (3, [])])
 def test_before_shows_the_dots_bpm_dot_pos_says(m4, value, xs):
     before(m4, dot=value)
     shown = [r[0] for r in m4.called(SET_RECT_VISIBLE) if r[1] == 1]
-    assert len(m4.called(SET_RECT_VISIBLE)) == 18 and len(shown) == len(xs) // 30 * 9
+    assert len(m4.called(SET_RECT_VISIBLE)) == 22 and len(shown) == len(xs) // 30 * 9
     cols = set()
     for (_, x, y, _), (_, cw, ch, _) in zip(m4.called(SET_RECT_POS), m4.called(SET_RECT_SIZE)):
         cols |= set(range(x, x + cw))
         assert 237 - 15 <= y <= 237 and y - ch >= 237 - 30, 'within the 30 px dot below the top edge'
     assert cols == set(xs)
+
+
+@pytest.mark.parametrize('value', [4, None, 5])
+def test_before_puts_the_tempo_dot_after_the_tempo(m4, value):
+    """Tempo (the default, and out of range): a 12 px dot 4 px after the tempo, as setText measured it (2 + 30 + 4 = 36)."""
+    m4.m.u32(m4.at('bpm_widget') + 0x10, 30)
+    before(m4, dot=value)
+    shown = [r[0] for r in m4.called(SET_RECT_VISIBLE) if r[1] == 1]
+    assert len(shown) == 4
+    cols, rows = set(), set()
+    for (_, x, y, _), (_, cw, ch, _) in zip(m4.called(SET_RECT_POS), m4.called(SET_RECT_SIZE)):
+        cols |= set(range(x, x + cw))
+        rows |= set(range(y - ch, y))
+    assert cols == set(range(36, 48)) and rows == set(range(223, 235)), 'level with the S tempo, top y 238'
+    before(m4, dot=value, font=4)
+    xs = {x for _, x, _, _ in m4.called(SET_RECT_POS)}
+    assert min(xs) == 2, 'with the tempo off, at its left'
 
 
 @pytest.mark.parametrize('lit, tapped, expect', [(0, 0, 0x404040), (1, 0, COLOURS[3]), (1, 1, 0xff0000), (0, 1, 0x404040)])
@@ -520,7 +538,7 @@ def test_before_lights_the_dot(m4, lit, tapped, expect):
 
 
 def test_font_off_hides_the_tempo_and_keeps_the_dot(m4):
-    before(m4, font=4)
+    before(m4, font=4, dot=0)
     assert not m4.called(SET_FONT) and [r[1] for r in m4.called(SET_TEXT_VISIBLE)] == [0]
     assert struct.unpack('<I', m4.data(16, 4))[0] == 468, 'the period at 128 BPM, for the dot without a TAP footswitch'
     assert len([r for r in m4.called(SET_RECT_VISIBLE) if r[1] == 1]) == 9

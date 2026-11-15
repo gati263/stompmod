@@ -66,7 +66,7 @@ The Home screen shows the tempo at its top left, and a beat dot beside the prese
 
 - **The tempo** is the one the HX Stomp is using, the global or the preset's as Tempo Select says, as a whole number. It shows ` X` after it while the tempo comes from MIDI clock (the tempo screen's Extrnl), and `--` with no tempo.
 - **The dot** keeps the beat in every footswitch mode, and with Tap Tempo LED off too: the ring then stays dark while the dot blinks.
-- **Settings** (Global Settings > BPM Display): Font Size, Color (the tempo's and the dot's; Tempo takes the TAP footswitch's colour) and Dot Position (left of the preset number, right of it, or both). Off on Font Size hides the tempo and on Dot Position the dot; both Off turns the display off without a rebuild. See [Custom settings](#custom-settings).
+- **Settings** (Global Settings > Displays, BPM Size, BPM Color, BPM Dot): Size (S by default, the size that fits above the preset name of [Snapshot names on Home](#more-snapshots)), Color (the tempo's and the dot's; Tempo takes the TAP footswitch's colour) and Dot (left of the preset number, right of it, both, or **Tempo**, the default: a small dot right after the tempo). Off on Size hides the tempo and on Dot the dot; both Off turns the display off without a rebuild. See [Custom settings](#custom-settings).
 
 ## Tap LED color
 

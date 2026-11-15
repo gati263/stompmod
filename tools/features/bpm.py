@@ -6,11 +6,12 @@ FLAG = 'HX_BPM'
 TITLE = 'BPM Display'
 ICON = 'Icon_Tempo'
 ORDER = 20
-SETTINGS = (     # 'Position\nDot' reads Dot over Position: the line after the newline is the top one
-    Setting('font', b'Size\nFont', (b'XL', b'L', b'M', b'S', b'Off'), default=1),
-    Setting('color', b'Color', (b'White', b'Gray', b'Red', b'Orange', b'Yellow', b'Green', b'Cyan', b'Blue', b'Purple',
-                                b'Tempo')),
-    Setting('dot', b'Position\nDot', (b'Left', b'Right', b'Both', b'Off')),
+MENU = 'Displays'                   # in Global Settings > Displays: Font Size Off and Dot Off turn it off
+SETTINGS = (     # 'Size\nBPM' reads BPM over Size: the line after the newline is the top one
+    Setting('font', b'Size\nBPM', (b'XL', b'L', b'M', b'S', b'Off'), default=3),     # S: above the preset name of Snapshot Names
+    Setting('color', b'Color\nBPM', (b'White', b'Gray', b'Red', b'Orange', b'Yellow', b'Green', b'Cyan', b'Blue', b'Purple',
+                                      b'Tempo')),
+    Setting('dot', b'Dot\nBPM', (b'Left', b'Right', b'Both', b'Off', b'Tempo'), default=4),     # Tempo: after the tempo
 )
 
 HOME_CTOR_CALL, HOME_CTOR = 0x28d96c44, 0x28dc91d0                  # bl to the Home view's constructor at boot
