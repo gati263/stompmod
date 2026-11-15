@@ -30,6 +30,8 @@ FS_FUNCTIONS = 0x28128a74                    # footswitch k's function at + 2k: 
 CAMERAS = {'white': (0x1a0, 0x71, 0x10f), 'red': (0x156, 0x105, 0x4f), 'lit': (0x13, 0x202, 0x12a)}   # Icon_Snapshot1..3, Red, Sel
 LABEL_X, LABEL_Y = (53, 160, 267), 100
 WIDGET_LOCK, WIDGET_UNLOCK, REDRAW, FILL, TEXT = 0x28e24970, 0x28e24ae8, 0x28db8508, 0x100017e8, 0x28db7aa4
+HOME, LABEL_TEXT, LABELS_BUILD = 0x2812a05c, 0x2812a0c0, 0x28dc87cc     # the Home view, label i's upper text at + 0x30 i
+REBUILT = [('labels built', HOME, 0), ('redraw', 0, 1)]   # the first Home paint after a flip: the stock labels from the live bank
 REC, RECS, CUR, PREV, BUSY = 0x260, 0xc, 0x743, 0x744, 0x9a9
 VALID, NAME = 0x24b, 0x255            # in a record: set once it holds a sound; its name, 11 bytes
 
@@ -74,6 +76,7 @@ class Manager:
         self.m.stub(WIDGET_LOCK, lambda m: self.events.append('widget lock'))
         self.m.stub(WIDGET_UNLOCK, lambda m: self.events.append('widget unlock'))
         self.m.stub(REDRAW, lambda m: self.events.append(('redraw', m.reg('r0'), m.reg('r1'))))
+        self.m.stub(LABELS_BUILD, lambda m: self.events.append(('labels built', m.reg('r0'), m.reg('r1'))))
         self.m.stub(FILL, lambda m: self.events.append(('fill', m.reg('r0'), m.reg('r1'), m.reg('r2'), m.reg('r3'),
                                                         *m.stack_args(3))))
         self.m.stub(TEXT, lambda m: self.events.append(('text', m.reg('r0'), m.read(m.reg('r1'), 32).split(b'\0')[0], m.reg('r3'),
@@ -354,14 +357,15 @@ def test_bank_b_draws_its_numbers_over_the_icon_and_the_labels(mgr, lit):
     mgr.press(lit)
     assert mgr.events[-1] == ('redraw', 0, 1), 'the flip asks for a paint, which draws the numbers'
     assert mgr.paint() == (top(str(lit + 4)), [])
-    assert mgr.paint('home') == (labels(lit), [])
+    assert mgr.paint('home') == (REBUILT + labels(lit), [])
+    assert mgr.paint('home') == (labels(lit), []), 'rebuilt once a flip'
 
 
 def test_the_numbers_follow_the_snapshot_within_bank_b(mgr):
     mgr.press(0)
     mgr.press(2)
     assert mgr.paint() == (top('6'), [])
-    assert mgr.paint('home') == (labels(2), [])
+    assert mgr.paint('home') == (REBUILT + labels(2), [])
 
 
 def test_an_edited_snapshots_red_icon_gets_a_white_number(mgr):
@@ -377,7 +381,7 @@ def test_hidden_or_other_images_get_no_number(mgr):
     assert mgr.paint() == (['widget lock', 'widget unlock'], [])
     mgr.m.u8(LABELS + 0x1d, 0)
     mgr.m.u8(LABELS + 0x24 + 0x1d, 0)
-    assert mgr.paint('home') == (labels(0)[:1] + labels(0)[5:], [])
+    assert mgr.paint('home') == (REBUILT + labels(0)[:1] + labels(0)[5:], [])
 
 
 @pytest.mark.parametrize('functions', [[2, 2, 2], [2, 2, 1]], ids=['stomp', 'stomp with TAP'])
@@ -388,7 +392,7 @@ def test_bank_b_in_another_footswitch_mode_leaves_the_labels_alone(mgr, function
     assert mgr.paint('home') == ([], [])
     assert mgr.paint() == (top('4'), []), 'the top icon still shows the bank'
     mgr.mode([14, 14, 14])
-    assert mgr.paint('home') == (labels(0), []), 'back in Snapshot mode'
+    assert mgr.paint('home') == (REBUILT + labels(0), []), 'back in Snapshot mode, the labels rebuilt there'
 
 
 def test_back_in_bank_a_the_cameras_are_drawn_again(mgr):
@@ -396,8 +400,18 @@ def test_back_in_bank_a_the_cameras_are_drawn_again(mgr):
     mgr.press(0)
     assert mgr.paint() == (['widget lock', 'widget unlock', ('redraw', 0, 1)], [0]), 'its node marked, and a paint to draw it'
     assert mgr.paint() == ([], []), 'once'
-    assert mgr.paint('home') == (['widget lock', 'widget unlock', ('redraw', 0, 1)], [1, 2, 3]), 'the labels, once each paint'
+    assert mgr.paint('home') == (REBUILT + ['widget lock', 'widget unlock', ('redraw', 0, 1)], [1, 2, 3]), 'the labels, once each paint'
     assert mgr.paint('home') == ([], [])
+
+
+def test_a_named_snapshot_label_gets_no_box_over_its_text(mgr):
+    """The stock shows a named snapshot as text and leaves its camera visible under it: a box there blacked out the name."""
+    mgr.press(0)
+    mgr.paint('home')
+    mgr.m.u8(LABEL_TEXT + 0x30 * 1 + 0x2a, 1)                     # footswitch 2's snapshot has a name
+    want = labels(0)
+    assert mgr.paint('home') == (want[:3] + want[5:], [])
+    assert mgr.paint() == (top('4'), []), 'the top icon has no text: numbered as before'
 
 
 def test_a_preset_load_in_bank_b_draws_the_cameras_again(mgr):

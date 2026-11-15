@@ -14,7 +14,9 @@ Everything HXtra adds to the HX Stomp, where to find it, and every setting. The 
 | [More snapshots](#more-snapshots) | The snapshot footswitches, with Footswitch Mode on Snapshot · no settings | `HX_MORE_SNAPSHOTS=1` |
 | [Metronome](#metronome) | Model browser: Looper > Metronome > Metronome · the block's knobs | `HX_CLICK=1` |
 | [GR meter](#gr-meter) | Home screen, lit by a compressor · knobs on six compressors | `HX_GR=1` |
+| [Model pictures](#model-pictures) | Edit view and model browser: a picture of the model · Global Settings > Displays, Model Pictures | `HX_MODEL_PICTURES=1` |
 | [Boot screen](#boot-screen-hx-stomp-only) | The screen at power-on · set when you build | `--splash`, `--splash-text` |
+| [Boot animation](#boot-animation-hx-stomp-only) | The screen at power-on: the boot picture, then frames in turn · set when you build | `HX_BOOT_ANIM=frames` |
 | [NAM A2 Lite](#nam-a2-lite) | Model browser: Amp > NAM | always on |
 
 Every feature here has run on an HX Stomp from RAM before it was released. The setup page builds them all, but Real block names only when you tick its box. Each is off in a plain `build.py` build until its switch is set (an environment variable, or a `build.py` option), and switches combine:
@@ -174,6 +176,21 @@ A gain-reduction meter on the Home screen, lit by the compressor you turn it on 
 - **Which compressors:** Deluxe, LA Studio, Kinky, Ampeg Opto, Rochester and Red Squeeze.
 - **With NAM:** in a build with the GR meter, NAM A2 Lite runs up to two blocks instead of three.
 
+## Model pictures
+
+A picture of the model, as HX Edit shows it, in the Edit view and the model browser. A first build (pictures in the browser, a smaller one in the Edit view's corner) ran on an HX Stomp from RAM; this layout is a test build. `tools/model_pictures_preview.py` draws it offline from your firmware file, to judge a change before a RAM run.
+
+- **Edit view:** the preset number and name at the top are smaller (hx21 instead of hx28), the row of blocks sits 24 px lower, and the selected block's picture shows centred between them. A preset with a second row of blocks keeps the stock layout and shows no picture. The smaller title and lower row stay in a build with this feature even with Pictures Off.
+- **Model browser:** the picture of the model in bold (the one the cursor is on) right of the list. A name that would run into the picture is shortened with `..`.
+- **Home screen:** stock. It shows no selected block, so there is no picture to show.
+- **Settings** (Global Settings > Displays, after Tap LED Color): **Model Pictures**, **On** (default) or Off. It has no section of its own, so no second eye icon in the section strip.
+- **Where the pictures come from:** HX Edit's own model images, read when you build from the HX Edit installed on your computer, so none is in this repository or on the setup page (the page doesn't build this feature). `HX_MODEL_PICTURES=1` looks for HX Edit in its usual place on Windows; otherwise give the path of its `res` folder (`HX_MODEL_PICTURES="path/to/HX Edit/res"`). 787 of the HX Stomp's 791 models have one (Mono and Stereo versions share one); the rest show none.
+- **Size:** each picture fits an 80x48 box, about 1.8 MB in all in the image store.
+
+```sh
+HX_MODEL_PICTURES=1 python3 build.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf
+```
+
 ## Boot screen (HX Stomp only)
 
 ```sh
@@ -190,6 +207,18 @@ python3 build.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf --splash my_picture.jp
 - The bootloader shows its own copy of the stock picture for a moment at power-on, before the firmware starts; that copy is not changed.
 
 This also changes the image store (part 8 of the 15), and with emoji, the font table (part 7).
+
+## Boot animation (HX Stomp only)
+
+The boot picture (`--splash`) shows for `HX_BOOT_INTRO_MS` (600 by default; 0 starts the frames at once) from the boot view's first paint, then the screen cycles through the 320x240 PNG frames `HX_BOOT_ANIM` names, one every 0.3 s, until the boot finishes; a pause of more than 0.3 s between paints before the first frame restarts the intro, as the first paint can come before the screen shows it. The loading bar, the firmware icon and the boot line are hidden, so the frames are the whole screen. Ran on an HX Stomp from RAM.
+
+```sh
+HX_BOOT_ANIM=/abs/frame1.png,/abs/frame2.png,/abs/frame3.png python3 build.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf --splash /abs/intro.png
+```
+
+- A frame changes only when the boot view paints, which the app does as the boot advances; how often it does is not measured yet, so the timing may be coarser than the 0.3 s steps.
+- Each frame is a whole picture, 150 KB in the image store.
+- The bootloader's own copy of the stock picture still shows for a moment at power-on.
 
 ## NAM A2 Lite
 

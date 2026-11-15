@@ -17,6 +17,11 @@
 .equ MANAGER, 0x2812c630
 .equ ICON, 0x2812ade8               @ the top view's snapshot icon (image widget): a camera, its number in a circle
 .equ LABELS, 0x2812a4bc             @ the Home view's footswitch labels in Snapshot mode: the same cameras, 0x24 bytes apart
+.equ HOME, 0x2812a05c               @ the Home view
+.equ LABEL_TEXT, 0x2812a0c0         @ each label's upper text line, 0x30 bytes apart (visible at +0x2a): shown for a named snapshot
+.equ LABELS_BUILD, 0x28dc87cd       @ (home, 0): the Home layout, the labels for the Footswitch Mode setting (Snapshot: 0x28dc89b8),
+                                    @ as the Home view's own event handler calls it on a snapshot or mode change; no widget lock
+.equ STALE, 4                       @ in snaps_data byte 3: a flip since the labels were last rebuilt
 .equ FS_FUNCTIONS, 0x28128a74       @ each footswitch's function, two bytes apart
 .equ FN_SNAPSHOT, 14                @ snapshot k for footswitch k: Snapshot mode; other modes keep stale cameras in LABELS
 .equ WIDGET_LOCK, 0x28e24971
@@ -183,9 +188,12 @@ snaps_ready:
     ldrb r0, [r6]
     eor r0, r0, #1
     strb r0, [r6]
-    cbnz r0, snaps_flipped
-    movs r1, #3
-    strb r1, [r6, #3]               @ back in bank A: the top icon (bit 0) and the labels (bit 1) drawn again over bank B's numbers
+    ldrb r1, [r6, #3]
+    orr r1, r1, #STALE              @ either way: the labels rebuilt from the live bank's records on the next Home paint
+    cbnz r0, snaps_flip_bits
+    orr r1, r1, #3                  @ back in bank A: the top icon (bit 0) and the labels (bit 1) drawn again over bank B's numbers
+snaps_flip_bits:
+    strb r1, [r6, #3]
 snaps_flipped:
     add.w r0, r4, #4
     ldr r3, =UNLOCK
@@ -447,6 +455,23 @@ snaps_home_paint:                   @ after the Home view's paint (framebuffer, 
     cmp r3, #FN_SNAPSHOT
     it ne
     bxne lr
+    adr.w r3, snaps_data
+    ldrb r2, [r3, #3]
+    tst r2, #STALE
+    beq snaps_home_labels
+    push {r0, lr}                   @ a flip since the last rebuild: the stock labels still show the other bank's names and cameras
+    bic r2, r2, #STALE
+    strb r2, [r3, #3]
+    ldr r0, =HOME
+    movs r1, #0
+    ldr r3, =LABELS_BUILD           @ outside the widget lock, as the Home view's event handler calls it
+    blx r3
+    movs r0, #0
+    movs r1, #1
+    ldr r3, =REDRAW
+    blx r3
+    pop {r0, lr}
+snaps_home_labels:
     movs r1, #2
     adr.w r2, snaps_labels
 
@@ -506,6 +531,19 @@ snaps_camera:                       @ (camera, r4 the framebuffer): 4..6 over a 
     ldrb r0, [r5, #0x1d]            @ visible
     cmp r0, #0
     beq snaps_camera_done
+    ldr r1, =LABELS
+    subs r1, r5, r1
+    cmp r1, #(3 * 0x24)
+    bhs snaps_camera_image          @ not a footswitch label: the top icon
+    movs r2, #0x24
+    udiv r1, r1, r2
+    movs r2, #0x30
+    ldr r0, =LABEL_TEXT
+    mla r0, r1, r2, r0
+    ldrb r0, [r0, #0x2a]
+    cmp r0, #0
+    bne snaps_camera_done           @ a named snapshot shows text over a camera the stock leaves visible: no box over the text
+snaps_camera_image:
     ldr r0, [r5]                    @ its image
     adr.w r1, snaps_images
     movs r6, #0
