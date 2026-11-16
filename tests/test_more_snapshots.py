@@ -35,6 +35,8 @@ REBUILT = [('labels built', HOME, 0), ('redraw', 0, 1)]   # the first Home paint
 REC, RECS, CUR, PREV, BUSY = 0x260, 0xc, 0x743, 0x744, 0x9a9
 GET_VALUE, TFONT, TPOS, COLOUR_OBJ, COLOUR, IMG_DRAW = 0x28e1f844, 0x28e249e8, 0x28e24a68, 0x28d96084, 0x28dd8110, 0x28e24a00
 TOP = 0x2812aae0
+DIRTY, ISET, IPOS, MEASURE = TOP + 0x894, 0x28e24c18, 0x28e24c68, 0x28e24c50     # the unsaved-edit mark and its calls
+NUMBER_W, NAME_W = 48, 120          # the measured widths the fake gives the number and the name
 NAMED, STATE = 0x24c, 0x254
 HOME_NAMES = IDS['more_snapshots.home']
 VALID, NAME = 0x24b, 0x255            # in a record: set once it holds a sound; its name, 11 bytes
@@ -96,6 +98,13 @@ class Manager:
         self.m.u32(TOP + 0x30 + 0x18, 4)                 # the top view's number and name as the constructor sets them
         self.m.u32(TOP + 0x8c + 8, 160)
         self.m.u32(TOP + 0x8c + 0xc, 0xc5)
+        self.m.u32(DIRTY, 0x120)                         # the mark as the constructor and the stock name update leave it
+        self.m.u32(DIRTY + 0xc, 160 + NAME_W // 2 + 6)
+        self.m.u32(DIRTY + 0x10, 0xc5)
+        self.m.stub(ISET, lambda m: (self.events.append(('image', m.reg('r0'), m.reg('r1'))), m.u32(m.reg('r0'), m.reg('r1'))))
+        self.m.stub(IPOS, lambda m: (self.events.append(('move', m.reg('r0'), m.reg('r1'), m.reg('r2'))),
+                                     m.u32(m.reg('r0') + 0xc, m.reg('r1')), m.u32(m.reg('r0') + 0x10, m.reg('r2'))))
+        self.m.stub(MEASURE, lambda m: m.u32(m.reg('r0'), {TOP + 0x30: NUMBER_W, TOP + 0x8c: NAME_W}[m.reg('r1')]))
         self.m.stub(COLOUR_OBJ, lambda m: m.reg('r0', 0x28720000))
         self.m.stub(COLOUR, lambda m: m.reg('r0', 0x110000 * m.reg('r1') + (0xff if m.reg('r2') else 0x80)))
         self.m.stub(IMG_DRAW, lambda m: self.events.append(('draw', m.reg('r2'))))
@@ -1009,6 +1018,27 @@ def test_home_names_lay_out_the_top_view_once(mgr):
     mgr.events.clear()
     mgr.call('snaps_paint', FB, TOP)
     assert [e for e in mgr.events if e[0] in ('font', 'place')] == [('font', TOP + 0x30, 4), ('place', TOP + 0x8c, 160, 0xc5)]
+
+
+def test_home_names_put_the_unsaved_mark_small_at_the_numbers_top_right(mgr):
+    """Icon_Dirty (6x9) 2 px right of the number, its top level with the digits' (y 235); back every paint the stock name
+    update moves it, and big right of the name again when the names go."""
+    home_names(mgr)
+    assert [e for e in mgr.events if e[0] in ('image', 'move')] == [('image', DIRTY, 0x43), ('move', DIRTY, 160 + 24 + 2, 235)]
+    home_names(mgr)
+    assert not any(e[0] in ('image', 'move', 'redraw') for e in mgr.events), 'in place: no repaint'
+    mgr.m.u32(DIRTY + 0xc, 100)                          # an edit: the stock name update puts it right of the name
+    mgr.m.u32(DIRTY + 0x10, 0xc5)
+    home_names(mgr)
+    assert [e for e in mgr.events if e[0] in ('image', 'move')] == [('move', DIRTY, 186, 235)]
+    assert ('redraw', 1, 0) in mgr.events
+    mgr.settings[HOME_NAMES] = 0
+    mgr.events.clear()
+    mgr.call('snaps_paint', FB, TOP)
+    assert [e for e in mgr.events if e[0] in ('image', 'move')] == [('image', DIRTY, 0x120), ('move', DIRTY, 160 + 60 + 6, 0xc5)]
+    mgr.events.clear()
+    mgr.call('snaps_paint', FB, TOP)
+    assert not any(e[0] in ('image', 'move') for e in mgr.events), 'then stock: the name update places it'
 
 
 def test_home_names_show_six_names_the_playing_one_boxed(mgr):

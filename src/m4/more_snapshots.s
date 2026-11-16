@@ -52,6 +52,15 @@
 .equ TOP_NUMBER, TOP + 0x30         @ its preset number: hx35_boldFont (4) at (160, 0xed), anchor 7
 .equ TOP_NAME, TOP + 0x8c           @ its preset name: hx41_lightFont at (160, 0xc5), anchor 7
 .equ NAME_Y, 214                    @ the name's top while the six names show: under the number in hx21_boldFont (0)
+.equ TOP_DIRTY, TOP + 0x894         @ its unsaved-edit mark (image widget, anchor 6): Icon_DirtyBig right of the name (0x28dc9d30)
+.equ DIRTY_BIG, 0x120               @ Icon_DirtyBig (9x15), stock
+.equ DIRTY_SMALL, 0x43              @ Icon_Dirty (6x9): at the number's top right while the six names show
+.equ DIRTY_Y, 235                   @ the top of hx21_boldFont's digits, its top at 0xed
+.equ DIRTY_GAP, 2                   @ right of the number
+.equ STOCK_GAP, 6                   @ right of the name, as 0x28dc9d2e
+.equ ISET, 0x28e24c19               @ (image widget, image)
+.equ IPOS, 0x28e24c69               @ (image widget, x, y)
+.equ MEASURE, 0x28e24c51            @ (out, text widget): out[0] its text's width
 .equ TFONT, 0x28e249e9              @ (text widget, font)
 .equ TPOS, 0x28e24a69               @ (text widget, x, y)
 .equ IMG_DRAW, 0x28e24a01           @ (fb, fb, image widget)
@@ -656,9 +665,82 @@ snaps_home_set:
     movs r1, #0
     ldr r3, =REDRAW
     blx r3
+    cbnz r4, snaps_home_laid
+    movs r0, #0
+    bl snaps_dirty_place            @ stock once: the big mark right of the name
 snaps_home_laid:
+    cbz r4, snaps_home_out
+    movs r0, #1
+    bl snaps_dirty_place            @ every paint: the stock name update moves the mark back beside the name
+snaps_home_out:
     mov r0, r4
     pop {r4, r5, pc}
+
+snaps_dirty_place:                  @ (on): the unsaved-edit mark small at the preset number's top right, or (0) stock: big,
+    push {r4-r7, lr}                @ right of the name; repaints in full when it moves
+    sub sp, #12
+    mov r7, r0
+    ldr r3, =WIDGET_LOCK
+    blx r3
+    cmp r7, #0
+    ite ne
+    ldrne r1, =TOP_NUMBER
+    ldreq r1, =TOP_NAME
+    mov r0, sp
+    ldr r3, =MEASURE
+    blx r3
+    ldr r5, [sp]
+    add.w r5, r5, r5, lsr #31
+    asrs r5, r5, #1
+    adds r5, #160                   @ the number and the name are centred on x 160
+    cmp r7, #0
+    itete ne
+    addne r5, #DIRTY_GAP
+    addeq r5, #STOCK_GAP
+    movne r6, #DIRTY_Y
+    moveq r6, #0xc5
+    ldr r4, =TOP_DIRTY
+    movs r2, #0
+    str r2, [sp, #4]                @ moved
+    cmp r7, #0
+    ite ne
+    movne r1, #DIRTY_SMALL
+    movweq r1, #DIRTY_BIG
+    ldr r0, [r4]
+    cmp r0, r1
+    beq snaps_dirty_image
+    mov r0, r4
+    ldr r3, =ISET
+    blx r3
+    movs r2, #1
+    str r2, [sp, #4]
+snaps_dirty_image:
+    ldr r0, [r4, #0xc]
+    cmp r0, r5
+    bne snaps_dirty_move
+    ldr r0, [r4, #0x10]
+    cmp r0, r6
+    beq snaps_dirty_placed
+snaps_dirty_move:
+    mov r0, r4
+    mov r1, r5
+    mov r2, r6
+    ldr r3, =IPOS
+    blx r3
+    movs r2, #1
+    str r2, [sp, #4]
+snaps_dirty_placed:
+    ldr r3, =WIDGET_UNLOCK
+    blx r3
+    ldr r0, [sp, #4]
+    cbz r0, snaps_dirty_out
+    movs r0, #1
+    movs r1, #0
+    ldr r3, =REDRAW
+    blx r3
+snaps_dirty_out:
+    add sp, #12
+    pop {r4-r7, pc}
 
 snaps_home_names:                   @ (fb) where the signal flow was: the six snapshots' names (or numbers, unnamed) in two rows,
     push {r4-r11, lr}               @ in their colours, the one playing in a box of its colour
