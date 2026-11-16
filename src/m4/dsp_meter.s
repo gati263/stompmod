@@ -6,8 +6,10 @@
 @ The model browser (0x281299d0) lists five models a page, each with its category's icon: dsp_browser centres each model's cost in white between its icon and name,
 @ and shows the total where the Edit view does.
 @ tools/features/dsp_meter.py chains dsp_paint after the Edit view top half's stock paint and dsp_browser after the browser's; patch_menu.py assembles this at build time.
+@ Its three Displays settings (Blocks, Browser, Total DSP) each turn one of these off: the total off shows as no DSP model does.
 .syntax unified
 .thumb
+.include "hxtra.inc"
 .equ BUDGET, 75                     @ per cent of the DSP blocks may use: the preset limit 9000 less its fixed 1500, in hundredths
 .equ TOTAL_RIGHT, 316
 .equ TOTAL_TOP, 228                 @ the title's baseline (its top 0xea less ink row 22) plus this font's ink row 16
@@ -15,7 +17,8 @@
 .thumb_func
 dsp_paint:                          @ r0 the framebuffer, r1 the Edit view's top half, after its stock paint
     push {r4-r7, lr}
-    sub sp, #44                     @ 0 the eight slots' DSP costs (-1 for none), 32 the blocks' sum in per cent (-1 for none)
+    sub sp, #44                     @ 0 the eight slots' DSP costs (-1 for none), 32 the blocks' sum in per cent (-1 for none),
+                                    @ 36 Blocks DSP
     mov r4, r0
     mov r5, r1
     movs r6, #0
@@ -52,8 +55,15 @@ first_row:
     ldr r3, =0x28e0785d
     blx r3
 costed:
+    add r0, sp, #32                 @ the settings are read before the widget lock
+    bl total_hidden
+    bl blocks_on
+    str r0, [sp, #36]
     ldr r3, =0x28e24971             @ the widget lock
     blx r3
+    ldr r0, [sp, #36]
+    cmp r0, #0
+    beq slots_done                  @ Blocks DSP Off: no numbers
     addw r5, r5, #0x4a4
     movs r6, #0
 slot:                               @ all this is in the framebuffer only, so whatever the stock paint redrew or hid has lost it
@@ -75,6 +85,7 @@ next:
     adds r6, #1
     cmp r6, #8
     bne slot
+slots_done:
     ldr r0, [sp, #32]
     bl total
     ldr r3, =0x28e24ae9
@@ -97,9 +108,15 @@ dsp_browser:                        @ r0 the framebuffer, r1 the model browser, 
     mov r5, r1
     bl blocks_total
     str r0, [sp, #8]
+    add r0, sp, #8
+    bl total_hidden
+    bl browser_on
+    cmp r0, #0
+    beq not_models                  @ Browser DSP Off: wiped as at any other list level
     ldrb r2, [r5, #0x40]
     cmp r2, #MODELS
     beq models
+not_models:
     ldr r3, =0x28e24971
     blx r3
     adr.w r3, drawn                 @ no widget covers the labels, so leaving the model list must wipe them
@@ -185,6 +202,37 @@ browser_total:                      @ in the Edit view's corner, which the brows
     movs r0, #0
     add sp, #16
     pop {r4-r8, pc}
+
+total_hidden:                       @ r0 where the blocks' sum is: -1 there when Total DSP is Off
+    push {r4, lr}
+    mov r4, r0
+    movs r0, #SETTING_DSP_METER_TOTAL
+    movs r1, #SETTING_DSP_METER_TOTAL_MAX
+    movs r2, #SETTING_DSP_METER_TOTAL_DEFAULT
+    bl hxtra_setting_get
+    cbnz r0, total_kept
+    mvn r0, #0
+    str r0, [r4]
+total_kept:
+    pop {r4, pc}
+
+blocks_on:                          @ -> r0 1 when Blocks DSP is On
+    push {r3, lr}
+    movs r0, #SETTING_DSP_METER_BLOCKS
+    movs r1, #SETTING_DSP_METER_BLOCKS_MAX
+    movs r2, #SETTING_DSP_METER_BLOCKS_DEFAULT
+    bl hxtra_setting_get
+    pop {r3, pc}
+
+browser_on:                         @ -> r0 1 when Browser DSP is On
+    push {r3, lr}
+    movs r0, #SETTING_DSP_METER_BROWSER
+    movs r1, #SETTING_DSP_METER_BROWSER_MAX
+    movs r2, #SETTING_DSP_METER_BROWSER_DEFAULT
+    bl hxtra_setting_get
+    pop {r3, pc}
+
+HXTRA_SETTING_GET
 
 edge:                               @ r0 a browser row, r5 the browser -> r0 the x just right of its icon, within 0..NAMES_X - 1
     movs r1, #0x24

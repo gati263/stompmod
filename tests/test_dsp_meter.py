@@ -36,10 +36,20 @@ GLYPH = {tuple(rows): ch for ch, rows in FONT.items()}
 WHITE, BLACK = 0xffffff, 0
 
 
-def test_no_settings():
-    """The total is always used/75; the old setting's virtual field stays retired, as units may hold a value in it."""
-    assert not hasattr(dsp_meter, 'SETTINGS') and 'dsp_meter.disp' not in IDS
-    assert {v[0]: v[:5] for v in setting_ids.VIRTUAL}[0xd1] == (0xd1, 107, 0, 4, None)
+BLOCKS_ON, BROWSER_ON, TOTAL_ON = IDS['dsp_meter.blocks'], IDS['dsp_meter.browser'], IDS['dsp_meter.total']
+
+
+def test_settings_are_three_switches_in_displays():
+    """Blocks, Browser and Total DSP, On by default, in Displays; the old setting's field stays retired (units may hold a
+    value in it), and the new ones take a container of their own, so no old value reads as Off."""
+    assert dsp_meter.MENU == 'Displays'
+    assert [(x.key, x.label, x.values, x.default) for x in dsp_meter.SETTINGS] == [
+        ('blocks', b'Blocks\nDSP', (b'Off', b'On'), 1), ('browser', b'Browser\nDSP', (b'Off', b'On'), 1),
+        ('total', b'Total\nDSP', (b'Off', b'On'), 1)]
+    virt = {v[0]: v[:5] for v in setting_ids.VIRTUAL}
+    assert virt[0xd1] == (0xd1, 107, 0, 4, None) and 'dsp_meter.disp' not in IDS
+    assert {virt[i][1] for i in (BLOCKS_ON, BROWSER_ON, TOTAL_ON)} == {114}
+    assert not any(v[1] == 114 and v[4] and not v[4].startswith('dsp_meter.') for v in setting_ids.VIRTUAL)
 
 
 class Meter:
@@ -56,7 +66,8 @@ class Meter:
         for fn, name in ((WIDGET_LOCK, 'widget lock'), (WIDGET_UNLOCK, 'widget unlock'), (DSP_LOCK, 'dsp lock'),
                          (DSP_UNLOCK, 'dsp unlock')):
             self.m.stub(fn, lambda m, name=name: self.events.append(name))
-        self.m.stub(pm.GET_VALUE, lambda m: self.events.append('get value'))
+        self.settings, self.reads = {}, []
+        self.m.stub(pm.GET_VALUE, self._get_value)
         self.m.u32(DSP_PTR, DSP)
         self.m.u32(DSP + 0x4400, NODES)
         self.m.u32(DSP + 0x43fc, 0)
@@ -64,6 +75,13 @@ class Meter:
             self.m.u32(DSP + 0x14 + 0x54 * idx, 0xffffffff)     # no block
         for k in range(8):
             self.slot(k, None)
+
+    def _get_value(self, m):
+        """GET_VALUE: {int, value} at r1, On unless self.settings says; reads notes it was asked while no widget lock was held."""
+        held = self.events.count('widget lock') > self.events.count('widget unlock')
+        self.reads.append((m.reg('r0'), held))
+        m.write(m.reg('r1'), struct.pack('<II', 2, self.settings.get(m.reg('r0'), 1)))
+        m.reg('r0', 0)
 
     def _fill(self, m):
         h, colour, anchor = m.stack_args(3)
@@ -225,9 +243,9 @@ def blocks(meter, *costs):
 
 @pytest.mark.parametrize('costs, total', [((2345, 1000, 1349), '46/75'), ((), '0/75'), ((4000, 4000), '80/75')])
 def test_total_is_used_of_75(meter, costs, total):
-    """Of the 75 per cent blocks may use (9000 less the fixed 1500), with no setting read."""
+    """Of the 75 per cent blocks may use (9000 less the fixed 1500)."""
     blocks(meter, *costs)
-    assert meter.paint().total() == total and 'get value' not in meter.events
+    assert meter.paint().total() == total
 
 
 def test_total_is_the_sum_of_the_shown_numbers(meter):
@@ -285,6 +303,33 @@ def test_no_dsp_model_hides_the_total_and_takes_no_dsp_lock(meter):
     m = meter.paint()
     assert m.events == ['widget lock', 'text visible', 'text erase', 'text draw', 'widget unlock'] and m.fills == []
     assert m.widget['visible'] == 0 and m.total() is None
+
+
+def test_settings_are_read_outside_the_widget_lock(meter):
+    blocks(meter, 2345)
+    meter.paint()
+    assert sorted(i for i, _ in meter.reads) == sorted((BLOCKS_ON, TOTAL_ON)) and not any(h for _, h in meter.reads)
+
+
+def test_blocks_off_shows_no_numbers_but_the_total(meter):
+    blocks(meter, 2345, 1000)
+    meter.settings[BLOCKS_ON] = 0
+    m = meter.paint()
+    assert m.numbers() == [] and m.fills == [] and m.total() == '33/75'
+
+
+def test_total_off_hides_the_total_but_keeps_the_numbers(meter):
+    blocks(meter, 2345, 1000)
+    meter.settings[TOTAL_ON] = 0
+    m = meter.paint()
+    assert m.numbers() == ['23', '10'] and m.widget['visible'] == 0 and m.total() is None
+
+
+def test_unset_or_out_of_range_reads_as_on(meter):
+    blocks(meter, 2345)
+    meter.settings.update({BLOCKS_ON: 3, TOTAL_ON: 2})
+    m = meter.paint()
+    assert m.numbers() == ['23'] and m.total() == '23/75'
 
 
 # The model browser: its list level, category and subcategory, first row's item, and five row icons, as 0x28dc3424 fills them
@@ -558,12 +603,37 @@ def test_browser_items_are_priced_as_the_model_table_says():
     assert priced > 400
 
 
+def test_browser_off_shows_no_labels_but_the_total(browser):
+    browser.lists[(2, 0)] = [2345] * 5
+    blocks(browser, 2345)
+    browser.settings[BROWSER_ON] = 0
+    m = browser.paint()
+    assert m.numbers() == [] and m.fills == [] and m.total() == '23/75'
+    assert not any(h for _, h in browser.reads)
+
+
+def test_browser_off_wipes_the_labels_it_showed(browser):
+    browser.lists[(2, 0)] = [2345] * 5
+    browser.paint()
+    browser.settings[BROWSER_ON] = 0
+    m = browser.paint()
+    assert m.numbers() == [] and m.fills == [wipe(r) for r in range(5)]
+
+
+def test_browser_total_off_hides_the_total_but_keeps_the_labels(browser):
+    browser.lists[(2, 0)] = [2345] * 5
+    blocks(browser, 2345)
+    browser.settings[TOTAL_ON] = 0
+    m = browser.paint()
+    assert m.numbers() == ['23'] * 5 and m.total() is None
+
+
 @pytest.mark.firmware
-def test_build_has_no_dsp_setting():
+def test_build_has_the_three_settings():
     e0 = built_e0({'HX_DSP_METER': '1'})
     fn, stock = pm.VIRTUAL_HOOKS['get']
-    assert reader(e0)(fn, len(stock)) == stock, 'no virtual setting: GET_VALUE stays stock'
-    assert b'Display\nDSP' not in e0 and not any(reader(e0)(pm.NAMES_LONG + pm.NAME_LEN * 101, pm.NAME_LEN))
+    assert reader(e0)(fn, len(stock)) != stock, 'virtual settings: GET_VALUE is the engine\'s'
+    assert all(label in e0 for label in (b'Blocks\nDSP', b'Browser\nDSP', b'Total\nDSP'))
 
 
 @pytest.mark.firmware

@@ -7,7 +7,7 @@ Everything HXtra adds to the HX Stomp, where to find it, and every setting. The 
 | [Tuner settings](#tuner-settings) | The tuner's own settings, on a third page: open the tuner and page right past Trails, Offsets and String 6 | `HX_TUNER=1` |
 | [BPM](#bpm) | Home screen: the tempo at the top left, the beat dot beside the preset number · Global Settings > BPM Display | `HX_BPM=1` |
 | [Tap LED color](#tap-led-color) | The TAP footswitch: its ring, and its icon and label on the Home screen · Global Settings > Displays, under Tap Tempo LED | `HX_TAP_COLOR=1` |
-| [DSP usage display](#dsp-usage-display) | Edit view and model browser: each block's or model's share, the total at the top right · no settings | `HX_DSP_METER=1` |
+| [DSP usage display](#dsp-usage-display) | Edit view and model browser: each block's or model's share, the total at the top right · Blocks, Browser and Total DSP in Displays | `HX_DSP_METER=1` |
 | [Breathing line](#breathing-line) | Home screen: the line between the signal flow and the knobs · Global Settings > Breathing Line | `HX_BREATHING_LINE=1` |
 | [Real block names](#real-block-names) | Model browser and Edit view: each block's title · no settings | `HX_REAL_NAMES=1` |
 | [Long press](#long-press) | FS1–FS5 in Stomp footswitch mode · Global Settings > Footswitches, pages 2 to 5 | `HX_LONG_PRESS=1` |
@@ -92,6 +92,8 @@ In the Edit view, each block in the signal-flow row shows its share of the DSP i
 In the model browser, each model shows the share it would take, in white between its icon and its name, and the top right corner shows the total as in the Edit view.
 
 75 is what blocks may use: the firmware's preset limit of 90%, less the 15% it always keeps. The numbers are the firmware's own fixed cost of each model, the same ones it uses to decide whether a block fits, not a measured load.
+
+**Global Settings > Displays:** Blocks DSP (the per cent on each block in the Edit view), Browser DSP (each model's per cent in the model browser) and Total DSP (the total at the top right of both) turn each part on or off; all On by default. All three Off turns the display off. With Browser DSP Off the names keep their place right of the icons.
 
 ## Real block names
 
