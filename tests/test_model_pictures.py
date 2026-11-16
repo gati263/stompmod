@@ -355,9 +355,10 @@ def browser_rows(t, x):
 
 
 @pytest.mark.parametrize('dsp, browser_dsp, want', [(0, 1, 8), (1, 1, 30), (1, 0, 8)])
-def test_browser_before_moves_the_model_lists_names_left(m4emu, dsp, browser_dsp, want):
-    """In every list but Favorites the names start at MP_MODELS_X, or MP_MODELS_X_DSP while the DSP labels show; in Favorites
-    at MP_NAMES_X. Into and out of Favorites, black over x 0..MP_NAMES_X of the list (anchor 0: from y 0, 196 high) before the paint."""
+def test_browser_before_moves_the_lists_names_left(m4emu, dsp, browser_dsp, want):
+    """Browser Icons Off: below Category, but in Favorites, the names start at MP_MODELS_X, or MP_MODELS_X_DSP while the DSP
+    labels show; in Category and Favorites at MP_NAMES_X. When they move, black over x 0..MP_NAMES_X of the list (anchor 0:
+    from y 0, 196 high) before the paint."""
     inc = INC.replace('.equ MP_MODELS_X, 44', '.equ MP_MODELS_X, 8').replace('.equ MP_DSP, 0', f'.equ MP_DSP, {dsp}')
     t = Pics(m4emu, inc)
     fills = []
@@ -365,29 +366,52 @@ def test_browser_before_moves_the_model_lists_names_left(m4emu, dsp, browser_dsp
     if dsp:
         t.settings[IDS['dsp_meter.browser']] = browser_dsp
     browser_rows(t, 44)
+    black = (0, 0, 44, 196, 0, 0)
+
+    def paint(level):
+        t.m.u8(VIEW + 0x40, level)
+        t.calls.clear()
+        fills.clear()
+        t.call('mp_browser_before', FB, VIEW)
+        return [c[2] for c in t.calls if c[0] == 'tpos'], list(fills)
+
     t.m.u8(VIEW + 0x40, 2)
     t.calls.clear()
     t.call('mp_browser_before', FB, VIEW)
     assert [c for c in t.calls if c[0] == 'tpos'] == [('tpos', VIEW + 0x2e0 + 0x30 * r, want, 194 - 40 * r) for r in range(5)]
-    assert fills == [(0, 0, 44, 196, 0, 0)]
-    assert t.calls[0] == ('lock',) and t.calls[-1] == ('unlock',)
-    t.calls.clear()
-    fills.clear()
-    t.call('mp_browser_before', FB, VIEW)
-    assert not any(c[0] == 'tpos' for c in t.calls) and fills == [], 'in place: nothing'
-    for level in (0, 1, 3):                              # the other lists: the same place, nothing to clear
-        t.m.u8(VIEW + 0x40, level)
-        t.call('mp_browser_before', FB, VIEW)
-        assert not any(c[0] == 'tpos' for c in t.calls) and fills == [], level
-    for level in (4, 6):                                 # Favorites: back right of the icons
+    assert fills == [black] and t.calls[0] == ('lock',) and t.calls[-1] == ('unlock',)
+    assert paint(2) == ([], []), 'in place: nothing'
+    assert paint(1) == paint(3) == ([], []), 'the other lists below Category: the same place'
+    assert paint(0) == ([44] * 5, [black]), 'Category keeps its icons'
+    assert paint(4) == ([], []), 'Favorites too: the same place'
+    assert paint(1) == ([want] * 5, [black])
+
+
+def test_browser_icons_on_keeps_every_list_stock(m4emu):
+    t = Pics(m4emu, INC.replace('.equ MP_MODELS_X, 44', '.equ MP_MODELS_X, 8'))
+    t.settings[IDS['model_pictures.icons']] = 1
+    t.m.stub(0x100017e8)
+    browser_rows(t, 44)
+    for level in (0, 1, 2, 3, 4):
         t.m.u8(VIEW + 0x40, level)
         t.calls.clear()
         t.call('mp_browser_before', FB, VIEW)
-        assert [c[2] for c in t.calls if c[0] == 'tpos'] == ([44] * 5 if level == 4 else []) and fills == [(0, 0, 44, 196, 0, 0)]
-    t.m.u8(VIEW + 0x40, 0)
-    t.calls.clear()
-    t.call('mp_browser_before', FB, VIEW)
-    assert [c[2] for c in t.calls if c[0] == 'tpos'] == [want] * 5 and len(fills) == 2, 'out of Favorites: cleared again'
+        assert not any(c[0] == 'tpos' for c in t.calls), level
+
+
+@pytest.mark.parametrize('icons, shown, want', [(0, 1, 0), (0, 0, 0), (1, 1, 1), (1, 0, 0)])
+def test_icon_shown_hides_the_icon_while_browser_icons_is_off(m4emu, icons, shown, want):
+    t = Pics(m4emu)
+    t.settings[IDS['model_pictures.icons']] = icons
+    got = []
+    t.m.stub(0x28e24b20, lambda m: got.append((m.reg('r0'), m.reg('r1'), m.reg('r2'))))
+    t.call('mp_icon_shown', VIEW + 0x44, 3, shown)
+    assert got == [(VIEW + 0x44, 3, want)]
+
+
+def test_settings_have_browser_icons_off_by_default():
+    s = {x.key: x for x in mp.SETTINGS}
+    assert (s['icons'].label, s['icons'].values, s['icons'].default) == (b'Icons\nBrowser', (b'Off', b'On'), 0)
 
 
 @pytest.mark.firmware

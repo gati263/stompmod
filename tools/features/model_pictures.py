@@ -19,6 +19,7 @@ WEB = False                         # needs HX Edit's files, which the web page 
 MENU = 'Displays'                   # in Global Settings > Displays, after Tap LED Color: no section (and strip icon) of its own
 SETTINGS = (     # a label's last line shows on top: "Model" over "Pictures"
     Setting('show', b'Pictures\nModel', (b'Off', b'On'), default=1),
+    Setting('icons', b'Icons\nBrowser', (b'Off', b'On'), default=0),     # the category icons of the lists below Category
 )
 
 BOX_W, BOX_H = 80, 38               # every picture fits this box: the Edit view's room between its title and its moved signal flow
@@ -70,18 +71,18 @@ EDIT_ROWS2_PATCHES = (              # (address, stock bytes, the imm8's offset):
 EDIT_PIC_Y = 195                    # the picture's centre: between the hx21 title (y 234 down to 214) and the first row's blocks
                                     # (top 176)
 BROWSER_NAMES_X, BROWSER_NAMES_X_DSP = 44, 60               # dsp_meter.py moves the names right to make room for its labels
-# Every list but Favorites shows no category icons (each fill sets its rows' icons hidden), so its names start further left:
-# at MODELS_X, or MODELS_X_DSP while the DSP meter's labels show in the model list, in the icons' place; one place in all of them.
-# Favorites keep their icons. The browser's levels pick the fill (0x28dc4d58): 0 categories, 1 subcategories, 2 models, 3 the
-# list 0x28dc392c, 4..6 Favorites (0x28dc31d8, left stock).
+# With Browser Icons Off (the default) the lists below Category show no category icons (each fill's setVisible(row, 1) of its
+# icon list goes to mp_icon_shown, which hides it), so their names start further left: at MODELS_X, or MODELS_X_DSP while the
+# DSP meter's labels show in the model list, in the icons' place; one place in all of them. Category and Favorites keep their
+# icons. The browser's levels pick the fill (0x28dc4d58): 0 Category (0x28dc3a2c), 1 subcategories, 2 models, 3 the list
+# 0x28dc392c, 4..6 Favorites (0x28dc31d8).
 MODELS_X, MODELS_X_DSP = 8, 30
-ICON_SHOWN_PATCHES = (              # (address, stock, hidden): each fill's r2 for its icon list's setVisible(row, r2)
-    (0x28dc3a92, bytes([1, 0x22]), bytes([0, 0x22]), "the category list's icons (movs r2, #1)"),
-    (0x28dc3af4, bytes([0x2a, 0x46]), bytes([0, 0x22]), "the category list's other icons (mov r2, r5)"),
-    (0x28dc3796, bytes([1, 0x22]), bytes([0, 0x22]), "the subcategory list's icons (movs r2, #1)"),
-    (0x28dc34d8, bytes([1, 0x22]), bytes([0, 0x22]), "the model list's icons (movs r2, #1)"),
-    (0x28dc3962, bytes([1, 0x22]), bytes([0, 0x22]), "the level-3 list's first icon (movs r2, #1)"),
-    (0x28dc39c6, bytes([1, 0x22]), bytes([0, 0x22]), "the level-3 list's icons (movs r2, #1)"),
+ICON_LIST_VISIBLE = 0x28e24b20      # (icon list, row, shown)
+ICON_SHOWN_CALLS = (                # each fill's setVisible(row, 1) of its icon list
+    (0x28dc379c, "the subcategory list's icons"),
+    (0x28dc34de, "the model list's icons"),
+    (0x28dc3968, "the level-3 list's first icon"),
+    (0x28dc39cc, "the level-3 list's icons"),
 )
 BROWSER_PIC_X, BROWSER_PIC_Y = 304 - BOX_W // 2, 110       # the picture's centre: right edge at x 304, left of the scrollbar
 # A pedal (a picture at least TALL times as high as wide) is only 38 px high in BOX: the browser, which has the room (y 70 to
@@ -325,6 +326,5 @@ def apply(p):
     p.chain_ptr(BROWSER_PAINT_LIT, BROWSER_PAINT, before=m['mp_browser_before'], after=m['mp_browser'])
     p.own_call(NAME_TEXT_CALL, SET_ROW_TEXT, "the model list's name text, shortened to leave the picture room", m['mp_row_text'])
     p.own_call(FAV_TEXT_CALL, SET_ROW_TEXT, "the favorites' name text, shortened to leave the picture room", m['mp_fav_text'])
-    for at, stock, hidden, what in ICON_SHOWN_PATCHES:
-        p.expect(at, stock, what)
-        p.put(at, hidden, what + ': hidden')
+    for at, what in ICON_SHOWN_CALLS:
+        p.own_call(at, ICON_LIST_VISIBLE, what + ', hidden while Browser Icons is Off', m['mp_icon_shown'])

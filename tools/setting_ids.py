@@ -69,6 +69,7 @@ VIRTUAL = (   # (virtual ID, container ID, first bit, bits, the '<feature>.<key>
     (0xde, 110, 16, 4, 'long_press.fs10_function', ''),
     (0xdf, 111, 0, 4, 'tap_color.color', ''),
     (0xe0, 112, 0, 2, 'model_pictures.show', ''),
+    (0xe5, 112, 2, 2, 'model_pictures.icons', 'its field held 0 since 112 became an int: Off, the default'),
     (0xe1, 113, 0, 2, 'more_snapshots.home', ''),
     (0xe2, 114, 0, 2, 'dsp_meter.blocks', 'a fresh container: 107 holds the retired dsp_meter.disp, whose old values would read as Off'),
     (0xe3, 114, 2, 2, 'dsp_meter.browser', ''),

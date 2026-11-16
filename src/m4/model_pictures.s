@@ -4,7 +4,8 @@
 @   (moved down: one row level with the first of two, two rows on the divider);
 @ mp_browser: the picture of the model under the cursor in the model browser, or of the favorite under it in Favorites, right
 @   of the names; mp_row_text and mp_fav_text shorten a name that would run into it;
-@ mp_browser_before: every list's names but Favorites' left, where the category icons were (model_pictures.py has the fills hide them).
+@ mp_browser_before: with Browser Icons Off, the names of the lists below Category (but Favorites) left, where their category icons
+@   were: mp_icon_shown hides those, for model_pictures.py sends their fills' setVisible to it.
 @ A block's model comes from the DSP model's block record (its name index), the selected block from the slot showing a selected
 @ picture (MP_SEL: a bit per stock image), and a model's picture from MP_TABLE (an image index per name index, 0 for none;
 @ MP_BTABLE, the browser's, names a tall picture's larger copy).
@@ -156,7 +157,7 @@ browser_show:
 .thumb_func
 mp_row_text:                        @ r0 the model list's names, r1 a row, r2 its name: setText, the name shortened with ".." past
     push {r0, r1, r2, lr}           @ MP_NAME_RIGHT from the model list's names
-    bl models_x
+    bl lists_x
     rsb r0, r0, #MP_NAME_RIGHT
     b row_maxw_set
 
@@ -227,33 +228,32 @@ row_set:
 
 .equ NAME_ROWS, 0x2e0                @ the browser's five name rows: text widgets, 0x30 apart, x at +8 and y at +0xc
 .equ LEVEL_FAVORITES, 4             @ 4..6
+.equ ICON_LIST_VISIBLE, 0x28e24b21  @ (icon list, row, shown)
 .equ TPOS, 0x28e24a69               @ (text widget, x, y)
 .equ FILL, 0x100017e9               @ (fb, x, y, w, h, colour, anchor)
 .equ LIST_H, 196                    @ the list's rows: y 0 to 195, under its title
 
 .thumb_func
 mp_browser_before:                  @ r0 the framebuffer, r1 the model browser, before its stock paint: the names at MP_NAMES_X in
-    push {r4-r7, lr}                @ Favorites, else at models_x; into or out of Favorites, black where the icons and labels were
+    push {r4-r7, lr}                @ Category and Favorites, else at lists_x; when they move, black where icons and labels were
     sub sp, #12
     mov r4, r0
     mov r5, r1
     movs r7, #MP_NAMES_X
     ldrb r6, [r5, #0x40]
+    cbz r6, before_x                @ Category: its icons
     subs r6, #LEVEL_FAVORITES
     cmp r6, #2
-    ite ls
-    movls r6, #1
-    movhi r6, #0
-    cbnz r6, before_x
-    bl models_x
+    bls before_x                    @ Favorites: theirs
+    bl lists_x
     mov r7, r0
 before_x:
     ldr r3, =WIDGET_LOCK
     blx r3
-    adr.w r0, was_favorites
+    adr.w r0, last_x
     ldrb r1, [r0]
-    strb r6, [r0]
-    cmp r1, r6
+    strb r7, [r0]
+    cmp r1, r7
     beq before_rows
     movs r0, #LIST_H
     str r0, [sp]
@@ -287,7 +287,36 @@ before_next:
     add sp, #12
     pop {r4-r7, pc}
 
-models_x:                           @ -> r0 where the names start but in Favorites: right of the DSP meter's labels while they show
+.thumb_func
+mp_icon_shown:                      @ (icon list, row, shown): the fill's setVisible, hidden while Browser Icons is Off
+    push {r0, r1, r2, lr}
+    bl icons_on
+    cmp r0, #0
+    pop {r0, r1, r2, lr}
+    it eq
+    moveq r2, #0
+    ldr r3, =ICON_LIST_VISIBLE
+    bx r3
+
+lists_x:                            @ -> r0 where the names start in the lists below Category but Favorites
+    push {r3, lr}
+    bl icons_on
+    cbz r0, lists_no_icons
+    movs r0, #MP_NAMES_X            @ right of their icons, as stock
+    pop {r3, pc}
+lists_no_icons:
+    bl models_x
+    pop {r3, pc}
+
+icons_on:                           @ -> r0 1 when Browser Icons is On
+    push {r3, lr}
+    movs r0, #SETTING_MODEL_PICTURES_ICONS
+    movs r1, #SETTING_MODEL_PICTURES_ICONS_MAX
+    movs r2, #SETTING_MODEL_PICTURES_ICONS_DEFAULT
+    bl hxtra_setting_get
+    pop {r3, pc}
+
+models_x:                           @ -> r0 where those names start without icons: right of the DSP meter's labels while they show
 .if MP_DSP
     push {r3, lr}
     movs r0, #SETTING_DSP_METER_BROWSER
@@ -485,6 +514,6 @@ row_short:                          @ a shortened name
 .balign 4
 row_maxw:                           @ how wide a name may be in the list being filled
     .word 0
-was_favorites:                      @ the browser's last paint showed Favorites (1) or another list (0); 0xff before the first
+last_x:                             @ where the browser's last paint put the names; 0xff before the first
     .byte 0xff
 .balign 4
