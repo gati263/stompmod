@@ -70,11 +70,19 @@ EDIT_ROWS2_PATCHES = (              # (address, stock bytes, the imm8's offset):
 EDIT_PIC_Y = 195                    # the picture's centre: between the hx21 title (y 234 down to 214) and the first row's blocks
                                     # (top 176)
 BROWSER_NAMES_X, BROWSER_NAMES_X_DSP = 44, 60               # dsp_meter.py moves the names right to make room for its labels
-# The model list shows no category icons (its fill sets each row's icon hidden), so its names start further left: at
-# MODELS_X, or MODELS_X_DSP while the DSP meter's labels show, in the icons' place. Favorites keep their icons.
+# Every list but Favorites shows no category icons (each fill sets its rows' icons hidden), so its names start further left:
+# at MODELS_X, or MODELS_X_DSP while the DSP meter's labels show in the model list, in the icons' place; one place in all of them.
+# Favorites keep their icons. The browser's levels pick the fill (0x28dc4d58): 0 categories, 1 subcategories, 2 models, 3 the
+# list 0x28dc392c, 4..6 Favorites (0x28dc31d8, left stock).
 MODELS_X, MODELS_X_DSP = 8, 30
-MODEL_ICON_SHOWN = 0x28dc34d8       # the model list fill's movs r2, #1 for its icon list's setVisible(row, 1)
-MODEL_ICON_SHOWN_STOCK, MODEL_ICON_SHOWN_HIDDEN = bytes([1, 0x22]), bytes([0, 0x22])
+ICON_SHOWN_PATCHES = (              # (address, stock, hidden): each fill's r2 for its icon list's setVisible(row, r2)
+    (0x28dc3a92, bytes([1, 0x22]), bytes([0, 0x22]), "the category list's icons (movs r2, #1)"),
+    (0x28dc3af4, bytes([0x2a, 0x46]), bytes([0, 0x22]), "the category list's other icons (mov r2, r5)"),
+    (0x28dc3796, bytes([1, 0x22]), bytes([0, 0x22]), "the subcategory list's icons (movs r2, #1)"),
+    (0x28dc34d8, bytes([1, 0x22]), bytes([0, 0x22]), "the model list's icons (movs r2, #1)"),
+    (0x28dc3962, bytes([1, 0x22]), bytes([0, 0x22]), "the level-3 list's first icon (movs r2, #1)"),
+    (0x28dc39c6, bytes([1, 0x22]), bytes([0, 0x22]), "the level-3 list's icons (movs r2, #1)"),
+)
 BROWSER_PIC_X, BROWSER_PIC_Y = 304 - BOX_W // 2, 110       # the picture's centre: right edge at x 304, left of the scrollbar
 # A pedal (a picture at least TALL times as high as wide) is only 38 px high in BOX: the browser, which has the room (y 70 to
 # 150), gets a second, larger copy of it. Only these: a larger copy of every picture would not fit the image store.
@@ -317,5 +325,6 @@ def apply(p):
     p.chain_ptr(BROWSER_PAINT_LIT, BROWSER_PAINT, before=m['mp_browser_before'], after=m['mp_browser'])
     p.own_call(NAME_TEXT_CALL, SET_ROW_TEXT, "the model list's name text, shortened to leave the picture room", m['mp_row_text'])
     p.own_call(FAV_TEXT_CALL, SET_ROW_TEXT, "the favorites' name text, shortened to leave the picture room", m['mp_fav_text'])
-    p.expect(MODEL_ICON_SHOWN, MODEL_ICON_SHOWN_STOCK, "the model list's icons shown")
-    p.put(MODEL_ICON_SHOWN, MODEL_ICON_SHOWN_HIDDEN, "the model list's icons hidden")
+    for at, stock, hidden, what in ICON_SHOWN_PATCHES:
+        p.expect(at, stock, what)
+        p.put(at, hidden, what + ': hidden')

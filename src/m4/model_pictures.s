@@ -4,7 +4,7 @@
 @   (moved down: one row level with the first of two, two rows on the divider);
 @ mp_browser: the picture of the model under the cursor in the model browser, or of the favorite under it in Favorites, right
 @   of the names; mp_row_text and mp_fav_text shorten a name that would run into it;
-@ mp_browser_before: the model list's names left, where its category icons were (model_pictures.py has its fill hide them).
+@ mp_browser_before: every list's names but Favorites' left, where the category icons were (model_pictures.py has the fills hide them).
 @ A block's model comes from the DSP model's block record (its name index), the selected block from the slot showing a selected
 @ picture (MP_SEL: a bit per stock image), and a model's picture from MP_TABLE (an image index per name index, 0 for none;
 @ MP_BTABLE, the browser's, names a tall picture's larger copy).
@@ -226,30 +226,31 @@ row_set:
     pop {r4-r10, pc}
 
 .equ NAME_ROWS, 0x2e0                @ the browser's five name rows: text widgets, 0x30 apart, x at +8 and y at +0xc
-.equ LEVEL_MODELS, 2
+.equ LEVEL_FAVORITES, 4             @ 4..6
 .equ TPOS, 0x28e24a69               @ (text widget, x, y)
 .equ FILL, 0x100017e9               @ (fb, x, y, w, h, colour, anchor)
 .equ LIST_H, 196                    @ the list's rows: y 0 to 195, under its title
 
 .thumb_func
-mp_browser_before:                  @ r0 the framebuffer, r1 the model browser, before its stock paint: the names at models_x in
-    push {r4-r7, lr}                @ the model list, else at MP_NAMES_X; into or out of it, black where the icons and labels were
+mp_browser_before:                  @ r0 the framebuffer, r1 the model browser, before its stock paint: the names at MP_NAMES_X in
+    push {r4-r7, lr}                @ Favorites, else at models_x; into or out of Favorites, black where the icons and labels were
     sub sp, #12
     mov r4, r0
     mov r5, r1
     movs r7, #MP_NAMES_X
     ldrb r6, [r5, #0x40]
-    cmp r6, #LEVEL_MODELS
-    ite eq
-    moveq r6, #1
-    movne r6, #0
-    cbz r6, before_x
+    subs r6, #LEVEL_FAVORITES
+    cmp r6, #2
+    ite ls
+    movls r6, #1
+    movhi r6, #0
+    cbnz r6, before_x
     bl models_x
     mov r7, r0
 before_x:
     ldr r3, =WIDGET_LOCK
     blx r3
-    adr.w r0, was_models
+    adr.w r0, was_favorites
     ldrb r1, [r0]
     strb r6, [r0]
     cmp r1, r6
@@ -286,7 +287,7 @@ before_next:
     add sp, #12
     pop {r4-r7, pc}
 
-models_x:                           @ -> r0 where the model list's names start: right of the DSP meter's labels while they show
+models_x:                           @ -> r0 where the names start but in Favorites: right of the DSP meter's labels while they show
 .if MP_DSP
     push {r3, lr}
     movs r0, #SETTING_DSP_METER_BROWSER
@@ -484,6 +485,6 @@ row_short:                          @ a shortened name
 .balign 4
 row_maxw:                           @ how wide a name may be in the list being filled
     .word 0
-was_models:                         @ the browser's last paint showed the model list (1) or another (0); 0xff before the first
+was_favorites:                      @ the browser's last paint showed Favorites (1) or another list (0); 0xff before the first
     .byte 0xff
 .balign 4

@@ -356,8 +356,8 @@ def browser_rows(t, x):
 
 @pytest.mark.parametrize('dsp, browser_dsp, want', [(0, 1, 8), (1, 1, 30), (1, 0, 8)])
 def test_browser_before_moves_the_model_lists_names_left(m4emu, dsp, browser_dsp, want):
-    """In the model list the names start at MP_MODELS_X, or MP_MODELS_X_DSP while the DSP labels show; elsewhere at MP_NAMES_X.
-    Into and out of the model list, black over x 0..MP_NAMES_X of the list (anchor 0: from y 0, 196 high) before the paint."""
+    """In every list but Favorites the names start at MP_MODELS_X, or MP_MODELS_X_DSP while the DSP labels show; in Favorites
+    at MP_NAMES_X. Into and out of Favorites, black over x 0..MP_NAMES_X of the list (anchor 0: from y 0, 196 high) before the paint."""
     inc = INC.replace('.equ MP_MODELS_X, 44', '.equ MP_MODELS_X, 8').replace('.equ MP_DSP, 0', f'.equ MP_DSP, {dsp}')
     t = Pics(m4emu, inc)
     fills = []
@@ -375,9 +375,19 @@ def test_browser_before_moves_the_model_lists_names_left(m4emu, dsp, browser_dsp
     fills.clear()
     t.call('mp_browser_before', FB, VIEW)
     assert not any(c[0] == 'tpos' for c in t.calls) and fills == [], 'in place: nothing'
-    t.m.u8(VIEW + 0x40, 4)                               # Favorites: back right of the icons
+    for level in (0, 1, 3):                              # the other lists: the same place, nothing to clear
+        t.m.u8(VIEW + 0x40, level)
+        t.call('mp_browser_before', FB, VIEW)
+        assert not any(c[0] == 'tpos' for c in t.calls) and fills == [], level
+    for level in (4, 6):                                 # Favorites: back right of the icons
+        t.m.u8(VIEW + 0x40, level)
+        t.calls.clear()
+        t.call('mp_browser_before', FB, VIEW)
+        assert [c[2] for c in t.calls if c[0] == 'tpos'] == ([44] * 5 if level == 4 else []) and fills == [(0, 0, 44, 196, 0, 0)]
+    t.m.u8(VIEW + 0x40, 0)
+    t.calls.clear()
     t.call('mp_browser_before', FB, VIEW)
-    assert [c[2] for c in t.calls if c[0] == 'tpos'] == [44] * 5 and fills == [(0, 0, 44, 196, 0, 0)]
+    assert [c[2] for c in t.calls if c[0] == 'tpos'] == [want] * 5 and len(fills) == 2, 'out of Favorites: cleared again'
 
 
 @pytest.mark.firmware
