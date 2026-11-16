@@ -97,7 +97,8 @@ slots_done:
 .equ MODELS, 2                      @ the browser's list level that shows models (0x28dc3424 fills it)
 .equ ROWS, 5
 .equ PITCH, 40
-.equ NAMES_X, 60                    @ where dsp_meter.py moves the names (stock 44) to make room for the labels
+.equ NAMES_AT, 0x2e0 + 8            @ the browser's first name row (a text widget, 0x30 apart): its x, where the names start; dsp_meter.py
+                                    @ moves them to 60 (stock 44), and model_pictures.s further left in the model list, its icons hidden
 .equ LABEL_TOP, 187                 @ the first row's digits, centred on its icon (y 194 down)
 .equ LABEL_SCALE, 2
 .thumb_func
@@ -159,11 +160,6 @@ item:
     mov r1, r0
     mov r0, r8
     bl wipe
-    movs r0, #0x24
-    mla r0, r8, r0, r5
-    addw r0, r0, #0x22c             @ the row's icon, an image widget
-    ldrb r1, [r0, #0x1d]
-    cbz r1, next_item
     ldrb.w r2, [r5, #0x569]         @ the first row's item
     add r2, r8
     cmp r2, r7
@@ -234,10 +230,12 @@ browser_on:                         @ -> r0 1 when Browser DSP is On
 
 HXTRA_SETTING_GET
 
-edge:                               @ r0 a browser row, r5 the browser -> r0 the x just right of its icon, within 0..NAMES_X - 1
+edge:                               @ r0 a browser row, r5 the browser -> r0 the x just right of its icon (0 hidden), left of the names
     movs r1, #0x24
     mla r0, r0, r1, r5
     addw r0, r0, #0x22c
+    ldrb r1, [r0, #0x1d]
+    cbz r1, edge_none
     ldrb r1, [r0, #0x1c]            @ the anchor: its column picks no, half or whole width left of x
     movs r2, #3
     udiv r3, r1, r2
@@ -247,12 +245,17 @@ edge:                               @ r0 a browser row, r5 the browser -> r0 the
     add r0, r2
     mul r1, r1, r2
     sub.w r0, r0, r1, asr #1
-    cmp r0, #(NAMES_X - 1)
+    ldr.w r1, [r5, #NAMES_AT]
+    subs r1, #1
+    cmp r0, r1
     it gt
-    movgt r0, #(NAMES_X - 1)
+    movgt r0, r1
     cmp r0, #0
     it lt
     movlt r0, #0
+    bx lr
+edge_none:
+    movs r0, #0
     bx lr
 
 wipe:                               @ r0 a browser row, r1 its icon's right edge, r4 the framebuffer: black from there to the names
@@ -261,7 +264,8 @@ wipe:                               @ r0 a browser row, r1 its icon's right edge
     movs r2, #PITCH
     mul r2, r2, r0
     rsb r2, r2, #(LABEL_TOP - 5 * LABEL_SCALE - 2)
-    rsb r3, r1, #NAMES_X
+    ldr.w r3, [r5, #NAMES_AT]
+    subs r3, r3, r1
     movs r0, #(5 * LABEL_SCALE + 4)
     str r0, [sp]
     movs r0, #0
@@ -276,8 +280,9 @@ wipe:                               @ r0 a browser row, r1 its icon's right edge
 label:                              @ r0 a browser row, r1 a number 0..999, r2 its icon's right edge, r4 the framebuffer: in white, centred between icon and name
     push {r5, r6, lr}
     sub sp, #12
+    ldr.w r6, [r5, #NAMES_AT]
+    add r6, r2                      @ twice the gap's centre
     mov r5, r0
-    add r6, r2, #NAMES_X            @ twice the gap's centre
     mov r0, r1
     mov r1, sp
     bl digits

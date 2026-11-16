@@ -3,7 +3,8 @@
 @ mp_edit: the selected block's picture in the Edit view, centred between its (smaller) title and its first row of blocks
 @   (moved down: one row level with the first of two, two rows on the divider);
 @ mp_browser: the picture of the model under the cursor in the model browser, or of the favorite under it in Favorites, right
-@   of the names; mp_row_text shortens a name that would run into it.
+@   of the names; mp_row_text and mp_fav_text shorten a name that would run into it;
+@ mp_browser_before: the model list's names left, where its category icons were (model_pictures.py has its fill hide them).
 @ A block's model comes from the DSP model's block record (its name index), the selected block from the slot showing a selected
 @ picture (MP_SEL: a bit per stock image), and a model's picture from MP_TABLE (an image index per name index, 0 for none;
 @ MP_BTABLE, the browser's, names a tall picture's larger copy).
@@ -153,7 +154,21 @@ browser_show:
     pop {r4-r7, pc}
 
 .thumb_func
-mp_row_text:                        @ r0 the model list's names, r1 a row, r2 its name: setText, the name shortened with ".." past MP_NAME_MAXW
+mp_row_text:                        @ r0 the model list's names, r1 a row, r2 its name: setText, the name shortened with ".." past
+    push {r0, r1, r2, lr}           @ MP_NAME_RIGHT from the model list's names
+    bl models_x
+    rsb r0, r0, #MP_NAME_RIGHT
+    b row_maxw_set
+
+.thumb_func
+mp_fav_text:                        @ the same for Favorites, whose names keep their place right of the icons
+    push {r0, r1, r2, lr}
+    movs r0, #(MP_NAME_RIGHT - MP_NAMES_X)
+row_maxw_set:
+    adr.w r3, row_maxw
+    str r0, [r3]
+    pop {r0, r1, r2, lr}
+row_text:
     push {r4-r10, lr}
     mov r4, r0
     mov r5, r1
@@ -164,7 +179,7 @@ mp_row_text:                        @ r0 the model list's names, r1 a row, r2 it
     mov r0, r6
     movs r1, #BOLD
     bl text_width
-    movw r1, #MP_NAME_MAXW
+    ldr r1, row_maxw
     cmp r0, r1
     ble row_set
     ldr r7, =(GLYPHS + GLYPHS_STEP * BOLD)
@@ -209,6 +224,84 @@ row_set:
     ldr r3, =SET_ROW_TEXT
     blx r3
     pop {r4-r10, pc}
+
+.equ NAME_ROWS, 0x2e0                @ the browser's five name rows: text widgets, 0x30 apart, x at +8 and y at +0xc
+.equ LEVEL_MODELS, 2
+.equ TPOS, 0x28e24a69               @ (text widget, x, y)
+.equ FILL, 0x100017e9               @ (fb, x, y, w, h, colour, anchor)
+.equ LIST_H, 196                    @ the list's rows: y 0 to 195, under its title
+
+.thumb_func
+mp_browser_before:                  @ r0 the framebuffer, r1 the model browser, before its stock paint: the names at models_x in
+    push {r4-r7, lr}                @ the model list, else at MP_NAMES_X; into or out of it, black where the icons and labels were
+    sub sp, #12
+    mov r4, r0
+    mov r5, r1
+    movs r7, #MP_NAMES_X
+    ldrb r6, [r5, #0x40]
+    cmp r6, #LEVEL_MODELS
+    ite eq
+    moveq r6, #1
+    movne r6, #0
+    cbz r6, before_x
+    bl models_x
+    mov r7, r0
+before_x:
+    ldr r3, =WIDGET_LOCK
+    blx r3
+    adr.w r0, was_models
+    ldrb r1, [r0]
+    strb r6, [r0]
+    cmp r1, r6
+    beq before_rows
+    movs r0, #LIST_H
+    str r0, [sp]
+    movs r0, #0
+    str r0, [sp, #4]                @ black
+    str r0, [sp, #8]                @ anchor 0: x, y the bottom left corner
+    mov r0, r4
+    movs r1, #0
+    movs r2, #0
+    movs r3, #MP_NAMES_X            @ the icons, and the labels left of the names in either place
+    ldr r12, =FILL
+    blx r12
+before_rows:
+    add.w r6, r5, #NAME_ROWS
+    movs r5, #5
+before_row:
+    ldr r0, [r6, #8]
+    cmp r0, r7
+    beq before_next
+    mov r0, r6
+    mov r1, r7
+    ldr r2, [r6, #0xc]
+    ldr r3, =TPOS
+    blx r3
+before_next:
+    adds r6, #0x30
+    subs r5, #1
+    bne before_row
+    ldr r3, =WIDGET_UNLOCK
+    blx r3
+    add sp, #12
+    pop {r4-r7, pc}
+
+models_x:                           @ -> r0 where the model list's names start: right of the DSP meter's labels while they show
+.if MP_DSP
+    push {r3, lr}
+    movs r0, #SETTING_DSP_METER_BROWSER
+    movs r1, #SETTING_DSP_METER_BROWSER_MAX
+    movs r2, #SETTING_DSP_METER_BROWSER_DEFAULT
+    bl hxtra_setting_get
+    cmp r0, #0
+    ite ne
+    movne r0, #MP_MODELS_X_DSP
+    moveq r0, #MP_MODELS_X
+    pop {r3, pc}
+.else
+    movs r0, #MP_MODELS_X
+    bx lr
+.endif
 
 @ Helpers
 
@@ -388,3 +481,9 @@ browser_pic:
     .word 4                         @ centred
 row_short:                          @ a shortened name
     .space 20
+.balign 4
+row_maxw:                           @ how wide a name may be in the list being filled
+    .word 0
+was_models:                         @ the browser's last paint showed the model list (1) or another (0); 0xff before the first
+    .byte 0xff
+.balign 4

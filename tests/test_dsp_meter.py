@@ -357,6 +357,7 @@ class Browser(Meter):
         self.m.stub(ITEM, self._item)
         self.m.stub(COST, self._cost)
         self.show(MODELS, cat=2, sub=0)
+        self.names_at(NAMES_X)
         for r in range(5):
             self.icon(r, 0x175)
 
@@ -396,6 +397,11 @@ class Browser(Meter):
         self.m.u8(BROWSER + 0x56e + path, cat)
         self.m.u8(BROWSER + 0x570 + path, sub)
 
+    def names_at(self, x):
+        """The browser's five name rows (text widgets, 0x30 apart) at x, as the list init or model_pictures.s place them."""
+        for r in range(5):
+            self.m.u32(BROWSER + 0x2e0 + 0x30 * r + 8, x)
+
     def icon(self, r, image, w=ICON_W):
         """Row r's icon (None: hidden), w px wide, top-centre anchored at x 21, as the ROM list init places them."""
         wd = BROWSER + 0x22c + 0x24 * r
@@ -431,6 +437,18 @@ def browser(m4emu):
     return Browser(m4emu)
 
 
+def test_browser_labels_go_left_of_the_names_where_hidden_icons_were(browser):
+    """model_pictures.s hides the model list's icons and moves its names to x 30: each label is centred in 0..30."""
+    browser.lists[(2, 0)] = [2345] * 5
+    browser.names_at(30)
+    for r in range(5):
+        browser.icon(r, None)
+    m = browser.paint()
+    assert m.numbers() == ['23'] * 5
+    assert m.fills[0][:3] == (0, wipe(0)[1], 30), 'wiped from the left edge to the names'
+    assert all(t[1] == (30 - 14) // 2 for t in m.texts(WHITE)), 'centred between 0 and 30'
+
+
 def test_browser_shows_each_listed_models_per_cent(browser):
     browser.lists[(2, 0)] = [509, 520, 2345, 49, 9950]
     assert browser.paint().numbers() == ['5', '5', '23', '0', '100']
@@ -455,9 +473,12 @@ def test_browser_wipes_each_rows_label_before_drawing_it(browser):
     f = browser.paint().fills
     assert wipe(2, 36) in f
     f[f.index(wipe(2, 36))] = wipe(2)
+    hidden = (0, 135, NAMES_X, 14, BLACK, 0)            # a hidden icon: from the left edge
+    assert hidden in f
+    f[f.index(hidden)] = wipe(1)
     boxes = [f.index(wipe(r)) for r in range(5)]
     assert boxes == sorted(boxes) and all(c == WHITE for *_, c, _ in f[boxes[0] + 1:boxes[1]])
-    assert [c for *_, c, _ in f[boxes[1]:]] == [BLACK] * 4
+    assert [c for *_, c, _ in f[boxes[2]:]] == [BLACK] * 3
 
 
 def test_browser_reads_the_page_from_the_first_rows_item(browser):
@@ -476,12 +497,13 @@ def test_browser_takes_the_list_the_stock_level_picks(browser):
     assert browser.paint().numbers() == ['15']
 
 
-def test_browser_skips_hidden_rows_rows_past_the_list_and_items_without_a_cost(browser):
+def test_browser_skips_rows_past_the_list_and_items_without_a_cost(browser):
+    """A hidden icon is no hidden row: model_pictures.s hides every icon of the model list."""
     browser.lists[(2, 0)] = [100, 200, 300, 400]        # four models: row 4 is past the list, though its icon is visible
     browser.icon(1, None)
     browser.bad_items.add((2, 0, 2))
     browser.lists[(2, 0)][3] = None                     # the cost function rejects it
-    assert browser.paint().numbers() == ['1']
+    assert browser.paint().numbers() == ['1', '2']
 
 
 def test_browser_draws_nothing_for_a_list_the_firmware_has_not(browser):

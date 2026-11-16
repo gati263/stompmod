@@ -26,7 +26,8 @@ COUNT, NBITS, SELECTED, PLAIN = 600, 577, 0x104, 0x32        # a Sel picture and
 BTABLE = TABLE + 0x2000             # the browser's table: a tall picture's larger copy
 INC = ''.join(f'.equ {k}, {v}\n' for k, v in (('MP_TABLE', TABLE), ('MP_BTABLE', BTABLE), ('MP_COUNT', COUNT), ('MP_SEL', SEL),
                                              ('MP_SEL_BITS', NBITS), ('MP_EDIT_Y', 187), ('MP_BROWSER_X', 264), ('MP_BROWSER_Y', 110),
-                                             ('MP_NAME_MAXW', 100)))
+                                             ('MP_NAME_RIGHT', 144), ('MP_NAMES_X', 44), ('MP_MODELS_X', 44),
+                                             ('MP_MODELS_X_DSP', 30), ('MP_DSP', 0)))
 SHOW = IDS['model_pictures.show']
 
 
@@ -334,6 +335,49 @@ def test_row_text_shortens_long_names(m4emu):
     t.texts.clear()
     t.call('mp_row_text', 0x28920000, 3, name)
     assert t.texts == [(0x28920000, 3, 'Divided Duo')]
+
+
+def test_fav_text_shortens_to_the_room_right_of_the_icons(m4emu):
+    """Favorites keep their icons: room from MP_NAMES_X (44) to MP_NAME_RIGHT (144), whatever the model list's names do."""
+    inc = INC.replace('.equ MP_MODELS_X, 44', '.equ MP_MODELS_X, 8')
+    t = Pics(m4emu, inc)
+    name = 0x28910000
+    t.m.write(name, b'Divided Duo\0')
+    t.call('mp_fav_text', 0x28920000, 3, name)
+    t.call('mp_row_text', 0x28920000, 3, name)
+    assert t.texts == [(0x28920000, 3, 'Divided..'), (0x28920000, 3, 'Divided Duo')], 'the model list: 136 px from x 8'
+
+
+def browser_rows(t, x):
+    for r in range(5):
+        t.m.u32(VIEW + 0x2e0 + 0x30 * r + 8, x)
+        t.m.u32(VIEW + 0x2e0 + 0x30 * r + 0xc, 194 - 40 * r)
+
+
+@pytest.mark.parametrize('dsp, browser_dsp, want', [(0, 1, 8), (1, 1, 30), (1, 0, 8)])
+def test_browser_before_moves_the_model_lists_names_left(m4emu, dsp, browser_dsp, want):
+    """In the model list the names start at MP_MODELS_X, or MP_MODELS_X_DSP while the DSP labels show; elsewhere at MP_NAMES_X.
+    Into and out of the model list, black over x 0..MP_NAMES_X of the list (anchor 0: from y 0, 196 high) before the paint."""
+    inc = INC.replace('.equ MP_MODELS_X, 44', '.equ MP_MODELS_X, 8').replace('.equ MP_DSP, 0', f'.equ MP_DSP, {dsp}')
+    t = Pics(m4emu, inc)
+    fills = []
+    t.m.stub(0x100017e8, lambda m: fills.append((m.reg('r1'), m.reg('r2'), m.reg('r3'), *m.stack_args(3))))
+    if dsp:
+        t.settings[IDS['dsp_meter.browser']] = browser_dsp
+    browser_rows(t, 44)
+    t.m.u8(VIEW + 0x40, 2)
+    t.calls.clear()
+    t.call('mp_browser_before', FB, VIEW)
+    assert [c for c in t.calls if c[0] == 'tpos'] == [('tpos', VIEW + 0x2e0 + 0x30 * r, want, 194 - 40 * r) for r in range(5)]
+    assert fills == [(0, 0, 44, 196, 0, 0)]
+    assert t.calls[0] == ('lock',) and t.calls[-1] == ('unlock',)
+    t.calls.clear()
+    fills.clear()
+    t.call('mp_browser_before', FB, VIEW)
+    assert not any(c[0] == 'tpos' for c in t.calls) and fills == [], 'in place: nothing'
+    t.m.u8(VIEW + 0x40, 4)                               # Favorites: back right of the icons
+    t.call('mp_browser_before', FB, VIEW)
+    assert [c[2] for c in t.calls if c[0] == 'tpos'] == [44] * 5 and fills == [(0, 0, 44, 196, 0, 0)]
 
 
 @pytest.mark.firmware
