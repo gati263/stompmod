@@ -36,7 +36,7 @@ A default build changes only 5 of the 15 parts of the firmware: the main applica
 To add features, set their switches: see [Features](features.md). For example, every feature but the boot picture:
 
 ```sh
-HX_TUNER=1 HX_BPM=1 HX_DSP_METER=1 HX_BREATHING_LINE=1 HX_LONG_PRESS=1 HX_MORE_SNAPSHOTS=1 HX_CLICK=1 HX_GR=1 HX_TAP_COLOR=1 HX_REAL_NAMES=1 \
+HX_TUNER=1 HX_BPM=1 HX_DSP_METER=1 HX_BREATHING_LINE=1 HX_LONG_PRESS=1 HX_MORE_SNAPSHOTS=1 HX_CLICK=1 HX_GR=1 HX_TAP_COLOR=1 HX_CC_TAP=1 HX_REAL_NAMES=1 \
   python3 build.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf
 ```
 

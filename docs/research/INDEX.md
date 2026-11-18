@@ -34,6 +34,7 @@ Before writing anything, read [conventions.md](conventions.md): the status tags,
 | [m4/model-browser.md](m4/model-browser.md) | the model browser's view, rows, levels, categories and items | changing the model list, or adding a model to a category |
 | [m4/tempo-and-leds.md](m4/tempo-and-leds.md) | the tempo settings (IDs 14..16), the tap tempo screen, the footswitch LEDs and LED task, the stock beat, the µs clock | anything tempo-synced, or lighting the LEDs |
 | [m4/footswitches.md](m4/footswitches.md) | footswitch functions, key events and holds, the event handler and key task, bypass assignment, controllers, MIDI CC bypass | changing what a footswitch does |
+| [m4/command-center.md](m4/command-center.md) | the Command Center's object and slots, its command types and their tables, the Command knob's choice lists, how a footswitch press and a snapshot recall fire a command | adding or changing a Command Center command |
 | [m4/snapshots.md](m4/snapshots.md) | the snapshot manager and records, select and its callers, the snapshot footswitch mode, the snapshot icon | anything about snapshots |
 | [m4/presets.md](m4/presets.md) | the eMMC stores (presets, globals, IRs) and the preset file's layout | storing data in a preset, or reading preset files |
 | [m4/dsp-link.md](m4/dsp-link.md) | the SPI frames between the DSP and the M4, and sending DSP values in a frame's tail | getting a value from the DSP to the screen |
@@ -62,6 +63,7 @@ Before writing anything, read [conventions.md](conventions.md): the status tags,
 | [features/more-snapshots.md](features/more-snapshots.md) | bank B (snapshots 4..6), the bank marker, saving and the preset file key, next and previous across the banks | working on more snapshots |
 | [features/metronome.md](features/metronome.md) | the Metronome block: model, browser folder, look, kernel | working on the Metronome, or adding an effect model |
 | [features/tap-color.md](features/tap-color.md) | Tap LED Color: the TAP ring, icon and label in a palette colour | working on the TAP footswitch's look |
+| [features/tap-command.md](features/tap-command.md) | the Tap command in the Command Center (#108): type 9, the knob's list, the press, the ring on the stock beat | working on the Tap command, or on the stock beat |
 | [features/boot-splash.md](features/boot-splash.md) | a custom boot picture, the boot line's text, colour emoji | working on the boot screen |
 | [features/screen-mirror.md](features/screen-mirror.md) | the screen on a computer: the command, the frame coding, the Mac viewer and recorder | working on the screen mirror, or recording a demo |
 
