@@ -6,7 +6,8 @@ Everything HXtra adds to the HX Stomp, where to find it, and every setting. The 
 |---|---|---|
 | [Tuner settings](#tuner-settings) | The tuner's own settings, on a third page: open the tuner and page right past Trails, Offsets and String 6 | `HX_TUNER=1` |
 | [BPM](#bpm) | Home screen: the tempo at the top left, the beat dot beside the preset number · Global Settings > BPM Display | `HX_BPM=1` |
-| [Tap LED color](#tap-led-color) | The TAP footswitch: its ring, and its icon and label on the Home screen · Global Settings > Displays, under Tap Tempo LED | `HX_TAP_COLOR=1` |
+| [Tap LED color](#tap-led-color) | The TAP footswitch: its ring, and its icon and label on the Home screen · Global Settings > Displays, in Tap Tempo LED's place | `HX_TAP_COLOR=1` |
+| [Tap command](#tap-command) | A footswitch that taps the tempo in the presets you put it in · Menu > Command Center, on FS1 … FS5 | `HX_CC_TAP=1` |
 | [DSP usage display](#dsp-usage-display) | Edit view and model browser: each block's or model's share, the total at the top right · Blocks, Browser and Total DSP in Displays | `HX_DSP_METER=1` |
 | [Breathing line](#breathing-line) | Home screen: the line between the signal flow and the knobs · Global Settings > Breathing Line | `HX_BREATHING_LINE=1` |
 | [Real block names](#real-block-names) | Model browser and Edit view: each block's title · no settings | `HX_REAL_NAMES=1` |
@@ -34,7 +35,7 @@ The features' settings are in Global Settings, each feature in a section of its 
 | BPM | **Font Size** | XL, **L** (default), M, S, Off | The tempo's size. XL is digits only: no ` X` with MIDI clock and nothing with no tempo. Off hides the tempo |
 | BPM | **Color** | **White** (default), Gray, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Tempo | The tempo's and the dot's colour. Tempo follows the TAP footswitch's colour (Tap LED Color; stock red in a build without it) |
 | BPM | **Dot Position** | **Left** (default), Right, Both, Off | Where the beat dot sits, beside the preset number. Off hides the dot; with Font Size Off too the BPM display is off and the TAP ring blinks as stock |
-| Tap LED color | **Tap LED Color** | **Red** (default), DkOrange, LtOrange, Yellow, Green, Teal, Blue, Violet, Pink, White, Rainbow, Random | The TAP footswitch's colour: its ring as it blinks the tempo, and its switch icon and TAP/TUNER label on the Home screen. Rainbow steps the ring round the colour wheel at each beat; Random picks a new colour at each beat. Both keep a white label. In Global Settings > Displays, under Tap Tempo LED. |
+| Tap LED color | **Tap LED Color** | **Red** (default), DkOrange, LtOrange, Yellow, Green, Teal, Blue, Violet, Pink, White, Rainbow, Random, Off | The TAP footswitch's colour: its ring as it blinks the tempo, and its switch icon and TAP/TUNER label on the Home screen. Rainbow steps the ring round the colour wheel at each beat; Random picks a new colour at each beat. Both keep a white label. In Global Settings > Displays, under Tap Tempo LED. |
 | Long press | **FS1 Hold Function** … **FS5 Hold Function** | Off, Tuner, FS4, FS5, FS6 … FS10 (defaults FS6 … FS10) | What holding that footswitch for 1 s does. FS4 and FS5 are external switches. In Global Settings > Footswitches, pages 2 and 3, after FS5 Function. |
 | Long press | **FS6 Function** … **FS10 Function** | Tuner, Stomp 6 … 10, Bank Up, Bank Dn, PresetUp, PresetDn, SnpshtUp, SnpshtDn, FS Mode>, <FS Mode, AllBypas, TogglEXP, GlobalEQ (default Stomp) | What that virtual footswitch does, as FS3 … FS5 Function do for the real ones, with Tuner in place of TAP/Tunr, and GlobalEQ added. In Global Settings > Footswitches, pages 4 and 5. |
 | Breathing line | **Color** | White, Red, Green, Blue, Fire, Ice, Sunset, Ocean, Aurora, Neon, **Rainbow** (default) | The line's colours. The gradients flow along the line: Fire is red, orange and yellow; Ice blue, cyan and white; Sunset purple, pink and orange; Ocean deep blue, blue and aqua; Aurora green, sky blue and violet; Neon magenta, indigo and cyan; Rainbow every hue. Where the motion dims the line, the colours dim with it. |
@@ -68,18 +69,27 @@ The Home screen shows the tempo at its top left, and a beat dot beside the prese
 - **The dot** keeps the beat in every footswitch mode, and with Tap Tempo LED off too: the ring then stays dark while the dot blinks.
 - **Settings** (Global Settings > Displays, BPM Size, BPM Color, BPM Dot): Size (S by default, the size that fits above the preset name of [Snapshot names on Home](#more-snapshots)), Color (the tempo's and the dot's; Tempo takes the TAP footswitch's colour) and Dot (left of the preset number, right of it, both, or **Tempo**, the default: a small dot right after the tempo). Off on Size hides the tempo and on Dot the dot; both Off turns the display off without a rebuild. See [Custom settings](#custom-settings).
 
+## Tap command
+
+*Menu > Command Center, on FS1 … FS5* (from upstream hxtra #136 and #137)
+
+- **Tap** (a Command for an FS slot, after Hotkey): the footswitch taps the tempo as TAP does, only in the presets where you put it (the Command Center is saved with the preset), and its ring blinks the tempo, in Tap LED Color's colour when that is built. A hold doesn't tap, and a snapshot change never taps.
+- **The footswitch must be a Stomp switch** (Global Settings > Footswitches, FS3 … FS5 Function = Stomp N).
+- **External MIDI clock:** a Tap ring follows it too, with no TAP footswitch.
+- **On stock firmware** a preset with Tap opens as usual and the footswitch doesn't tap.
+
 ## Tap LED color
 
 <!-- demo: tap-color -->
 <img src="https://github.com/user-attachments/assets/29f1b0a3-fa13-4d40-bfb0-cb426b15079d" width="100%" alt="Tap LED Color: red, green, blue, then Rainbow walking the colour wheel, and BPM Display Color Tempo following it">
 
-The TAP footswitch's ring blinks red with the tempo, and its icon and label on the Home screen are red. Tap LED Color (Global Settings > Displays, under Tap Tempo LED) picks another colour for all three, from the colours the HX Stomp gives its other footswitches.
+The TAP footswitch's ring blinks red with the tempo, and its icon and label on the Home screen are red. Tap LED Color (Global Settings > Displays, in Tap Tempo LED's place) picks another colour for all three, from the colours the HX Stomp gives its other footswitches. **Off** stops the blink, as Tap Tempo LED Off did: the stock setting leaves the menu and follows Tap LED Color (upstream #136).
 
 - **The colours** are the stock footswitch palette: each ring colour is the one the HX Stomp lights for a block of that colour, and each icon the stock switch icon of that colour.
 - **Rainbow** moves the ring a small step round the colour wheel at each beat: 42 shades blended from the palette's Red, DkOrange, Yellow, Green, Blue and Violet, back to Red, about 21 s round at 120 BPM.
 - **Random** lights the ring in a random colour of the palette at each beat, never the same twice running.
 - With Rainbow and Random, the icon and label stay White, and a tap or a preset change re-lights the ring in its current colour without moving on.
-- **External MIDI clock:** the ring keeps the stock colour it blinks with then. **Tap Tempo LED** still decides whether the ring blinks at all.
+- **External MIDI clock:** the ring keeps the stock colour it blinks with then. Tap LED Color Off still stops the blink.
 - **BPM Display's Color Tempo** gives the tempo and the beat dot the TAP footswitch's colour, the ring's current one with Rainbow and Random.
 
 ## DSP usage display
