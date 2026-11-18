@@ -941,6 +941,9 @@ snaps_cameras_paint:                @ r0 the framebuffer, r1 this paint's bit in
 snaps_cameras_dirty:
     ldr r1, [r0], #4
     cbz r1, snaps_cameras_draw
+    ldrb r2, [r1, #0x1d]            @ a hidden one is a renamed snapshot's: its erase would black out the name over it (upstream #127)
+    cmp r2, #0
+    beq snaps_cameras_dirty
     ldr r1, [r1, #0x20]             @ its node: the paint draws it only while the node's byte 0x24 is set
     movs r2, #1
     strb.w r2, [r1, #0x24]

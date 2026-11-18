@@ -452,6 +452,23 @@ def test_a_named_snapshot_label_gets_no_box_over_its_text(mgr):
     assert mgr.paint() == (top('4'), []), 'the top icon has no text: numbered as before'
 
 
+@pytest.mark.parametrize('leave', ['flip', 'load'])
+def test_leaving_bank_b_leaves_a_renamed_snapshots_label_alone(mgr, leave):
+    """Upstream #125/#127: a renamed snapshot's label is text over a hidden camera; marking that camera's node made the stock
+    erase fill black across the name, which nothing then redrew."""
+    mgr.press(0)
+    if leave == 'flip':
+        mgr.press(0)
+    else:
+        mgr.call('snaps_loaded', MGR, 0, 0, 0)
+    mgr.m.u8(LABELS + 0x1d, 0)
+    _, marked = mgr.paint('home')
+    assert marked == [2, 3]
+    mgr.m.u8(ICON + 0x1d, 0)
+    _, marked = mgr.paint()
+    assert marked == []
+
+
 def test_a_preset_load_in_bank_b_draws_the_cameras_again(mgr):
     mgr.press(0)
     mgr.call('snaps_loaded', MGR, 0, 0, 0)
