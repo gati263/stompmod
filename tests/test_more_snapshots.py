@@ -1089,6 +1089,18 @@ def test_home_names_in_bank_b_read_bank_a_from_the_shadow(mgr):
 
 def test_home_names_only_in_snapshot_mode(mgr):
     """The Footswitch Mode setting decides, as for the labels: the footswitch functions follow it only on a preset load."""
+    for mode in (0, 2):                                  # Stomp, Preset
+        mgr.settings[0x15] = mode
+        texts, _ = home_names(mgr)
+        assert texts == [] and not any(e[0] == 'font' for e in mgr.events)
+
+
+def test_home_names_in_scroll_mode_on_snapshots(mgr):
+    """Scroll mode's up/down on snapshots (setting 0x12 not 0) shows the names too; on presets (0) it doesn't."""
     mgr.settings[0x15] = 1
+    mgr.settings[0x12] = 0
     texts, _ = home_names(mgr)
     assert texts == [] and not any(e[0] == 'font' for e in mgr.events)
+    mgr.settings[0x12] = 1
+    texts, _ = home_names(mgr)
+    assert len(texts) == 6, 'the six names, as in Snapshot mode'

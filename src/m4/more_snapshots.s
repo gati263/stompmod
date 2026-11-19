@@ -27,6 +27,8 @@
 .equ FS_FUNCTIONS, 0x28128a74       @ each footswitch's function, two bytes apart
 .equ FS_MODE, 0x15                  @ the Footswitch Mode setting (0x28dc87d6): 3 Snapshot
 .equ FS_MODE_SNAPSHOT, 3
+.equ FS_MODE_SCROLL, 1              @ FS1 and FS2 step presets or, with SCROLL_SNAPSHOTS not 0, snapshots: functions 8 previous and
+.equ SCROLL_SNAPSHOTS, 0x12         @ 7 next (0x28dd259e), which run through all six; its labels read "SNPSHOT" (0x28dc8940)
 .equ FN_SNAPSHOT, 14                @ snapshot k for footswitch k: Snapshot mode; other modes keep stale cameras in LABELS
 .equ WIDGET_LOCK, 0x28e24971
 .equ WIDGET_UNLOCK, 0x28e24ae9
@@ -607,14 +609,23 @@ snaps_icon_draw:                    @ in place of the top view paint's draw of t
 snaps_icon_none:
     bx lr
 
-snaps_home_on:                      @ -> r0 1 when the top view shows the six names: Home Names on, Footswitch Mode Snapshot
-    push {r3, lr}                   @ (the setting, as the labels read it: the footswitch functions follow it only on a preset load)
-    movs r0, #FS_MODE
+snaps_home_on:                      @ -> r0 1 when the top view shows the six names: Home Names on, Footswitch Mode Snapshot, or
+    push {r3, lr}                   @ Scroll with its up/down on snapshots (the settings, as the labels read them: the footswitch
+    movs r0, #FS_MODE               @ functions follow them only on a preset load)
     movs r1, #0xff
     movs r2, #0
     bl hxtra_setting_get
     cmp r0, #FS_MODE_SNAPSHOT
+    beq snaps_home_shown
+    cmp r0, #FS_MODE_SCROLL
     bne snaps_home_off
+    movs r0, #SCROLL_SNAPSHOTS
+    movs r1, #0xff
+    movs r2, #0
+    bl hxtra_setting_get
+    cmp r0, #0
+    beq snaps_home_off
+snaps_home_shown:
     movs r0, #SETTING_MORE_SNAPSHOTS_HOME
     movs r1, #SETTING_MORE_SNAPSHOTS_HOME_MAX
     movs r2, #SETTING_MORE_SNAPSHOTS_HOME_DEFAULT
