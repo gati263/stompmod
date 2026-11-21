@@ -13,6 +13,7 @@ Before writing anything, read [conventions.md](conventions.md): the status tags,
 | [features/engine.md](features/engine.md) | a feature module: its settings, flag, inputs, and the hooks it shares (`chain_*`) or owns (`own_entry`, `own_call`); Entries 7 and 8 access | starting a new feature, or hooking a site |
 | [../resource-limits.md](../resource-limits.md) | which resources are nearly full and what changes cost | planning a feature |
 | [ideas.md](ideas.md) | open ideas from the old notes | looking for what to do next |
+| [web-app-plan.md](web-app-plan.md) | the plan for the web build page: decisions, features, boot picture, verification, hosting | working on `web/` or its release |
 
 ## Formats
 

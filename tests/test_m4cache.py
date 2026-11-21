@@ -1,5 +1,6 @@
 """tools/m4asm.py's precomputed modules (HX_M4_CACHE) and tools/m4cache.py, which makes them at a release for the web page."""
 import json
+import os
 
 import pytest
 
@@ -41,23 +42,40 @@ def test_cached_module(tmp_path, monkeypatch):
         m4asm.assemble_module(str(a / "x.s"), (a,))
 
 
-def test_web_flags_are_every_feature():
-    assert set(m4cache.web_flags()) == {"HX_TUNER", "HX_BPM", "HX_GR", "HX_DSP_METER", "HX_BREATHING_LINE", "HX_LONG_PRESS",
-                                        "HX_MORE_SNAPSHOTS", "HX_CLICK", "HX_TAP_COLOR", "HX_CC_TAP"}
+def test_web_flags_are_the_full_build():
+    """This fork's Full build (README, docs/research/web-app-plan.md): the page always builds these, nothing else but the options."""
+    assert set(m4cache.web_flags()) == {"HX_TUNER", "HX_BPM", "HX_DSP_METER", "HX_LONG_PRESS", "HX_MORE_SNAPSHOTS", "HX_TAP_COLOR",
+                                        "HX_CC_TAP", "HX_REAL_NAMES"}
 
 
 def test_web_options_are_the_opt_in_features():
-    assert m4cache.web_options() == ["HX_REAL_NAMES"]
+    assert m4cache.web_options() == ["HX_MODEL_PICTURES"]
+
+
+def test_full_env_is_the_full_build_inputs():
+    """The non-switch inputs of the Full build: the boot line hidden, and the repository's signal chain picture, filled."""
+    assert m4cache.FULL_ENV == {"HX_SPLASH_LINE": "hide", "HX_SPLASH": "assets/boot/signal_chain.png", "HX_SPLASH_FIT": "fill"}
+    assert os.path.isfile(os.path.join(m4cache.ROOT, m4cache.FULL_ENV["HX_SPLASH"]))
+
+
+def test_build_env_is_every_input_of_a_pinned_build(monkeypatch):
+    monkeypatch.setenv("HX_BPM", "stray")
+    monkeypatch.setenv("PATH_KEPT", "1")
+    env = m4cache.build_env(["HX_A", "HX_MODEL_PICTURES"], "C:/res")
+    assert env["HX_A"] == "1" and env["HX_MODEL_PICTURES"] == "C:/res" and "HX_BPM" not in env and env["PATH_KEPT"] == "1"
+    assert env["HX_SPLASH_LINE"] == "hide" and env["HX_SPLASH_FIT"] == "fill"
+    assert os.path.samefile(env["HX_SPLASH"], os.path.join(m4cache.ROOT, "assets/boot/signal_chain.png")) and os.path.isabs(env["HX_SPLASH"])
+    assert m4cache.build_env(["HX_MODEL_PICTURES"])["HX_MODEL_PICTURES"] == "1", "its usual place"
 
 
 def test_make_pins_every_option_combination(monkeypatch):
     monkeypatch.delenv(m4asm.CACHE, raising=False)
     monkeypatch.setattr(m4cache, "web_flags", lambda: ["HX_B", "HX_A"])
     monkeypatch.setattr(m4cache, "web_options", lambda: ["HX_X", "HX_Y"])
-    monkeypatch.setattr(m4cache, "built_md5", lambda stock, flags: m4cache.combo_key(flags))
-    monkeypatch.setattr(m4cache, "modules", lambda stock, flags: {"flags": flags})
+    monkeypatch.setattr(m4cache, "built_md5", lambda stock, flags, res=None: m4cache.combo_key(flags))
+    monkeypatch.setattr(m4cache, "modules", lambda stock, flags, res=None: {"flags": flags})
     cache = m4cache.make("stock.hxf", "v1")
-    assert cache["features"] == ["HX_B", "HX_A"] and cache["options"] == ["HX_X", "HX_Y"]
+    assert cache["features"] == ["HX_B", "HX_A"] and cache["options"] == ["HX_X", "HX_Y"] and cache["env"] == m4cache.FULL_ENV
     assert sorted(cache["md5"]["HX_Stomp"]) == ["HX_A+HX_B", "HX_A+HX_B+HX_X", "HX_A+HX_B+HX_X+HX_Y", "HX_A+HX_B+HX_Y"]
     assert cache["modules"] == {"flags": ["HX_B", "HX_A", "HX_X", "HX_Y"]}
 

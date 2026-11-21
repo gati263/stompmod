@@ -1,5 +1,5 @@
-"""web/firmware-worker.js, the in-browser build.py: it accepts the same stock files,
-pins the same built MD5s, and loads every file the build reads; with HX_STOMP_HXF set, its
+"""web/firmware-worker.js, the in-browser build.py, for the HX Stomp only: it accepts the same stock file,
+pins the same built MD5, and loads every file the build reads; with HX_STOMP_HXF set, its
 copy of the repository builds the features from a release's M4 code (tools/m4cache.py) as
 the repository does with clang."""
 import ast
@@ -41,7 +41,9 @@ def py_dict(path, name):
 
 
 def test_stock_md5_as_build_py():
-    assert js_object("STOCK_MD5") == py_dict("build.py", "STOCK_MD5")
+    """The page takes the HX Stomp's file only: build.py's other two are not on it."""
+    assert js_object("STOCK_MD5") == {md5: unit for md5, unit in py_dict("build.py", "STOCK_MD5").items() if unit == "HX_Stomp"}
+    assert "HX_Stomp_XL" not in WORKER and "HX_Effects" not in WORKER
 
 
 def js_value(name):
@@ -51,14 +53,13 @@ def js_value(name):
 
 
 def test_build_steps_as_build_py():
-    for name in ("KERNEL", "GR_SLOTS", "STEPS"):
-        assert js_value(name) == py_dict("build.py", name), name
+    for name in ("KERNEL", "STEPS"):
+        assert js_value(name) == {"HX_Stomp": py_dict("build.py", name)["HX_Stomp"]}, name
 
 
 def test_built_md5_as_firmware_test():
     pinned = py_dict("tests/test_firmware.py", "BUILT_MD5")
-    assert js_object("BUILT_MD5") == {"HX_Stomp": pinned["HX_STOMP_HXF"], "HX_Stomp_XL": pinned["HX_STOMP_XL_HXF"],
-                                      "HX_Effects": pinned["HX_EFFECTS_HXF"]}
+    assert js_object("BUILT_MD5") == {"HX_Stomp": pinned["HX_STOMP_HXF"]}
 
 
 def test_sources_cover_the_build():
@@ -86,6 +87,18 @@ def test_sources_cover_the_build():
 
 def listed_sources():
     return re.findall(r'"((?:tools/|src/)?[\w/.]+\.\w+)"', WORKER.split("var SOURCES")[1].split("];")[0])
+
+
+def test_sources_have_the_full_builds_boot_picture():
+    # the cache's env (m4cache.FULL_ENV) names the picture the page builds with when the user gives none
+    assert m4cache.FULL_ENV["HX_SPLASH"] in listed_sources()
+
+
+def test_worker_takes_the_options_and_files_of_the_page():
+    # the message in (its header comment) and what the build does with it: the cache's env, the user's picture and HX Edit's files
+    assert "splash: ArrayBuffer | null" in WORKER and "hxedit:" in WORKER
+    assert "cache && cache.env" in WORKER and '"/repo/build/splash.png"' in WORKER and '"/repo/hxedit/res"' in WORKER
+    assert "HX_GR" not in WORKER and "HX_CLICK" not in WORKER      # the Full build has neither: no extra DSP steps
 
 
 def test_sources_have_every_m4_source():
@@ -129,7 +142,7 @@ def test_page_copy_builds_features_from_the_cache(tmp_path):
     stock = os.environ.get("HX_STOMP_HXF")
     if not stock:
         pytest.skip("HX_STOMP_HXF is not set")
-    flags = ["HX_BPM", "HX_LONG_PRESS"]           # a section of its own, and settings in a stock category
+    flags = m4cache.web_flags()                   # the page's features: sections of their own, and settings in stock categories
     cache = tmp_path / "m4cache.json"
     cache.write_text(json.dumps({"modules": m4cache.modules(stock, flags)}))
     page = tmp_path / "repo"
@@ -137,6 +150,7 @@ def test_page_copy_builds_features_from_the_cache(tmp_path):
         (page / p).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ROOT / p, page / p)
     env = {k: v for k, v in os.environ.items() if not k.startswith("HX_")}
+    env.update(m4cache.FULL_ENV)                  # relative to each tree: the picture is its own copy's
     env.update({f: "1" for f in flags})
     base = m4cache.nam_base(stock, str(tmp_path))      # what build.py, and the page, give patch_menu.py
     out = {}

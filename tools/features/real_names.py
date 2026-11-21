@@ -1,6 +1,6 @@
 """Real names: each block's title in the model browser and the Edit view is its real-world counterpart's (helixhelp.com/models,
 'based on'), e.g. Deez One Mod -> Boss DS-1 Mod. Line 6 originals, utility blocks and titles that are already real keep theirs.
-Off by default: a checkbox on the web page (WEB 'opt-in') and HX_REAL_NAMES for build.py; hxbuild turns it on.
+Off in a plain build.py build (HX_REAL_NAMES); always on in the web page's build.
 
 Every model title the M4 code has is in two tables of Entry 0, renamed in place: Table 2's 16-byte short name and each browser
 item's 17-byte name. Presets keep model IDs, so a preset is the same with or without the feature."""
@@ -9,7 +9,6 @@ import struct
 import patch_amp as pa
 
 FLAG = 'HX_REAL_NAMES'
-WEB = 'opt-in'
 
 SHORT = 16                                  # Table 2 row bytes 4..20; byte 20 is a 0
 BROWSER = 16                                # a browser item's name[0x11] at +0xe, NUL-terminated

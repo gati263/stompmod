@@ -1,14 +1,16 @@
-// firmware-worker.js - build.py in the browser: the stock .hxf in, the HXtra
-// .hxf out, with NAM A2 Lite and, on the HX Stomp, the release's HXtra
-// features. Pyodide runs the repository's own Python tools, the same
-// commands build.py runs (without --check, the simulator run, which takes
-// minutes here). The features' M4 code comes from the release's m4cache.json
-// (tools/m4cache.py), next to the page, since there is no clang here. The
-// result's MD5 is then compared with the pinned build: tests/test_firmware.py's
-// with no features, the release's with them. A match means the
-// bytes are the very file that build makes on a desktop.
+// firmware-worker.js - build.py in the browser, for the HX Stomp only: the stock .hxf in, the
+// firmware out with NAM A2 Lite and the release's features (the Full build). Pyodide runs the
+// repository's own Python tools, the same commands build.py runs (without --check, the
+// simulator run, which takes minutes here). The features' M4 code and the inputs besides their
+// switches (boot picture and line) come from the release's m4cache.json (tools/m4cache.py),
+// next to the page, since there is no clang here. The result's MD5 is then compared with the
+// pinned build: tests/test_firmware.py's with no features, the release's with them. A match
+// means the bytes are the very file that build makes on a desktop.
 //
-// Messages in:  { stock: ArrayBuffer, features: ["HX_BPM", ...] }
+// Messages in:  { stock: ArrayBuffer, features: ["HX_BPM", ...] (the options ticked: the cache's features always build),
+//                 splash: ArrayBuffer | null (the user's boot picture, a 320x240 PNG; null: the repository's),
+//                 hxedit: [{ path, bytes: ArrayBuffer }] | null (HX Edit's res folder, for HX_MODEL_PICTURES: its
+//                 HX_ModelCatalog.json and icons_models/*, by path under res) }
 // It also lays out the RAM run of the result (tools/hxf_ram.py plan), for
 // ramrun.js: the regions to send and the eMMC checks.
 //
@@ -22,22 +24,17 @@ var PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
 
 // tests/test_web_build.py keeps these equal to build.py's STOCK_MD5 and
 // tests/test_firmware.py's BUILT_MD5.
+// The HX Stomp only: build.py also builds the XL and the HX Effects, which the page does not offer.
 var STOCK_MD5 = {
   "a2cd8f4ae56f49415380270ebc484bf1": "HX_Stomp",
-  "329e3a26d60d3de1988b6785fa833ee1": "HX_Stomp_XL",
-  "7c2ebdf1bffb6bcc5f89dda97f91e40c": "HX_Effects",
 };
 var BUILT_MD5 = {
   "HX_Stomp": "195682572258a3347d94ca7610a697b8",
-  "HX_Stomp_XL": "8918ab60ebff62ebfccd4fccb2bed85a",
-  "HX_Effects": "2efb98791581b67116ba82c5ecd30ea2",
 };
 
-// build.py's KERNEL and STEPS (tests/test_web_build.py keeps them equal): per unit, the kernel
+// build.py's KERNEL and STEPS for the HX Stomp (tests/test_web_build.py keeps them equal): the kernel
 // command and the patch_amp.py steps, each "patch_amp.py CMD IN OUT ARGS..." on the previous output.
-// GR_SLOTS too: build.py's kernel(unit) adds it on an HX Stomp build with the GR meter.
-var GR_SLOTS = ["--slots", "2"];
-var KERNEL = {"HX_Stomp": ["tools/sharc/nam_multi.py", "--mid-sweep"], "HX_Stomp_XL": ["tools/sharc/nam_multi.py", "--mid-sweep"], "HX_Effects": ["tools/sharc/nam_multi.py", "--mid-sweep", "--effects"]};
+var KERNEL = {"HX_Stomp": ["tools/sharc/nam_multi.py", "--mid-sweep"]};
 var STEPS = {
   "HX_Stomp": [
     ["remove-model", "--preset-id", "555"],
@@ -45,15 +42,6 @@ var STEPS = {
     ["move-folder", "--name", "NAM", "--from", "2", "--to", "12"],
     ["ir-title", "--fx-preset-id", "555", "--knob", "6"],
     ["model-int"],
-  ],
-  "HX_Stomp_XL": [
-    ["remove-model", "--preset-id", "555"],
-    ["add-fx-model", "--knobs", "eq", "--name", "HD2_DistNAMLite", "--display-name", "NAM A2 Lite", "--category", "distortion", "--folder", "NAM", "--preset-id", "555", "--dsp-cost", "2275", "--sdram-words", "0x5000", "--dm-words", "0x303", "--pm-words", "0x147"],
-    ["move-folder", "--name", "NAM", "--from", "2", "--to", "12"],
-    ["ir-title", "--fx-preset-id", "555", "--knob", "6"],
-  ],
-  "HX_Effects": [
-    ["effects-eq"],
   ],
 };
 
@@ -119,6 +107,7 @@ var SOURCES = [
   "src/m4/virtual_settings.s",
   "src/sharc/click.asm",
   "src/sharc/frame_probe.asm",
+  "assets/boot/signal_chain.png",     // the Full build's boot picture (m4cache.json's env: HX_SPLASH), when the user gives none
 ];
 // The release's M4 code for the features (tools/m4cache.py); a page from a checkout has none, and offers no features.
 var CACHE = "m4cache.json";
@@ -158,7 +147,7 @@ async function boot() {
   var c = await fetch(root + CACHE, { cache: "no-cache" });
   if (c.ok) cache = await c.json();
   ["/repo", "/repo/tools", "/repo/tools/features", "/repo/tools/sharc", "/repo/tools/ramboot", "/repo/src", "/repo/src/m4", "/repo/src/sharc",
-   "/repo/build"].forEach(function (d) {
+   "/repo/assets", "/repo/assets/boot", "/repo/hxedit", "/repo/hxedit/res", "/repo/build"].forEach(function (d) {
     try { p.FS.mkdir(d); } catch (e) { /* exists */ }
   });
   files.forEach(function (f) { p.FS.writeFile("/repo/" + f[0], f[1]); });
@@ -168,17 +157,37 @@ async function boot() {
   return p;
 }
 
-// The features' switches for patch_menu.py, as build.py's environment would have them; the M4 code from the cache.
-function setFeatures(p, flags) {
-  p.globals.set("flags", p.toPy(flags));
+// The features' switches and the other inputs for patch_menu.py, as build.py's environment would have them; the M4 code from the
+// cache. env is the cache's (tools/m4cache.py FULL_ENV: paths relative to /repo, where the build runs); extra overrides it.
+function setFeatures(p, flags, env, extra) {
+  var all = {};
+  Object.keys(env || {}).forEach(function (k) { all[k] = env[k]; });
+  Object.keys(extra || {}).forEach(function (k) { all[k] = extra[k]; });
+  flags.forEach(function (f) { all[f] = all[f] || "1"; });
+  p.globals.set("env_in", p.toPy(all));
   p.runPython([
     "for k in [k for k in os.environ if k.startswith('HX_')]: del os.environ[k]",
-    "os.environ.update({f: '1' for f in flags})",
-    "if flags: os.environ['HX_M4_CACHE'] = '/repo/" + CACHE + "'",
+    "os.environ.update(dict(env_in))",
+    "if " + (flags.length ? "True" : "False") + ": os.environ['HX_M4_CACHE'] = '/repo/" + CACHE + "'",
   ].join("\n"));
 }
 
-async function build(stock, flags) {
+// Writes the user's files into the build's file system: the boot picture, and HX Edit's res folder for the model pictures.
+function writeInputs(p, splash, hxedit) {
+  if (splash) p.FS.writeFile("/repo/build/splash.png", new Uint8Array(splash));
+  (hxedit || []).forEach(function (f) {
+    var parts = f.path.split("/").filter(Boolean);
+    if (parts.indexOf("..") >= 0) throw new Error("Not a file of HX Edit's res folder: " + f.path);
+    var dir = "/repo/hxedit/res";
+    parts.slice(0, -1).forEach(function (d) {
+      dir += "/" + d;
+      try { p.FS.mkdir(dir); } catch (e) { /* exists */ }
+    });
+    p.FS.writeFile("/repo/hxedit/res/" + parts.join("/"), new Uint8Array(f.bytes));
+  });
+}
+
+async function build(stock, flags, splash, hxedit) {
   var of = 6;
   progress(1, of, "Loading the build tools (about 15 MB, once)…");
   var p = await boot();
@@ -189,17 +198,24 @@ async function build(stock, flags) {
   var md5 = p.runPython("import hashlib; hashlib.md5(open('/repo/build/stock.hxf','rb').read()).hexdigest()");
   var unit = STOCK_MD5[md5];
   if (!unit) {
-    throw new Error("This is not the stock HX Stomp, HX Stomp XL or HX Effects 3.80.0 firmware (its MD5 is " + md5 +
-                    "). The patch is made for those three files only.");
+    throw new Error("This is not the stock HX Stomp 3.80.0 firmware (its MD5 is " + md5 +
+                    "). The patch is made for that file only.");
   }
   post({ type: "log", text: "stock firmware: " + unit.replace(/_/g, " ") + " 3.80.0 (MD5 " + md5 + ")\n" });
-  flags = unit === "HX_Stomp" ? (flags || []) : [];
-  if (flags.length && !cache) throw new Error("This page has no feature code (" + CACHE + "): build without features.");
+  // The cache's features always build; the options (flags) are the ones ticked. A page without a cache builds NAM only.
+  flags = cache ? cache.features.concat((flags || []).filter(function (f) { return cache.features.indexOf(f) < 0; })) : [];
   flags.forEach(function (f) {
     if (cache.features.indexOf(f) < 0 && (cache.options || []).indexOf(f) < 0) throw new Error("This release has no feature " + f + ".");
   });
-  setFeatures(p, flags);
-  post({ type: "log", text: "features: " + (flags.join(" ") || "none") + "\n" });
+  var extra = {};
+  if (flags.indexOf("HX_MODEL_PICTURES") >= 0) {
+    if (!hxedit || !hxedit.length) throw new Error("The model pictures need HX Edit's res folder.");
+    extra.HX_MODEL_PICTURES = "/repo/hxedit/res";
+  }
+  if (splash) extra.HX_SPLASH = "/repo/build/splash.png";
+  writeInputs(p, splash, hxedit);
+  setFeatures(p, flags, cache && cache.env, extra);
+  post({ type: "log", text: "features: " + (flags.join(" ") || "none") + (splash ? "; your boot picture" : "") + "\n" });
 
   var run = p.globals.get("run");
   function step(n, text, argv) {
@@ -210,8 +226,7 @@ async function build(stock, flags) {
     return out;
   }
   try {
-    var gr = flags.indexOf("HX_GR") >= 0;
-    step(3, "Building the NAM kernel…", KERNEL[unit].concat(gr ? GR_SLOTS : [], ["-o", "build/nam_lite.asm"]));
+    step(3, "Building the NAM kernel…", KERNEL[unit].concat(["-o", "build/nam_lite.asm"]));
     var base = "build/stock.hxf";
     STEPS[unit].forEach(function (s, k) {
       var out = "build/nam_lite_" + k + ".l6ia";
@@ -219,24 +234,12 @@ async function build(stock, flags) {
       if (base !== "build/stock.hxf") p.FS.unlink("/repo/" + base);
       base = out;
     });
-    if (unit === "HX_Stomp") {
-      step(4, "Adding NAM A2 Lite…", ["tools/patch_menu.py", base, "build/nam_lite_menu.l6ia"]);
-      p.FS.unlink("/repo/" + base);
-      base = "build/nam_lite_menu.l6ia";
-    }
+    step(4, "Adding NAM A2 Lite…", ["tools/patch_menu.py", base, "build/nam_lite_menu.l6ia"]);
+    p.FS.unlink("/repo/" + base);
+    base = "build/nam_lite_menu.l6ia";
     step(5, "Adding the kernel to the DSP program…",
          ["tools/patch_amp.py", "patch", base, "build/nam_lite.l6ia", "--asm", "build/nam_lite.asm"]);
     p.FS.unlink("/repo/" + base);
-    if (flags.indexOf("HX_CLICK") >= 0) {
-      step(5, "Adding the kernel to the DSP program…",
-           ["tools/patch_click.py", "build/nam_lite.l6ia", "build/nam_lite_click.l6ia"]);
-      p.FS.rename("/repo/build/nam_lite_click.l6ia", "/repo/build/nam_lite.l6ia");
-    }
-    if (gr) {           // last, as in build.py: every step that adds a model rebuilds the tails its knobs live in
-      step(5, "Adding the kernel to the DSP program…",
-           ["tools/patch_comp.py", "build/nam_lite.l6ia", "build/nam_lite_comp.l6ia"]);
-      p.FS.rename("/repo/build/nam_lite_comp.l6ia", "/repo/build/nam_lite.l6ia");
-    }
     var report = step(6, "Checking every checksum and packing the file…",
                       ["tools/l6ia_verify.py", "build/nam_lite.l6ia"]);
     if (report.indexOf("ALL OK") < 0) throw new Error("The built image failed its checksum check.");
@@ -249,11 +252,13 @@ async function build(stock, flags) {
   }
   var bytes = p.FS.readFile("/repo/build/" + file);
   var outMd5 = p.runPython("import hashlib; hashlib.md5(open('/repo/build/" + file + "','rb').read()).hexdigest()");
-  ["stock.hxf", "nam_lite.l6ia", file].forEach(function (f) {
+  ["stock.hxf", "nam_lite.l6ia", "splash.png", file].forEach(function (f) {
     try { p.FS.unlink("/repo/build/" + f); } catch (e) { /* gone */ }
   });
   var buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-  var want = flags.length ? (cache.md5[unit] || {})[flags.slice().sort().join("+")] : BUILT_MD5[unit];
+  // A boot picture of the user's is not the pinned build's: the file is compared only when it is the repository's (tier 2 of
+  // docs/research/web-app-plan.md section 4 is task 3).
+  var want = splash ? null : flags.length ? (cache.md5[unit] || {})[flags.slice().sort().join("+")] : BUILT_MD5[unit];
   post({ type: "done", unit: unit, file: file, bytes: buf, md5: outMd5, pinned: want ? outMd5 === want : null, ram: ram },
        [buf].concat(ram.regions ? ram.regions.map(function (r) { return r.bytes; }) : []));
 }
@@ -261,10 +266,6 @@ async function build(stock, flags) {
 // The RAM run of the built file: what tools/hxf_ram.py run would send. A failure here leaves the
 // build as it is; the page then offers no RAM run.
 function ramPlan(p, step, file) {
-  if (file.indexOf("HX_Effects") === 0) {      // the RAM loader is the HX Stomp's and XL's only
-    post({ type: "log", text: "RAM run: HX Stomp and HX Stomp XL only.\n" });
-    return {};
-  }
   var dir = "/repo/build/ram";
   try {
     step(6, "Checking every checksum and packing the file…",
@@ -287,7 +288,7 @@ function ramPlan(p, step, file) {
 }
 
 self.onmessage = function (e) {
-  build(e.data.stock, e.data.features).catch(function (err) {
+  build(e.data.stock, e.data.features, e.data.splash, e.data.hxedit).catch(function (err) {
     post({ type: "error", text: err && err.message ? err.message : String(err) });
   });
 };

@@ -6,6 +6,7 @@ import image_store
 import patch_menu as pm
 
 FLAG = 'HX_CLICK'
+WEB = False                         # not in this fork's Full build
 
 # Looper's slot category (0x12) draws the looper's grey pictures with the looper's on/off, so the Metronome gets Volume/Pan's
 SLOT_CATEGORY, SLOT_CATEGORY_STOCK = 0x28dd3042, bytes.fromhex('9df8 1020')    # ldrb.w r2, [sp, #0x10]

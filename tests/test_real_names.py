@@ -25,7 +25,7 @@ def test_unchanged_titles_are_not_listed():
 
 
 def test_off_unless_asked_for():
-    assert 'HX_REAL_NAMES' not in m4cache.web_flags() and 'HX_REAL_NAMES' in m4cache.web_options()
+    assert 'HX_REAL_NAMES' in m4cache.web_flags() and 'HX_REAL_NAMES' not in m4cache.web_options()     # the page's build has it
     assert rn not in features.enabled(MODS, {})
     assert rn in features.enabled(MODS, {'HX_REAL_NAMES': '1'})
 

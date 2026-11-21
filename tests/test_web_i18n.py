@@ -1,5 +1,5 @@
 """web/index.html's translations: every language has every string of the page, with the
-same HTML tags and {placeholders} as the English, and is listed in the language menu."""
+same HTML tags and {placeholders} as the English, and is listed in the language menu. This fork's page is English only: LANGS is empty."""
 import json
 import re
 from html.parser import HTMLParser
@@ -71,7 +71,11 @@ def test_translations_have_one_string_a_line():
 
 
 def test_menu_lists_every_language():
-    assert NAMES[0] == "en" and sorted(NAMES[1:]) == sorted(LANGS) and len(NAMES) == 10
+    assert NAMES[0] == "en" and sorted(NAMES[1:]) == sorted(LANGS)
+
+
+def test_the_page_is_english_only():
+    assert LANGS == {} and NAMES == ["en"]
 
 
 @pytest.mark.parametrize("lang", sorted(LANGS))

@@ -15,7 +15,7 @@ import struct
 from features import Setting
 
 FLAG = 'HX_MODEL_PICTURES'
-WEB = False                         # needs HX Edit's files, which the web page doesn't have
+WEB = 'opt-in'                      # a checkbox on the web page: it needs HX Edit's files (the user's res folder), and takes long
 MENU = 'Displays'                   # in Global Settings > Displays, after Tap LED Color: no section (and strip icon) of its own
 SETTINGS = (     # a label's last line shows on top: "Model" over "Pictures"
     Setting('show', b'Pictures\nModel', (b'Off', b'On'), default=1),

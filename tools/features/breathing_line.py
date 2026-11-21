@@ -2,6 +2,7 @@
 from features import Setting, gr
 
 FLAG = 'HX_BREATHING_LINE'
+WEB = False                         # not in this fork's Full build
 TITLE = 'Breathing Line'
 ICON = 'Icon_DualIR'
 SETTINGS = (
