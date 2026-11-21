@@ -15,7 +15,10 @@
 // ramrun.js: the regions to send and the eMMC checks.
 //
 // Messages out: { type: "progress", step, of, text } | { type: "log", text }
-//               { type: "done", unit, file, bytes: ArrayBuffer, md5, pinned (true, false, or null: no pinned build),
+//               { type: "done", unit, file, bytes: ArrayBuffer, md5,
+//                 verify: "exact" (the file is the tested build's, byte for byte) | "picture" (your boot picture is the only
+//                 difference from it, and it is in the file as you gave it) | "failed" (it differs from the tested build) |
+//                 null (nothing to compare with: no tested build for this combination),
 //                 ram: { regions: [{ addr, label, bytes: ArrayBuffer }], checks } | { error } }
 //               { type: "error", text }
 "use strict";
@@ -48,6 +51,7 @@ var STEPS = {
 // What build.py needs, relative to the repository root.
 var SOURCES = [
   "build.py",
+  "tools/build_verify.py",
   "tools/hxf.py",
   "tools/l6ia.py",
   "tools/hxf_ram.py",
@@ -251,17 +255,49 @@ async function build(stock, flags, splash, hxedit) {
     run.destroy();
   }
   var bytes = p.FS.readFile("/repo/build/" + file);
+  var verify = verifyBuild(p, flags, splash, file);
   var outMd5 = p.runPython("import hashlib; hashlib.md5(open('/repo/build/" + file + "','rb').read()).hexdigest()");
   ["stock.hxf", "nam_lite.l6ia", "splash.png", file].forEach(function (f) {
     try { p.FS.unlink("/repo/build/" + f); } catch (e) { /* gone */ }
   });
   var buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-  // A boot picture of the user's is not the pinned build's: the file is compared only when it is the repository's (tier 2 of
-  // docs/research/web-app-plan.md section 4 is task 3).
+  // With the repository's boot picture the file is compared with the pinned build's MD5. A boot picture of the user's changes
+  // the file, so then only what it cannot change is (verifyBuild).
   var want = splash ? null : flags.length ? (cache.md5[unit] || {})[flags.slice().sort().join("+")] : BUILT_MD5[unit];
-  post({ type: "done", unit: unit, file: file, bytes: buf, md5: outMd5, pinned: want ? outMd5 === want : null, ram: ram },
+  if (!splash) verify = want ? (outMd5 === want ? "exact" : "failed") : null;
+  post({ type: "done", unit: unit, file: file, bytes: buf, md5: outMd5, verify: verify, ram: ram },
        [buf].concat(ram.regions ? ram.regions.map(function (r) { return r.bytes; }) : []));
 }
+
+// A build with the user's boot picture (tools/build_verify.py): every part of the image but Entry 8 is the tested build's, and
+// Entry 8 is too outside the boot picture's two pixel ranges, and the picture in the image is the one given. Its hashes are
+// in the cache for the combinations without the model pictures, which change Entries 0, 7 and 8 by the user's HX Edit and are
+// checked by the file MD5 only, so with them and a picture of the user's there is nothing to compare with (null).
+function verifyBuild(p, flags, splash, file) {
+  if (!splash) return null;
+  var key = flags.slice().sort().join("+");
+  var want = flags.indexOf("HX_MODEL_PICTURES") < 0 && cache && cache.entries && (cache.entries[unitOf(file)] || {})[key];
+  if (!want) return null;
+  p.globals.set("want_entries", p.toPy(want));
+  var ok = p.runPython([
+    "import sys",
+    "sys.path.insert(0, '/repo/tools')",
+    "import build_verify",
+    "data = open('/repo/build/nam_lite.l6ia', 'rb').read()",
+    "got = build_verify.entry_hashes(data)",
+    "want = {int(k): v for k, v in dict(want_entries).items()}",
+    "log = ['entries: ' + ('all match' if got == want else 'differ at ' + ', '.join(str(k) for k in sorted(set(got) | set(want)) if got.get(k) != want.get(k)))]",
+    "same = build_verify.picture_matches(data, '/repo/build/splash.png')",
+    "log.append('boot picture in the image: ' + ('as given' if same else 'NOT as given'))",
+    "import json",
+    "json.dumps([got == want and same, chr(10).join(log) + chr(10)])",
+  ].join("\n"));
+  var res = JSON.parse(ok);
+  post({ type: "log", text: res[1] });
+  var good = res[0];
+  return good ? "picture" : "failed";
+}
+function unitOf(file) { return file.replace(/_v3\.80\.0_HXtra\.hxf$/, ""); }
 
 // The RAM run of the built file: what tools/hxf_ram.py run would send. A failure here leaves the
 // build as it is; the page then offers no RAM run.

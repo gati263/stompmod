@@ -529,6 +529,10 @@ var EN = {
   "fw.p6": "Checking every checksum and packing the file…",
   "fw.okTitle": "Verified: your {unit} firmware is ready.",
   "fw.okText": "It is byte for byte the same as the build the project tested. Download it, then go to step 4.",
+  "fw.pictureTitle": "Verified: your {unit} firmware is ready.",
+  "fw.pictureText": "Only your boot picture differs from the build the project tested, and the picture in the file is the one you gave. Download it, then go to step 4.",
+  "fw.unpinnedTitle": "Built: your {unit} firmware is ready.",
+  "fw.unpinnedText": "Every checksum passed. There is no tested build to compare this combination with, so it is not verified byte for byte. Download it, then go to step 4.",
   "fw.oddTitle": "Built, but not the tested file.",
   "fw.oddText": "Every checksum passed, but the result differs from the tested build. This shouldn't happen; please report it before installing.",
   "fw.wrongTitle": "This isn't the right firmware file.",
@@ -728,10 +732,12 @@ var LANG_NAMES = {
           finish();
           built = { blob: new Blob([m.bytes], { type: "application/octet-stream" }), file: m.file };
           $("fwName").textContent = m.file;
-          fwLog("\nbuilt " + m.file + ", MD5 " + m.md5 + (m.pinned ? " (the tested build)\n" : "\n"));
+          fwLog("\nbuilt " + m.file + ", MD5 " + m.md5 + (m.verify === "exact" ? " (the tested build)\n" : "\n"));
           var unit = m.unit.replace(/_/g, " ");
           ramReady(m.ram);
-          if (m.pinned) fwShow("ok", ["fw.okTitle", { unit: unit }], ["fw.okText"]);
+          if (m.verify === "exact") fwShow("ok", ["fw.okTitle", { unit: unit }], ["fw.okText"]);
+          else if (m.verify === "picture") fwShow("ok", ["fw.pictureTitle", { unit: unit }], ["fw.pictureText"]);
+          else if (m.verify === null) fwShow("ok", ["fw.unpinnedTitle", { unit: unit }], ["fw.unpinnedText"]);
           else fwShow("ok", ["fw.oddTitle"], ["fw.oddText"]);
           markDone(2);
         } else if (m.type === "error") {

@@ -101,6 +101,16 @@ def test_worker_takes_the_options_and_files_of_the_page():
     assert "HX_GR" not in WORKER and "HX_CLICK" not in WORKER      # the Full build has neither: no extra DSP steps
 
 
+def test_worker_verifies_with_the_recipe_the_cache_pins():
+    # a boot picture of the user's is checked by tools/build_verify.py, run in Pyodide: the same code m4cache.make pins with
+    assert "tools/build_verify.py" in listed_sources() and "build_verify.entry_hashes" in WORKER and "build_verify.picture_matches" in WORKER
+    assert "cache.entries" in WORKER and "import build_verify" in (ROOT / "tools/m4cache.py").read_text()
+    page = (ROOT / "web/index.html").read_text()
+    for outcome in ("exact", "picture", "failed"):
+        assert f'"{outcome}"' in WORKER or outcome == "failed"      # "failed" is the else of the page's chain
+    assert 'm.verify === "exact"' in page and 'm.verify === "picture"' in page and "m.verify === null" in page
+
+
 def test_sources_have_every_m4_source():
     # m4asm.key hashes every source next to a module, so the page needs all of them, as at the release
     m4 = {f"src/m4/{f.name}" for f in (ROOT / "src/m4").iterdir() if f.suffix in m4asm.SOURCE_TYPES}

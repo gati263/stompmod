@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 
+import build_verify
 import features
 import m4asm
 import patch_amp as pa
@@ -93,8 +94,8 @@ def modules(stock, flags, res=None):
     return out
 
 
-def built_md5(stock, flags, res=None):
-    """The MD5 of build.py's .hxf with flags on, FULL_ENV and no other HX_ variable."""
+def built(stock, flags, res=None):
+    """(the MD5 of build.py's .hxf with flags on, FULL_ENV and no other HX_ variable, its build_verify.entry_hashes())."""
     env = build_env(flags, res)
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, 'out.hxf')
@@ -102,7 +103,7 @@ def built_md5(stock, flags, res=None):
                            env=env, cwd=ROOT, capture_output=True, text=True)
         if r.returncode or 'ALL OK' not in r.stdout:
             raise SystemExit(f'm4cache: the build with {combo_key(flags) or "no features"} failed:\n{r.stdout}{r.stderr}')
-        return hashlib.md5(open(out, 'rb').read()).hexdigest()
+        return hashlib.md5(open(out, 'rb').read()).hexdigest(), build_verify.entry_hashes(pa.load_l6ia_from_any(out)[0])
 
 
 def make(stock, release=None, res=None):
@@ -110,8 +111,13 @@ def make(stock, release=None, res=None):
         raise SystemExit(f'm4cache: unset {m4asm.CACHE}: this assembles with clang')
     flags, options = web_flags(), web_options()
     combos = [flags + list(c) for n in range(len(options) + 1) for c in itertools.combinations(options, n)]
+    pins = {combo_key(c): built(stock, c, res) for c in combos}
+    # 'entries': per combo, the hashes a build with the user's boot picture is checked against (tools/build_verify.py). Not for a
+    # combo with the model pictures: they change Entries 0, 7 and 8 by what is in the user's HX Edit, so that combo is checked by
+    # its file MD5 only (and not with a boot picture of the user's) until its pictures have a tier of their own (plan, task 5).
     return {'release': release, 'unit': UNIT, 'features': flags, 'options': options, 'env': FULL_ENV,
-            'md5': {UNIT: {combo_key(c): built_md5(stock, c, res) for c in combos}},
+            'md5': {UNIT: {k: v[0] for k, v in pins.items()}},
+            'entries': {UNIT: {combo_key(c): pins[combo_key(c)][1] for c in combos if MODEL_PICTURES not in c}},
             'modules': modules(stock, flags + options, res)}
 
 
