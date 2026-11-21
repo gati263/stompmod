@@ -364,6 +364,9 @@
   h1 { margin: 0; font: var(--type-display-weight) var(--type-display-size)/var(--type-display-line) var(--font-serif); letter-spacing: var(--type-display-tracking); text-wrap: balance; }
   @media (min-width: 640px) { h1 { font: var(--type-hero-weight) var(--type-hero-size)/var(--type-hero-line) var(--font-serif); letter-spacing: var(--type-hero-tracking); } }
   h1::after { content: ""; display: block; width: var(--space-12); height: var(--focus-width); margin-top: var(--space-3); background: var(--viz-1); }
+  .hero-text { display: grid; gap: var(--space-4); align-content: start; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+  a.btn:hover { color: var(--btn-fg); }
   .lede { margin: 0; color: var(--text-muted); max-width: var(--prose-max); font: var(--type-lead-weight) var(--type-lead-size)/var(--type-lead-line) var(--font-sans); }
 
   /* ThemeSwitch: Light, Dark, System (a segmented control) */
@@ -381,6 +384,8 @@
     font: var(--type-body-weight) var(--type-body-size)/var(--type-body-line) var(--font-sans);
   }
   .warning a { color: inherit; }
+  .warning.short { padding: var(--space-2) var(--space-3); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  section.recovery .warning { margin: 0; }
 
   /* Step navigation */
   nav.steps-nav { position: sticky; top: 0; z-index: var(--z-sticky); margin-inline: calc(-1 * var(--space-2)); padding: var(--space-2); background: var(--bg-base); }
@@ -395,15 +400,19 @@
     display: grid; place-items: center; width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-pill);
     background: var(--bg-selected); color: var(--text-primary); font: var(--type-readout-weight) var(--type-readout-size)/1 var(--font-mono);
   }
-  nav.steps-nav li:nth-child(5n+1), .card:nth-of-type(5n+1) { --accent: var(--viz-1); --accent-soft: var(--viz-1-soft); }
-  nav.steps-nav li:nth-child(5n+2), .card:nth-of-type(5n+2) { --accent: var(--viz-2); --accent-soft: var(--viz-2-soft); }
-  nav.steps-nav li:nth-child(5n+3), .card:nth-of-type(5n+3) { --accent: var(--viz-4); --accent-soft: var(--viz-4-soft); }
-  nav.steps-nav li:nth-child(5n+4), .card:nth-of-type(5n+4) { --accent: var(--viz-3); --accent-soft: var(--viz-3-soft); }
-  nav.steps-nav li:nth-child(5n+5), .card:nth-of-type(5n+5) { --accent: var(--viz-5); --accent-soft: var(--viz-5-soft); }
+  nav.steps-nav li:nth-child(5n+1) { --accent: var(--viz-1); --accent-soft: var(--viz-1-soft); }
+  nav.steps-nav li:nth-child(5n+2) { --accent: var(--viz-2); --accent-soft: var(--viz-2-soft); }
+  nav.steps-nav li:nth-child(5n+3) { --accent: var(--viz-4); --accent-soft: var(--viz-4-soft); }
+  nav.steps-nav li:nth-child(5n+4) { --accent: var(--viz-3); --accent-soft: var(--viz-3-soft); }
+  nav.steps-nav li:nth-child(5n+5) { --accent: var(--viz-5); --accent-soft: var(--viz-5-soft); }
   nav.steps-nav a { transition: border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard); }
   nav.steps-nav .n { background: var(--accent-soft); box-shadow: inset 0 0 0 var(--hairline) var(--accent); }
   nav.steps-nav a.done .n { background: var(--text-primary); color: var(--bg-base); box-shadow: none; }
+  nav.steps-nav a[aria-current] { border-color: var(--border-strong); background: var(--bg-selected); color: var(--text-primary); }
+  nav.steps-nav li.extra { display: none; }
   @media (max-width: 560px) { nav.steps-nav .t { display: none; } }
+  .layout, .main { display: grid; gap: var(--space-6); }
+  .main, .main > * { min-width: 0; }
 
   /* Steps: panels */
   section.step {
@@ -411,15 +420,17 @@
     padding: var(--space-6); display: grid; gap: var(--space-4); scroll-margin-top: var(--space-16);
   }
   @media (max-width: 520px) { section.step { padding: var(--space-4); } }
-  .step-head { display: grid; grid-template-columns: var(--control-lg) minmax(0, 1fr); gap: var(--space-1) var(--space-3); align-items: center; }
+  .step-head { display: grid; grid-template-columns: var(--control-lg) minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center; }
   .step-head .n {
     display: grid; place-items: center; width: var(--control-lg); height: var(--control-lg); border-radius: var(--radius-pill);
     background: var(--text-primary); color: var(--bg-base); font: var(--type-readout-lg-weight) var(--type-readout-lg-size)/1 var(--font-mono);
   }
   .step.done .step-head .n { outline: var(--focus-width) solid var(--success); outline-offset: 2px; }
   .step-head h2 { margin: 0; font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
-  .step-head p { grid-column: 2; margin: 0; color: var(--text-muted); }
+  .step-head p { grid-column: 2 / -1; margin: 0; color: var(--text-muted); }
   .step p { margin: 0; }
+  .tag { display: inline-flex; align-items: center; gap: var(--space-1); height: var(--tag-height); padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--bg-elevated); border: var(--hairline) solid var(--border-subtle); color: var(--text-primary); font: var(--type-caption-weight) var(--type-caption-size)/1 var(--font-sans); }
+  .tag::before { content: ""; width: var(--dot-sm); height: var(--dot-sm); border-radius: var(--radius-pill); background: var(--text-muted); }
   h3 { margin: 0; font: var(--type-panel-header-weight) var(--type-panel-header-size)/var(--type-panel-header-line) var(--font-serif); letter-spacing: var(--type-panel-header-tracking); }
 
   ol.how { margin: 0; padding-left: var(--space-6); display: grid; gap: var(--space-2); }
@@ -559,6 +570,7 @@
   details.faq p, details.faq ul { margin: var(--space-2) 0 var(--space-1); color: var(--text-muted); }
 
   /* Boot screen panel and the HX Edit folder pick: a section of the Build step, divided by a line, not a nested panel */
+  .options { display: grid; gap: var(--space-3); padding-top: var(--space-4); border-top: var(--hairline) solid var(--border-subtle); }
   .boot { display: grid; gap: var(--space-3); padding-top: var(--space-4); border-top: var(--hairline) solid var(--border-subtle); }
   .boot p, .hxedit p { margin: 0; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   .boot-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
@@ -575,6 +587,8 @@
   .boot-ctl input[type=file], .hxedit input[type=file] { display: none; }
   .boot-fit { display: flex; flex-wrap: wrap; gap: var(--space-4); }
   .boot-fit label { display: inline-flex; gap: var(--space-2); align-items: center; cursor: pointer; }
+  .build-grid, .build-main, .build-side { display: contents; }
+  #fwOffline { order: -1; }
   #bootMsg, #hxeditMsg { min-height: calc(var(--type-caption-line) * 1); }
   #bootMsg.bad, #hxeditMsg.bad { color: var(--danger); }
   #bootMsg.warn, #hxeditMsg.warn { color: var(--text-primary); }
@@ -608,21 +622,33 @@
   dialog.modal p { margin: 0 0 var(--space-4); color: var(--text-muted); }
   /* What it adds: the hero photo and one card per feature (a panel each, not nested in another) */
   .hero-shot { margin: 0; overflow: hidden; border-radius: var(--radius-md); }
-  .hero-shot img, .shots img { display: block; width: 100%; height: auto; border-radius: var(--radius-md); border: var(--hairline) solid var(--border-subtle); background: var(--bg-panel); }
+  .hero-shot img, .shots img, .rep img { display: block; width: 100%; height: auto; border-radius: var(--radius-md); border: var(--hairline) solid var(--border-subtle); background: var(--bg-panel); }
   .features { display: grid; gap: var(--space-4); scroll-margin-top: var(--space-16); }
   .features > h2 { margin: 0; font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
   .features > p { margin: 0; color: var(--text-muted); }
-  .card { position: relative; background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-6); display: grid; gap: var(--space-3); box-shadow: inset 0 var(--focus-width) 0 var(--accent, var(--border-subtle)); }
+  .fgroup { display: grid; gap: var(--space-3); }
+  div.fgroup:nth-of-type(1) { --accent: var(--viz-1); }
+  div.fgroup:nth-of-type(2) { --accent: var(--viz-2); }
+  div.fgroup:nth-of-type(3) { --accent: var(--viz-4); }
+  .fgroup > h3 { margin: 0; padding-bottom: var(--space-2); border-bottom: var(--hairline) solid var(--accent); color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-mono); }
+  .fgroup > h3::before { content: ""; display: inline-block; width: var(--dot-md); height: var(--dot-md); margin-right: var(--space-2); border-radius: var(--radius-pill); background: var(--accent); }
+  .grid { display: grid; gap: var(--space-4); }
+  .card { position: relative; background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-6); display: grid; gap: var(--space-3); align-content: start; box-shadow: inset 0 var(--focus-width) 0 var(--accent, var(--border-subtle)); }
   .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--shadow-popover); opacity: 0; pointer-events: none; }
   @media (max-width: 520px) { .card { padding: var(--space-4); } }
-  .card h3, .card p { margin: 0; }
-  .card h3::before { content: ""; display: inline-block; width: var(--dot-md); height: var(--dot-md); margin-right: var(--space-2); border-radius: var(--radius-pill); background: var(--accent); vertical-align: middle; }
+  .card h4, .card p { margin: 0; }
+  .card h4 { font: var(--type-panel-header-weight) var(--type-panel-header-size)/var(--type-panel-header-line) var(--font-serif); letter-spacing: var(--type-panel-header-tracking); }
+  .card h4::before { content: ""; display: inline-block; width: var(--dot-md); height: var(--dot-md); margin-right: var(--space-2); border-radius: var(--radius-pill); background: var(--accent); vertical-align: middle; }
   .card .where { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  .rep { margin: 0; display: grid; gap: var(--space-1); }
+  .rep figcaption, .shots figcaption { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  .zoom { position: relative; display: block; overflow: hidden; border-radius: var(--radius-md); cursor: zoom-in; }
+  .count { position: absolute; right: var(--space-2); bottom: var(--space-2); display: inline-flex; align-items: center; height: var(--tag-height); padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--bg-elevated); border: var(--hairline) solid var(--border-subtle); color: var(--text-primary); font: var(--type-caption-weight) var(--type-caption-size)/1 var(--font-sans); }
+  details.more summary { cursor: pointer; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  details.more > * + * { margin-top: var(--space-3); }
   .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 280px)); gap: var(--space-3); margin: 0; }
-  .shots.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  @media (max-width: 520px) { .shots.three { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 280px)); } }
   .shots figure { margin: 0; display: grid; gap: var(--space-1); align-content: start; }
-  .shots figcaption { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+
   /* Motion: transform and opacity only, nothing that moves the layout. The hero rises in on load (CSS); the script marks cards, headings and
      steps .rv and the first time each scrolls into view it gets .in. Without script nothing is marked, so nothing is ever hidden. */
   header > * { animation: rise var(--dur-slow) var(--ease-emphasis) both; }
@@ -632,14 +658,41 @@
   header > :nth-child(5) { animation-delay: calc(var(--dur-stagger) * 4); }
   .rv { opacity: 0; transform: translateY(var(--space-4)); transition: opacity var(--dur-base) var(--ease-emphasis), transform var(--dur-base) var(--ease-emphasis); }
   .rv.in { opacity: 1; transform: none; }
-  .shots img, .hero-shot img { transition: transform var(--dur-base) var(--ease-move); }
+  .shots img, .hero-shot img, .zoom img { transition: transform var(--dur-base) var(--ease-move); }
   .card::after { transition: opacity var(--dur-mid) var(--ease-standard); }
   @media (hover: hover) {
     .card:hover { transform: translateY(calc(-1 * var(--space-1))); }
     .card:hover::after { opacity: 1; }
-    .shots figure:hover img, .hero-shot:hover img { transform: scale(1.03); }
+    .shots figure:hover img, .hero-shot:hover img, .zoom:hover img { transform: scale(1.03); }
   }
+  dialog.lightbox { width: min(var(--prose-max), calc(100% - var(--space-8))); padding: var(--space-4); }
+  .lb-fig { margin: 0; }
+  .lb-stage img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: var(--radius-md); background: var(--bg-panel); }
+  .lb-cap { margin: var(--space-3) 0; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  .lb-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .lb-bar .mono { color: var(--text-muted); }
+  .lb-btns { display: flex; gap: var(--space-2); }
   @media print { .rv { opacity: 1; transform: none; } }
+  /* Wide screens: a frame with the contents on the left, the hero in two columns, the cards in a grid, the build step in two columns */
+  @media (min-width: 1100px) {
+    .wrap { max-width: var(--container-max); }
+    header { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6) var(--space-8); align-items: center; padding: var(--space-8); }
+    header .top { grid-column: 1 / -1; }
+    .layout { grid-template-columns: var(--sidebar-width) minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+    nav.steps-nav { top: var(--space-6); margin: 0; padding: 0; background: transparent; z-index: auto; max-height: calc(100vh - var(--space-12)); overflow-y: auto; }
+    nav.steps-nav ol { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+    nav.steps-nav a { grid-template-columns: var(--control-sm) minmax(0, 1fr); justify-items: start; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); text-align: left; border-color: transparent; background: transparent; }
+    nav.steps-nav a:hover, nav.steps-nav a[aria-current] { background: var(--bg-selected); }
+    nav.steps-nav li.extra { display: list-item; }
+    nav.steps-nav li:nth-child(7) { margin-top: var(--space-3); padding-top: var(--space-3); border-top: var(--hairline) solid var(--border-subtle); }
+    section.step > p, section.step > ol, section.step > ul { max-width: var(--prose-max); }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .build-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+    .build-main, .build-side { display: grid; gap: var(--space-4); align-content: start; min-width: 0; }
+    .build-side { position: sticky; top: var(--space-6); }
+    #fwDrop { order: -1; }
+    .build-grid .boot-body { grid-template-columns: minmax(0, 1fr); }
+  }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
     html { scroll-behavior: auto; }
@@ -666,130 +719,22 @@
         <select id="lang"></select>
       </label>
     </div>
-    <h1 data-i18n="hero.title">StompMod</h1>
-    <p class="lede" data-i18n="hero.lede">Custom firmware for the Line 6 HX Stomp, built in your browser from your own copy of Line 6's firmware.</p>
+    <div class="hero-text">
+      <h1 data-i18n="hero.title">StompMod</h1>
+      <p class="lede" data-i18n="hero.lede">Custom firmware for the Line 6 HX Stomp, built in your browser from your own copy of Line 6's firmware.</p>
+      <div class="hero-cta">
+        <a class="btn primary big" href="#get-ready" data-i18n="hero.build">Build your firmware</a>
+        <a class="btn big" href="#what-it-adds" data-i18n="hero.see">See what it adds</a>
+      </div>
+      <p class="warning short" data-i18n="warn.short"><b>Unofficial and experimental.</b> At your own risk. <a href="#recovery">Recovery</a> puts the stock firmware back.</p>
+    </div>
     <figure class="hero-shot">
       <img src="img/features/p1.webp" width="1280" height="942" alt="An HX Stomp with StompMod on the Home screen: the preset Praise, six snapshot names in colour and the snapshot footswitch icons in red, yellow and blue">
     </figure>
   </header>
 
-  <div class="warning" data-i18n="warn"><b>Unofficial and experimental.</b> StompMod isn't made or supported by Line 6. Installing modified firmware is at your own risk and may void your warranty. Don't worry though: if anything goes wrong, the <a href="#recovery">Recovery</a> steps put the stock firmware back easily.</div>
 
-  <section class="features" id="what-it-adds" aria-labelledby="hfa">
-    <h2 id="hfa">What it adds</h2>
-    <p>Everything below is in the firmware you build in step 2, with the Model pictures box as the one exception. Photos are of an HX Stomp running it.</p>
-
-    <article class="card">
-      <h3>NAM A2 Lite</h3>
-      <p>Run Neural Amp Modeler captures as an amp block on the HX Stomp. Convert your captures on this page, then add them in HX Edit.</p>
-      <div class="shots"><figure><img src="img/features/s5.webp" width="640" height="486" loading="lazy" alt="The model browser on the HX Stomp, in Amp, with NAM A2 Lite listed"></figure></div>
-      <p class="where"><b>Where:</b> model browser, Amp > NAM A2 Lite. See <a href="#convert-captures">Convert captures</a> and <a href="#play-nam">Play NAM</a>.</p>
-    </article>
-
-    <article class="card">
-      <h3>Six snapshots, with their names on Home</h3>
-      <p>The Home screen shows the names of all six snapshots in their colours, the playing one in a box. In Snapshot mode, press the lit footswitch again to preview snapshots 4 to 6 while the current one keeps playing; the next footswitch you press selects it. Names also show in Scroll mode when its up and down switches change snapshots.</p>
-      <div class="shots three">
-        <figure><img src="img/features/s1.webp" width="640" height="486" loading="lazy" alt="The Home screen with six snapshot names in colour, Lead, Verse and Chorus above Chorus 2, Verse 2 and Outro"><figcaption>Home, six names</figcaption></figure>
-        <figure><img src="img/features/s11a.webp" width="640" height="486" loading="lazy" alt="The Home screen in Snapshot mode after pressing the lit footswitch again, previewing snapshots 4, 5 and 6 by number"><figcaption>Preview of 4 to 6</figcaption></figure>
-        <figure><img src="img/features/s11b.webp" width="640" height="486" loading="lazy" alt="The Home screen on snapshots 4 to 6, showing their names Clean, Crunch and Lead"><figcaption>Snapshots 4 to 6, named</figcaption></figure>
-      </div>
-      <p class="where"><b>Where:</b> Footswitch Mode on Snapshot. Names on Home: Global Settings > Displays > Snapshot Names (on by default).</p>
-    </article>
-
-    <article class="card">
-      <h3>BPM on Home</h3>
-      <p>The tempo at the top left of the Home screen and a beat dot beside the preset number. Choose the size, the colour and where the dot sits.</p>
-      <div class="shots"><figure><img src="img/features/s6c.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the BPM Size, BPM Color and BPM Dot settings"></figure></div>
-      <p class="where"><b>Where:</b> Global Settings > Displays > BPM Size, BPM Color, BPM Dot.</p>
-    </article>
-
-    <article class="card">
-      <h3>DSP usage</h3>
-      <p>Each block in the Edit view shows its share of the DSP, and the top right shows the total out of 75. The model browser shows the share each model would take before you add it.</p>
-      <div class="shots">
-        <figure><img src="img/features/s2.webp" width="640" height="486" loading="lazy" alt="The Edit view with the DSP share on each block and the total 75/75 at the top right"><figcaption>Edit view</figcaption></figure>
-        <figure><img src="img/features/s6b.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the DSP Blocks, DSP Browser and DSP Total settings"><figcaption>The three settings</figcaption></figure>
-      </div>
-      <p class="where"><b>Where:</b> Global Settings > Displays > DSP Blocks, DSP Browser, DSP Total (all on by default).</p>
-    </article>
-
-    <article class="card">
-      <h3>Real block names</h3>
-      <p>The model browser and the Edit view title each block by the gear it is based on, such as Xotic EP Booster and Klon Centaur, instead of Line 6's own name. Presets are the same with or without it.</p>
-      <div class="shots"><figure><img src="img/features/s3.webp" width="640" height="486" loading="lazy" alt="The model browser's Distortion list showing real names: Xotic EP Boost, Rangemaster, Klon Centaur, Timmy Overdrive and Prince of Tone"></figure></div>
-      <p class="where"><b>Where:</b> model browser and Edit view. No setting.</p>
-    </article>
-
-    <article class="card">
-      <h3>Model pictures</h3>
-      <p>A picture of the selected model in the Edit view and of the model under the cursor in the model browser. They are HX Edit's own pictures, read from the HX Edit on this computer, and nothing is uploaded. Optional: tick the Model pictures box before you build; the build then takes about a minute longer.</p>
-      <div class="shots three">
-        <figure><img src="img/features/s2.webp" width="640" height="486" loading="lazy" alt="The Edit view with a picture of the SLO-100 amp above the block's knobs"><figcaption>Edit view</figcaption></figure>
-        <figure><img src="img/features/s3.webp" width="640" height="486" loading="lazy" alt="The model browser with a picture of the Timmy overdrive pedal beside the list"><figcaption>Model browser</figcaption></figure>
-        <figure><img src="img/features/s6a.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the Model Pictures, Browser Icons and Snapshot Names settings"><figcaption>The settings</figcaption></figure>
-      </div>
-      <p class="where"><b>Where:</b> Global Settings > Displays > Model Pictures (on by default) and Browser Icons (off by default).</p>
-    </article>
-
-    <article class="card">
-      <h3>Tap command</h3>
-      <p>A footswitch that taps the tempo, in the presets where you put it. Its ring blinks the tempo. The footswitch must be a Stomp switch.</p>
-      <div class="shots"><figure><img src="img/features/s8.webp" width="640" height="486" loading="lazy" alt="The Command Center for Footswitch 1, with its command set to Tap"></figure></div>
-      <p class="where"><b>Where:</b> Menu > Command Center, on FS1 to FS5, command Tap.</p>
-    </article>
-
-    <article class="card">
-      <h3>Tap LED color</h3>
-      <p>Pick the colour of the TAP footswitch's ring, and of its icon and label on the Home screen. Rainbow steps round the colour wheel on each beat, Random picks a new colour each beat, and Off stops the blink.</p>
-      <p class="where"><b>Where:</b> Global Settings > Displays > Tap LED Color, in Tap Tempo LED's place.</p>
-    </article>
-
-    <article class="card">
-      <h3>Long press</h3>
-      <p>Hold FS1 to FS5 for one second to run a function of your choice, such as the tuner. FS6 to FS10 are virtual footswitches with the same functions as FS3 to FS5, plus GlobalEQ, which opens the Global EQ.</p>
-      <div class="shots three">
-        <figure><img src="img/features/s7a.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS1 Hold Function and FS2 Hold Function settings"><figcaption>FS1 and FS2 Hold</figcaption></figure>
-        <figure><img src="img/features/s7b.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS3, FS4 and FS5 Hold Function settings"><figcaption>FS3 to FS5 Hold</figcaption></figure>
-        <figure><img src="img/features/s7c.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS6, FS7 and FS8 Function settings"><figcaption>FS6 to FS8 Function</figcaption></figure>
-      </div>
-      <p class="where"><b>Where:</b> Global Settings > Footswitches, FS1 Hold Function to FS5 Hold Function, then FS6 Function to FS10 Function. Works in Stomp footswitch mode.</p>
-    </article>
-
-    <article class="card">
-      <h3>Tuner page</h3>
-      <p>A page of its own for two tuner settings. Activate set to Press opens the tuner with one press instead of a hold, and Lock stops the tuner's other settings from changing by accident.</p>
-      <div class="shots"><figure><img src="img/features/s9b.webp" width="640" height="486" loading="lazy" alt="The tuner's added page with the Activate and Lock knobs"></figure></div>
-      <p class="where"><b>Where:</b> open the tuner, then page right past Trails, Offsets and String 6.</p>
-    </article>
-
-    <article class="card">
-      <h3>Custom boot screen</h3>
-      <p>Show your own picture or text when the HX Stomp powers on. You set it when you build.</p>
-      <p class="where"><b>Where:</b> the boot screen panel in <a href="#build">Build StompMod</a>.</p>
-    </article>
-  </section>
-
-  <section class="step" id="options" hidden>
-    <div class="checks" id="opts" hidden>
-      <div class="feat" data-option="HX_MODEL_PICTURES" hidden><label><input type="checkbox"> <span data-i18n="feat.pics"><b>Model pictures</b> (optional, off unless you tick it)</span></label>
-        <ul data-i18n="feat.picsS">
-          <li>A picture of the selected block's model in the Edit view and of the model under the cursor in the model browser.</li>
-          <li>The pictures are HX Edit's own, read from the HX Edit installed on this computer: you pick its <b>res</b> folder, and nothing is uploaded. <b>The build takes about a minute longer with this ticked.</b></li>
-        </ul>
-        <div class="hxedit" id="hxedit" hidden>
-          <p data-i18n="pics.hint">Pick HX Edit's <b>res</b> folder. On Windows it is usually <code>C:\Program Files (x86)\Line6\HX Edit\res</code>; if your browser will not open a system folder, copy the folder somewhere else first. Only HX Edit's model pictures are read.</p>
-          <div class="row">
-            <label class="btn" for="hxeditDir" data-i18n="pics.choose">Choose the res folder</label>
-            <input id="hxeditDir" type="file" webkitdirectory multiple>
-          </div>
-          <p id="hxeditMsg" role="status"></p>
-        </div>
-      </div>
-    </div>
-    <p class="tip" id="featNone" hidden data-i18n="feat.none">This copy of the page has no feature code, so it builds NAM A2 Lite and the boot screen only. The page published with each StompMod release has it.</p>
-  </section>
-
+  <div class="layout">
   <nav class="steps-nav" aria-label="Steps">
     <ol>
       <li><a href="#get-ready" id="nav1"><span class="n">1</span><span class="t" data-i18n="nav.1">Prepare</span></a></li>
@@ -798,9 +743,14 @@
       <li><a href="#install" id="nav4"><span class="n">4</span><span class="t" data-i18n="nav.3">Install</span></a></li>
       <li><a href="#convert-captures" id="nav5"><span class="n">5</span><span class="t" data-i18n="nav.4">Convert captures</span></a></li>
       <li><a href="#play-nam" id="nav6"><span class="n">6</span><span class="t" data-i18n="nav.5">Play NAM</span></a></li>
+      <li class="extra"><a href="#what-it-adds" id="navFeatures"><span class="n">+</span><span class="t" data-i18n="nav.feat">What it adds</span></a></li>
+      <li class="extra"><a href="#recovery" id="navRecovery"><span class="n">!</span><span class="t" data-i18n="nav.rec">Recovery</span></a></li>
+      <li class="extra"><a href="#questions" id="navQuestions"><span class="n">?</span><span class="t" data-i18n="nav.faq">Questions</span></a></li>
     </ol>
   </nav>
 
+
+  <main class="main">
   <!-- 1 -->
   <section class="step" id="get-ready" aria-labelledby="h1s">
     <div class="step-head">
@@ -828,56 +778,81 @@
       <p data-i18n="s2.sub">This step builds StompMod from the stock firmware file and gives you the modified firmware file to install.</p>
     </div>
 
-    <div id="fwOffline" class="status bad" hidden>
-      <span class="title" data-i18n="s2.offTitle">This step needs the page opened from a web address.</span>
-      <p data-i18n="s2.off1">You opened the page as a file on your computer, and browsers don't let a file page run the build. Open the online page instead (gatistudio.com/stompmod). It does the same thing and still uploads nothing. (Steps 5 and 6 work either way.)</p>
-    </div>
-
-    <div class="boot" id="boot">
-      <h3 data-i18n="boot.title">Boot screen</h3>
-      <p data-i18n="boot.sub">The picture the HX Stomp shows while it starts. Leave it as it is, or use your own.</p>
-      <div class="boot-body">
-        <div class="boot-stage" id="bootStage">
-          <img id="bootImg" src="../assets/boot/signal_chain.png" width="320" height="240" alt="Preview of the boot picture">
-          <div class="boot-mark boot-bar" id="bootBar"><span data-i18n="boot.bar">loading bar</span></div>
-          <div class="boot-mark boot-icon" id="bootIcon"><span data-i18n="boot.icon">hidden text</span></div>
-        </div>
-        <div class="boot-ctl">
-          <div class="row">
-            <label class="btn" for="bootPick" data-i18n="boot.use">Use my own picture</label>
-            <input id="bootPick" type="file" accept="image/*">
-            <button class="btn" id="bootReset" type="button" hidden data-i18n="boot.reset">Use the default</button>
+    <div class="build-grid">
+      <div class="build-main">
+      <div class="boot" id="boot">
+        <h3 data-i18n="boot.title">Boot screen</h3>
+        <p data-i18n="boot.sub">The picture the HX Stomp shows while it starts. Leave it as it is, or use your own.</p>
+        <div class="boot-body">
+          <div class="boot-stage" id="bootStage">
+            <img id="bootImg" src="../assets/boot/signal_chain.png" width="320" height="240" alt="Preview of the boot picture">
+            <div class="boot-mark boot-bar" id="bootBar"><span data-i18n="boot.bar">loading bar</span></div>
+            <div class="boot-mark boot-icon" id="bootIcon"><span data-i18n="boot.icon">hidden text</span></div>
           </div>
-          <div class="boot-fit" id="bootFit" hidden>
-            <label><input type="radio" name="bootFit" value="fill" checked><span data-i18n="boot.fill">Fill (crop the edges)</span></label>
-            <label><input type="radio" name="bootFit" value="fit"><span data-i18n="boot.fit">Fit (black bars)</span></label>
+          <div class="boot-ctl">
+            <div class="row">
+              <label class="btn" for="bootPick" data-i18n="boot.use">Use my own picture</label>
+              <input id="bootPick" type="file" accept="image/*">
+              <button class="btn" id="bootReset" type="button" hidden data-i18n="boot.reset">Use the default</button>
+            </div>
+            <div class="boot-fit" id="bootFit" hidden>
+              <label><input type="radio" name="bootFit" value="fill" checked><span data-i18n="boot.fill">Fill (crop the edges)</span></label>
+              <label><input type="radio" name="bootFit" value="fit"><span data-i18n="boot.fit">Fit (black bars)</span></label>
+            </div>
+            <p id="bootMsg" role="status"></p>
+            <p data-i18n="boot.note">The picture is made 320 x 240 here and stays on this computer. The dashed lines show where the loading bar crosses it and where the firmware paints over its corner to hide the boot text. How the bar looks over your picture can only be judged on the HX Stomp itself.</p>
           </div>
-          <p id="bootMsg" role="status"></p>
-          <p data-i18n="boot.note">The picture is made 320 x 240 here and stays on this computer. The dashed lines show where the loading bar crosses it and where the firmware paints over its corner to hide the boot text. How the bar looks over your picture can only be judged on the HX Stomp itself.</p>
         </div>
       </div>
-    </div>
 
-    <label class="drop" id="fwDrop">
-      <svg class="jack" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="10" y="6" width="28" height="36" rx="3"/><path d="M17 15h14M17 22h14M17 29h8"/>
-      </svg>
-      <strong data-i18n="s2.drop">Drop your stock .hxf file here</strong>
-      <small data-i18n="s2.dropSub">or click to choose it · about 45 MB · it stays on this computer</small>
-      <input id="fwPick" type="file" accept=".hxf">
-    </label>
-
-    <div class="status" id="fwStatus" hidden>
-      <span class="title" id="fwTitle"></span>
-      <div class="bar" id="fwBarWrap"><i id="fwBar"></i></div>
-      <p id="fwText"></p>
-      <div class="row-actions" id="fwActions" hidden>
-        <button class="btn primary big" id="fwSave" type="button" data-i18n="s2.save">Download firmware</button>
-        <button class="btn" id="fwAgain" type="button" data-i18n="s2.again">Build another</button>
+      <div class="options" id="options" hidden>
+      <div class="checks" id="opts" hidden>
+        <div class="feat" data-option="HX_MODEL_PICTURES" hidden><label><input type="checkbox"> <span data-i18n="feat.pics"><b>Model pictures</b> (optional, off unless you tick it)</span></label>
+          <ul data-i18n="feat.picsS">
+            <li>A picture of the selected block's model in the Edit view and of the model under the cursor in the model browser.</li>
+            <li>The pictures are HX Edit's own, read from the HX Edit installed on this computer: you pick its <b>res</b> folder, and nothing is uploaded. <b>The build takes about a minute longer with this ticked.</b></li>
+          </ul>
+          <div class="hxedit" id="hxedit" hidden>
+            <p data-i18n="pics.hint">Pick HX Edit's <b>res</b> folder. On Windows it is usually <code>C:\Program Files (x86)\Line6\HX Edit\res</code>; if your browser will not open a system folder, copy the folder somewhere else first. Only HX Edit's model pictures are read.</p>
+            <div class="row">
+              <label class="btn" for="hxeditDir" data-i18n="pics.choose">Choose the res folder</label>
+              <input id="hxeditDir" type="file" webkitdirectory multiple>
+            </div>
+            <p id="hxeditMsg" role="status"></p>
+          </div>
+        </div>
       </div>
-      <details class="log"><summary data-i18n="s2.log">Technical details</summary><pre id="fwLog"></pre></details>
+      <p class="tip" id="featNone" hidden data-i18n="feat.none">This copy of the page has no feature code, so it builds NAM A2 Lite and the boot screen only. The page published with each StompMod release has it.</p>
+      </div>
+      <label class="drop" id="fwDrop">
+        <svg class="jack" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="10" y="6" width="28" height="36" rx="3"/><path d="M17 15h14M17 22h14M17 29h8"/>
+        </svg>
+        <strong data-i18n="s2.drop">Drop your stock .hxf file here</strong>
+        <small data-i18n="s2.dropSub">or click to choose it · about 45 MB · it stays on this computer</small>
+        <input id="fwPick" type="file" accept=".hxf">
+      </label>
+
+      </div>
+      <div class="build-side">
+      <div id="fwOffline" class="status bad" hidden>
+        <span class="title" data-i18n="s2.offTitle">This step needs the page opened from a web address.</span>
+        <p data-i18n="s2.off1">You opened the page as a file on your computer, and browsers don't let a file page run the build. Open the online page instead (gatistudio.com/stompmod). It does the same thing and still uploads nothing. (Steps 5 and 6 work either way.)</p>
+      </div>
+
+      <div class="status" id="fwStatus" hidden>
+        <span class="title" id="fwTitle"></span>
+        <div class="bar" id="fwBarWrap"><i id="fwBar"></i></div>
+        <p id="fwText"></p>
+        <div class="row-actions" id="fwActions" hidden>
+          <button class="btn primary big" id="fwSave" type="button" data-i18n="s2.save">Download firmware</button>
+          <button class="btn" id="fwAgain" type="button" data-i18n="s2.again">Build another</button>
+        </div>
+        <details class="log"><summary data-i18n="s2.log">Technical details</summary><pre id="fwLog"></pre></details>
+      </div>
+      <p class="note" data-i18n="s2.note">The first build downloads the build tools (about 15 MB) and takes 20–60 seconds, depending on the computer. Keep this tab open until it finishes.</p>
+      </div>
     </div>
-    <p class="note" data-i18n="s2.note">The first build downloads the build tools (about 15 MB) and takes 20–60 seconds, depending on the computer. Keep this tab open until it finishes.</p>
   </section>
 
   <!-- 3 -->
@@ -885,6 +860,7 @@
     <div class="step-head">
       <span class="n">3</span>
       <h2 id="h3s" data-i18n="ram.title">Try it without installing</h2>
+      <span class="tag" data-i18n="opt">Optional</span>
     </div>
 
       <p data-i18n="ram.p1">Run StompMod from the unit's memory for one session. Nothing is written to the unit and no changes you make will save. Power cycling takes you back to stock.</p>
@@ -935,6 +911,7 @@
     <div class="step-head">
       <span class="n">5</span>
       <h2 id="h5s" data-i18n="s4.title">Convert your NAM captures</h2>
+      <span class="tag" data-i18n="opt">Optional</span>
       <p data-i18n="s4.sub">The HX Stomp loads NAM captures from its User IR slots. This turns each <b>.nam</b> into a <b>.wav</b> that HX Edit can import there.</p>
     </div>
     <label class="drop" id="drop">
@@ -964,6 +941,7 @@
     <div class="step-head">
       <span class="n">6</span>
       <h2 id="h6s" data-i18n="s5.title">Load a capture and play</h2>
+      <span class="tag" data-i18n="opt">Optional</span>
       <p data-i18n="s5.sub">Import the .wav files with HX Edit, then point the NAM A2 Lite block at them.</p>
     </div>
     <ol class="how">
@@ -993,6 +971,129 @@
     </ul>
   </section>
 
+  <section class="features" id="what-it-adds" aria-labelledby="hfa">
+    <h2 id="hfa">What it adds</h2>
+    <p>Everything below is in the firmware you build in step 2, with the Model pictures box as the one exception. Photos are of an HX Stomp running it.</p>
+    <div class="fgroup">
+      <h3 id="gdisp" data-i18n="gdisp">Displays</h3>
+      <div class="grid">
+      <article class="card">
+        <h4>Six snapshots, with their names on Home</h4>
+        <p>The Home screen shows the names of all six snapshots in their colours, the playing one in a box.</p>
+        <figure class="rep"><a class="zoom" href="img/features/s1.webp"><img src="img/features/s1.webp" width="640" height="486" loading="lazy" alt="The Home screen with six snapshot names in colour, Lead, Verse and Chorus above Chorus 2, Verse 2 and Outro"><span class="count">3 photos</span></a><figcaption>Home, six names</figcaption></figure>
+        <p class="where"><b>Where:</b> Footswitch Mode on Snapshot. Names on Home: Global Settings &gt; Displays &gt; Snapshot Names (on by default).</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p>In Snapshot mode, press the lit footswitch again to preview snapshots 4 to 6 while the current one keeps playing; the next footswitch you press selects it. Names also show in Scroll mode when its up and down switches change snapshots.</p>
+          <div class="shots">
+            <figure><img src="img/features/s11a.webp" width="640" height="486" loading="lazy" alt="The Home screen in Snapshot mode after pressing the lit footswitch again, previewing snapshots 4, 5 and 6 by number"><figcaption>Preview of 4 to 6</figcaption></figure>
+            <figure><img src="img/features/s11b.webp" width="640" height="486" loading="lazy" alt="The Home screen on snapshots 4 to 6, showing their names Clean, Crunch and Lead"><figcaption>Snapshots 4 to 6, named</figcaption></figure>
+          </div>
+        </details>
+      </article>
+      <article class="card">
+        <h4>BPM on Home</h4>
+        <p>The tempo at the top left of the Home screen and a beat dot beside the preset number. Choose the size, the colour and where the dot sits.</p>
+        <figure class="rep"><img src="img/features/s6c.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the BPM Size, BPM Color and BPM Dot settings"></figure>
+        <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; BPM Size, BPM Color, BPM Dot.</p>
+      </article>
+      <article class="card">
+        <h4>DSP usage</h4>
+        <p>Each block in the Edit view shows its share of the DSP, and the top right shows the total out of 75.</p>
+        <figure class="rep"><a class="zoom" href="img/features/s2.webp"><img src="img/features/s2.webp" width="640" height="486" loading="lazy" alt="The Edit view with the DSP share on each block and the total 75/75 at the top right"><span class="count">2 photos</span></a><figcaption>Edit view</figcaption></figure>
+        <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; DSP Blocks, DSP Browser, DSP Total (all on by default).</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p>The model browser shows the share each model would take before you add it.</p>
+          <div class="shots">
+            <figure><img src="img/features/s6b.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the DSP Blocks, DSP Browser and DSP Total settings"><figcaption>The three settings</figcaption></figure>
+          </div>
+        </details>
+      </article>
+      <article class="card">
+        <h4>Real block names</h4>
+        <p>The model browser and the Edit view title each block by the gear it is based on, such as Xotic EP Booster and Klon Centaur, instead of Line 6's own name.</p>
+        <figure class="rep"><img src="img/features/s3.webp" width="640" height="486" loading="lazy" alt="The model browser's Distortion list showing real names: Xotic EP Boost, Rangemaster, Klon Centaur, Timmy Overdrive and Prince of Tone"></figure>
+        <p class="where"><b>Where:</b> model browser and Edit view. No setting.</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p>Presets are the same with or without it.</p>
+        </details>
+      </article>
+      <article class="card">
+        <h4>Model pictures</h4>
+        <p>A picture of the selected model in the Edit view and of the model under the cursor in the model browser.</p>
+        <figure class="rep"><a class="zoom" href="img/features/s2.webp"><img src="img/features/s2.webp" width="640" height="486" loading="lazy" alt="The Edit view with a picture of the SLO-100 amp above the block's knobs"><span class="count">3 photos</span></a><figcaption>Edit view</figcaption></figure>
+        <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; Model Pictures (on by default) and Browser Icons (off by default).</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p>They are HX Edit's own pictures, read from the HX Edit on this computer, and nothing is uploaded. Optional: tick the Model pictures box before you build; the build then takes about a minute longer.</p>
+          <div class="shots">
+            <figure><img src="img/features/s3.webp" width="640" height="486" loading="lazy" alt="The model browser with a picture of the Timmy overdrive pedal beside the list"><figcaption>Model browser</figcaption></figure>
+            <figure><img src="img/features/s6a.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the Model Pictures, Browser Icons and Snapshot Names settings"><figcaption>The settings</figcaption></figure>
+          </div>
+        </details>
+      </article>
+      <article class="card">
+        <h4>Custom boot screen</h4>
+        <p>Show your own picture or text when the HX Stomp powers on. You set it when you build.</p>
+        <p class="where"><b>Where:</b> the boot screen panel in <a href="#build">Build StompMod</a>.</p>
+      </article>
+      </div>
+    </div>
+    <div class="fgroup">
+      <h3 id="gfoot" data-i18n="gfoot">Footswitches</h3>
+      <div class="grid">
+      <article class="card">
+        <h4>Tap command</h4>
+        <p>A footswitch that taps the tempo, in the presets where you put it.</p>
+        <figure class="rep"><img src="img/features/s8.webp" width="640" height="486" loading="lazy" alt="The Command Center for Footswitch 1, with its command set to Tap"></figure>
+        <p class="where"><b>Where:</b> Menu &gt; Command Center, on FS1 to FS5, command Tap.</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p>Its ring blinks the tempo. The footswitch must be a Stomp switch.</p>
+        </details>
+      </article>
+      <article class="card">
+        <h4>Tap LED color</h4>
+        <p>Pick the colour of the TAP footswitch's ring, and of its icon and label on the Home screen.</p>
+        <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; Tap LED Color, in Tap Tempo LED's place.</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p>Rainbow steps round the colour wheel on each beat, Random picks a new colour each beat, and Off stops the blink.</p>
+        </details>
+      </article>
+      <article class="card">
+        <h4>Long press</h4>
+        <p>Hold FS1 to FS5 for one second to run a function of your choice, such as the tuner.</p>
+        <figure class="rep"><a class="zoom" href="img/features/s7a.webp"><img src="img/features/s7a.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS1 Hold Function and FS2 Hold Function settings"><span class="count">3 photos</span></a><figcaption>FS1 and FS2 Hold</figcaption></figure>
+        <p class="where"><b>Where:</b> Global Settings &gt; Footswitches, FS1 Hold Function to FS5 Hold Function, then FS6 Function to FS10 Function. Works in Stomp footswitch mode.</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p>FS6 to FS10 are virtual footswitches with the same functions as FS3 to FS5, plus GlobalEQ, which opens the Global EQ.</p>
+          <div class="shots">
+            <figure><img src="img/features/s7b.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS3, FS4 and FS5 Hold Function settings"><figcaption>FS3 to FS5 Hold</figcaption></figure>
+            <figure><img src="img/features/s7c.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS6, FS7 and FS8 Function settings"><figcaption>FS6 to FS8 Function</figcaption></figure>
+          </div>
+        </details>
+      </article>
+      </div>
+    </div>
+    <div class="fgroup">
+      <h3 id="gsnd" data-i18n="gsnd">Sound</h3>
+      <div class="grid">
+      <article class="card">
+        <h4>NAM A2 Lite</h4>
+        <p>Run Neural Amp Modeler captures as an amp block on the HX Stomp. Convert your captures on this page, then add them in HX Edit.</p>
+        <figure class="rep"><img src="img/features/s5.webp" width="640" height="486" loading="lazy" alt="The model browser on the HX Stomp, in Amp, with NAM A2 Lite listed"></figure>
+        <p class="where"><b>Where:</b> model browser, Amp &gt; NAM A2 Lite. See <a href="#convert-captures">Convert captures</a> and <a href="#play-nam">Play NAM</a>.</p>
+      </article>
+      <article class="card">
+        <h4>Tuner page</h4>
+        <p>A page of its own for two tuner settings.</p>
+        <figure class="rep"><img src="img/features/s9b.webp" width="640" height="486" loading="lazy" alt="The tuner's added page with the Activate and Lock knobs"></figure>
+        <p class="where"><b>Where:</b> open the tuner, then page right past Trails, Offsets and String 6.</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p>Activate set to Press opens the tuner with one press instead of a hold, and Lock stops the tuner's other settings from changing by accident.</p>
+        </details>
+      </article>
+      </div>
+    </div>
+  </section>
+
   <!-- Recovery -->
   <section class="step recovery" id="recovery" aria-labelledby="hrs">
     <div class="step-head">
@@ -1000,6 +1101,7 @@
       <h2 id="hrs" data-i18n="rec.title">Recovery, or going back to stock</h2>
       <p data-i18n="rec.sub">If the HX Stomp stops at the boot screen, or you just want the normal firmware back.</p>
     </div>
+    <div class="warning" data-i18n="warn"><b>Unofficial and experimental.</b> StompMod isn't made or supported by Line 6. Installing modified firmware is at your own risk and may void your warranty. Don't worry though: if anything goes wrong, the <a href="#recovery">Recovery</a> steps put the stock firmware back easily.</div>
     <ol class="how">
       <li data-i18n="rec.li1">Turn the HX Stomp off.</li>
       <li data-i18n="rec.li2"><b>Hold the Page › button while you turn it on.</b> It starts in update mode with a dark screen.</li>
@@ -1029,6 +1131,9 @@
         <li>If the file was renamed, that's fine: only its contents count.</li></ul></details>
   </section>
 
+  </main>
+  </div>
+
   <footer>
     <p>StompMod is an unofficial firmware mod for the Line 6 HX Stomp. It is not made or supported by Line 6 or Yamaha Guitar Group; Line 6, Helix, HX Stomp and HX Edit are their trademarks.</p>
     <p>Based on <a href="https://github.com/wisemandenny/hxtra" target="_blank" rel="noopener">hxtra</a> by wisemandenny, GPL-3.0-or-later. <a href="../LICENSE">Licence</a> and <a href="../NOTICE">third-party notices</a>.</p>
@@ -1047,6 +1152,18 @@
   </dl>
   <p>Based on hxtra by wisemandenny, GPL-3.0-or-later.</p>
   <div class="actions-bar"><button class="btn" id="aboutClose" type="button" autofocus>Close</button></div>
+</dialog>
+
+<dialog class="modal lightbox" id="lightbox" aria-label="Photos">
+  <figure class="lb-fig"><div class="lb-stage" id="lbStage"></div><figcaption class="lb-cap" id="lbCap"></figcaption></figure>
+  <div class="lb-bar">
+    <span class="mono" id="lbCount" aria-live="polite"></span>
+    <div class="lb-btns">
+      <button class="btn" id="lbPrev" type="button">Previous</button>
+      <button class="btn" id="lbNext" type="button">Next</button>
+      <button class="btn" id="lbClose" type="button" autofocus>Close</button>
+    </div>
+  </div>
 </dialog>
 
 <script src="nam2ir-core.js"></script>
@@ -1193,26 +1310,72 @@ var LANG_NAMES = {
     if (about.showModal) about.showModal(); else about.setAttribute("open", "");
   });
   // closing plays the exit fade first (not under reduced motion), then the dialog closes
-  function closeAbout() {
-    if (!about.close) { about.removeAttribute("open"); return; }
-    if (!about.open || about.classList.contains("closing")) return;
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { about.close(); return; }
-    about.classList.add("closing");
+  function closeModal(dlg) {
+    if (!dlg.close) { dlg.removeAttribute("open"); return; }
+    if (!dlg.open || dlg.classList.contains("closing")) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { dlg.close(); return; }
+    dlg.classList.add("closing");
     // animationend, or the exit duration token plus a margin if the browser never reports it (a hidden tab)
     var wait = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--dur-exit")) + 100, fin = false;
     function done() {
       if (fin) return;
-      fin = true; clearTimeout(timer); about.removeEventListener("animationend", onEnd);
-      about.classList.remove("closing");
-      about.close();
+      fin = true; clearTimeout(timer); dlg.removeEventListener("animationend", onEnd);
+      dlg.classList.remove("closing");
+      dlg.close();
     }
-    function onEnd(e) { if (e.target === about) done(); }
+    function onEnd(e) { if (e.target === dlg) done(); }
     var timer = setTimeout(done, wait);
-    about.addEventListener("animationend", onEnd);
+    dlg.addEventListener("animationend", onEnd);
   }
-  $("aboutClose").addEventListener("click", closeAbout);
-  about.addEventListener("click", function (e) { if (e.target === about) closeAbout(); });
-  about.addEventListener("cancel", function (e) { if (about.close) { e.preventDefault(); closeAbout(); } });
+  function modalClosing(dlg) {
+    dlg.addEventListener("click", function (e) { if (e.target === dlg) closeModal(dlg); });
+    dlg.addEventListener("cancel", function (e) { if (dlg.close) { e.preventDefault(); closeModal(dlg); } });
+  }
+  $("aboutClose").addEventListener("click", function () { closeModal(about); });
+  modalClosing(about);
+
+  // ---- Photos: a card with more than one picture opens them all in a dialog; without script the extra ones are under the card's More ----
+  var lb = $("lightbox"), lbList = [], lbAt = 0;
+  function lbShow(i) {
+    lbAt = (i + lbList.length) % lbList.length;
+    var src = lbList[lbAt], big = document.createElement("img");
+    big.src = src.getAttribute("src"); big.alt = src.alt;
+    big.width = +src.getAttribute("width"); big.height = +src.getAttribute("height");
+    $("lbStage").textContent = ""; $("lbStage").appendChild(big);
+    $("lbCap").textContent = src.alt;
+    $("lbCount").textContent = (lbAt + 1) + " of " + lbList.length;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("a.zoom"), function (a) {
+    a.addEventListener("click", function (e) {
+      if (!lb.showModal) return;
+      e.preventDefault();
+      lbList = Array.prototype.slice.call(a.closest(".card").querySelectorAll(".rep img, .shots img"));
+      lbShow(0);
+      lb.showModal();
+    });
+  });
+  $("lbPrev").addEventListener("click", function () { lbShow(lbAt - 1); });
+  $("lbNext").addEventListener("click", function () { lbShow(lbAt + 1); });
+  $("lbClose").addEventListener("click", function () { closeModal(lb); });
+  lb.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") { e.preventDefault(); lbShow(lbAt - 1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); lbShow(lbAt + 1); }
+  });
+  modalClosing(lb);
+
+  // ---- Contents: the link of the section being read is marked as you scroll ------------------------------------------------------
+  if ("IntersectionObserver" in window) {
+    var tocLinks = Array.prototype.slice.call(document.querySelectorAll("nav.steps-nav a")), tocBy = {};
+    tocLinks.forEach(function (a) { tocBy[a.hash.slice(1)] = a; });
+    var spy = new IntersectionObserver(function (list) {
+      list.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        tocLinks.forEach(function (a) { a.removeAttribute("aria-current"); });
+        tocBy[en.target.id].setAttribute("aria-current", "location");
+      });
+    }, { rootMargin: "-25% 0px -65% 0px" });
+    tocLinks.forEach(function (a) { var t = $(a.hash.slice(1)); if (t) spy.observe(t); });
+  }
 
   // ---- Scroll reveal: the first time a card, heading or step comes into view it fades up; never when motion is reduced or there is no script
   if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
