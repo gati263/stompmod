@@ -117,6 +117,11 @@ def make(stock, release=None, res=None):
     flags, options = web_flags(), web_options()
     combos = [flags + list(c) for n in range(len(options) + 1) for c in itertools.combinations(options, n)]
     pins = {combo_key(c): built(stock, c, res) for c in combos}
+    # Every combination of the options assembles its own modules: m4asm.key covers hxtra.inc, which lists the settings of the
+    # features built (the model pictures' two settings change every other module's key), so a build without an option needs its own.
+    mods = {}
+    for c in combos:
+        mods.update(modules(stock, c, res))
     # 'entries': per combo, the hashes a build with the user's boot picture is checked against (tools/build_verify.py). Not for a
     # combo with the model pictures: they change Entries 0, 7 and 8 by what is in the user's HX Edit, so that combo is checked by
     # its file MD5 only (and not with a boot picture of the user's) until its pictures have a tier of their own (plan, task 5).
@@ -126,7 +131,7 @@ def make(stock, release=None, res=None):
             'md5': {UNIT: {k: v[0] for k, v in pins.items()}},
             'entries': {UNIT: {combo_key(c): pins[combo_key(c)][1] for c in combos if MODEL_PICTURES not in c}},
             'hxedit': {UNIT: {combo_key(c): pins[combo_key(c)][2] for c in combos if MODEL_PICTURES in c}},
-            'modules': modules(stock, flags + options, res)}
+            'modules': mods}
 
 
 def main():

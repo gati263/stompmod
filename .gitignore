@@ -17,3 +17,5 @@ tools/*.hex
 *.mp4
 *.gif
 *.webp
+
+.impeccable/

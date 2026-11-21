@@ -1,0 +1,22 @@
+// StompMod's static site on Cloudflare Workers: gatistudio.com/stompmod, served beside the "gatistudio" Worker, which is not changed.
+// The routes below take precedence over the custom domain that Worker has, and keep the path, so tools/build_site.py puts the site in a
+// stompmod/ folder of the assets directory.
+//
+//   python tools/build_site.py --cache build/m4cache.json      # builds build/site/stompmod/ and build/site/_headers
+//   npx wrangler deploy -c deploy/stompmod/wrangler.jsonc
+//
+// No Worker script: every URL is a file in the assets (html_handling and not_found_handling are the defaults: /stompmod/ and
+// /stompmod/web/ serve their index.html, a missing path is a 404). Response headers come from build/site/_headers.
+{
+  "name": "stompmod",
+  "compatibility_date": "2026-11-21",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "gatistudio.com/stompmod", "zone_name": "gatistudio.com" },
+    { "pattern": "gatistudio.com/stompmod/*", "zone_name": "gatistudio.com" }
+  ],
+  "assets": {
+    "directory": "../../build/site"
+  }
+}

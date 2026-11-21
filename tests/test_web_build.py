@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+import build_site
 import m4asm
 import m4cache
 
@@ -142,9 +143,8 @@ def test_page_moves_old_anchors_to_their_names():
 
 
 def test_site_root_keeps_the_anchor():
-    # wisemandenny.github.io/hxtra/#install lands on the page's install step
-    site = (ROOT / ".github/workflows/pages.yml").read_text()
-    assert 'location.replace("web/" + location.hash)' in site
+    # gatistudio.com/stompmod/#install lands on the page's install step
+    assert 'location.replace("web/" + location.hash)' in build_site.INDEX
 
 
 @pytest.mark.firmware
@@ -172,8 +172,16 @@ def test_page_copy_builds_features_from_the_cache(tmp_path):
     assert out["cache"].read_bytes() == out["clang"].read_bytes()
 
 
-def test_pages_publishes_every_source():
-    # the page fetches each of SOURCES from the site, which has only what .github/workflows/pages.yml copies there
-    site = ROOT / ".github/workflows/pages.yml"
-    copied = [p for line in re.findall(r"^\s*cp -r (.*) _site/", site.read_text(), re.M) for p in line.split()]
-    assert [p for p in listed_sources() if not any(p == c or p.startswith(c + "/") for c in copied)] == []
+def test_site_publishes_every_source():
+    # the page fetches each of SOURCES from the site, which has only what tools/build_site.py copies there
+    assert [p for p in listed_sources() if not any(p == c or p.startswith(c + "/") for c in build_site.COPY)] == []
+
+
+def test_site_is_the_stompmod_folder_of_the_assets_directory():
+    # the Worker's routes keep the path (deploy/stompmod/wrangler.jsonc), so the site sits in stompmod/ under the assets directory,
+    # and the headers' patterns are the public paths
+    config = (ROOT / "deploy/stompmod/wrangler.jsonc").read_text()
+    assert '"gatistudio.com/stompmod"' in config and '"gatistudio.com/stompmod/*"' in config and '"workers_dev": false' in config
+    assert '"directory": "../../build/site"' in config
+    assert build_site.PREFIX == "stompmod" and all(line.startswith(("/stompmod/", " ")) for line in build_site.HEADERS.splitlines())
+    assert "cdn.jsdelivr.net" in build_site.CSP and "wasm-unsafe-eval" in build_site.CSP and "worker-src 'self' blob:" in build_site.CSP

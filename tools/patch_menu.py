@@ -659,7 +659,7 @@ class Patch:
         src = os.path.join(ROOT, path)
         with tempfile.TemporaryDirectory() as d:
             for name, text in {'hxtra.inc': hxtra_inc(self.mods, self.ids, getattr(self, 'virt_set', None)), **(inc or {})}.items():
-                with open(os.path.join(d, name), 'w') as f:
+                with open(os.path.join(d, name), 'w', newline='\n') as f:     # LF on every system: m4asm.key hashes these bytes
                     f.write(text)
             code, symbols = m4asm.assemble_module(src, include=(d, os.path.dirname(src)))
         self.modules[path] = Module(self.add(code), symbols)

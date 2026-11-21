@@ -42,11 +42,22 @@ HX_TUNER=1 HX_BPM=1 HX_DSP_METER=1 HX_BREATHING_LINE=1 HX_LONG_PRESS=1 HX_MORE_S
 
 ## Build in the browser
 
-The setup page, **[wisemandenny.github.io/hxtra](https://wisemandenny.github.io/hxtra/web/)**, does the same build in the browser, with nothing uploaded: you drop your stock `.hxf` and download `HX_Stomp_v3.80.0_HXtra.hxf`, with every feature on, the Metronome block included, and Real block names if you tick their box. It also runs the build from RAM and converts `.nam` captures, and it reads in 10 languages. It runs `build.py`'s own commands in [Pyodide](https://pyodide.org) (`web/firmware-worker.js`); its builds have the same MD5s as `build.py`'s.
+This fork's setup page, **StompMod** at `https://gatistudio.com/stompmod/web/`, does the Full build in the browser, with nothing uploaded: you drop your stock `.hxf` (HX Stomp only) and download the firmware, with the boot picture of your choice (`assets/boot/signal_chain.png` by default) and, if you tick it and pick HX Edit's `res` folder, the model pictures. It runs `build.py`'s own commands in [Pyodide](https://pyodide.org) (`web/firmware-worker.js`); its builds have the same MD5s as `build.py`'s, and the page says **Verified** when the file is the tested one, or, with a boot picture of your own, when only that picture differs (`tools/build_verify.py`).
 
-The browser has no clang to assemble the features' M4 code, so each release brings that code made in advance: `tools/m4cache.py` runs the page's features on the stock file and keeps what each module assembled to, in `m4cache.json`, with the MD5 of the build, and `tools/m4asm.py` reads it when `HX_M4_CACHE` names it. The page compares its build with that MD5 and says **Verified**. The page runs `build.py`'s other steps for them too: the Metronome block (`tools/patch_click.py`), and the GR meter's knobs and DSP code (`tools/patch_comp.py`, with NAM on two slots). A copy of the page served from a checkout (`python3 -m http.server`, then `/web/`) has no `m4cache.json` and builds without features, unless you make one: `python3 tools/m4cache.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf -o m4cache.json`.
+The browser has no clang to assemble the features' M4 code, so each release brings that code made in advance: `tools/m4cache.py` runs the page's features on the stock file, for every combination of the options (the model pictures change every module's key), and keeps what each module assembled to, with the MD5s, the entry hashes and the fingerprint of the HX Edit pictures it was built from, in `m4cache.json`; `tools/m4asm.py` reads it when `HX_M4_CACHE` names it. The file holds only our own code and hashes, no Line 6 data, and is never committed. Make it from the stock file and an installed HX Edit:
 
-The page is published only for a release, never from `main`, so it always matches one; see [Releases](../CONTRIBUTING.md#releases).
+```sh
+python tools/m4cache.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf -o build/m4cache.json --release v1.0.0 --hxedit-res "C:/Program Files (x86)/Line6/HX Edit/res"
+```
+
+The site is a Cloudflare Worker with static assets only, `stompmod`, on the routes `gatistudio.com/stompmod` and `gatistudio.com/stompmod/*` (`deploy/stompmod/wrangler.jsonc`; the `gatistudio` Worker that serves the rest of the domain is not changed). `tools/build_site.py` puts the page, the files its build reads and `m4cache.json` into `build/site/stompmod/`, with `build/site/_headers` (a content security policy, and no caching of the page and the cache), then `wrangler` deploys it:
+
+```sh
+python tools/build_site.py --cache build/m4cache.json
+npx wrangler deploy -c deploy/stompmod/wrangler.jsonc
+```
+
+Run both from a clean checkout of a release, so the page always matches the cache. Serve `build/site` with any static server to try it: the page is then at `/stompmod/web/`.
 
 ## Try it first, from RAM
 
