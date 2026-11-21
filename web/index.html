@@ -354,13 +354,16 @@
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* Header: the name, the theme switch and About */
-  header { display: grid; gap: var(--space-3); }
+  header { display: grid; gap: var(--space-3); padding: var(--space-6); background: var(--viz-1-soft); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-lg); }
+  @media (max-width: 520px) { header { padding: var(--space-4); } }
   .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
   .brand { display: grid; gap: var(--space-1); }
   .eyebrow { font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-mono); color: var(--text-muted); }
+  .eyebrow::before { content: ""; display: inline-block; width: var(--dot-md); height: var(--dot-md); margin-right: var(--space-2); border-radius: var(--radius-pill); background: var(--viz-1); }
   .tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
   h1 { margin: 0; font: var(--type-display-weight) var(--type-display-size)/var(--type-display-line) var(--font-serif); letter-spacing: var(--type-display-tracking); text-wrap: balance; }
   @media (min-width: 640px) { h1 { font: var(--type-hero-weight) var(--type-hero-size)/var(--type-hero-line) var(--font-serif); letter-spacing: var(--type-hero-tracking); } }
+  h1::after { content: ""; display: block; width: var(--space-12); height: var(--focus-width); margin-top: var(--space-3); background: var(--viz-1); }
   .lede { margin: 0; color: var(--text-muted); max-width: var(--prose-max); font: var(--type-lead-weight) var(--type-lead-size)/var(--type-lead-line) var(--font-sans); }
 
   /* ThemeSwitch: Light, Dark, System (a segmented control) */
@@ -392,7 +395,14 @@
     display: grid; place-items: center; width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-pill);
     background: var(--bg-selected); color: var(--text-primary); font: var(--type-readout-weight) var(--type-readout-size)/1 var(--font-mono);
   }
-  nav.steps-nav a.done .n { background: var(--text-primary); color: var(--bg-base); }
+  nav.steps-nav li:nth-child(5n+1), .card:nth-of-type(5n+1) { --accent: var(--viz-1); --accent-soft: var(--viz-1-soft); }
+  nav.steps-nav li:nth-child(5n+2), .card:nth-of-type(5n+2) { --accent: var(--viz-2); --accent-soft: var(--viz-2-soft); }
+  nav.steps-nav li:nth-child(5n+3), .card:nth-of-type(5n+3) { --accent: var(--viz-4); --accent-soft: var(--viz-4-soft); }
+  nav.steps-nav li:nth-child(5n+4), .card:nth-of-type(5n+4) { --accent: var(--viz-3); --accent-soft: var(--viz-3-soft); }
+  nav.steps-nav li:nth-child(5n+5), .card:nth-of-type(5n+5) { --accent: var(--viz-5); --accent-soft: var(--viz-5-soft); }
+  nav.steps-nav a { transition: border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard); }
+  nav.steps-nav .n { background: var(--accent-soft); box-shadow: inset 0 0 0 var(--hairline) var(--accent); }
+  nav.steps-nav a.done .n { background: var(--text-primary); color: var(--bg-base); box-shadow: none; }
   @media (max-width: 560px) { nav.steps-nav .t { display: none; } }
 
   /* Steps: panels */
@@ -452,6 +462,7 @@
     display: inline-flex; align-items: center; justify-content: center; height: var(--btn-h); padding: 0 var(--btn-px); border-radius: var(--radius-sm);
     border: var(--hairline) solid var(--btn-border); background: var(--btn-bg); color: var(--btn-fg); cursor: pointer; text-decoration: none; white-space: nowrap;
     font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); letter-spacing: var(--type-label-tracking);
+    transition: background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
   }
   .btn:hover { background: var(--btn-bg-hover); }
   .btn:active { background: var(--bg-pressed); }
@@ -483,10 +494,11 @@
   .status .title { font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); }
   .status.ok { border-color: var(--success); }
   .status.bad { border-color: var(--danger); }
+  .status:not([hidden]) { animation: rise var(--dur-base) var(--ease-emphasis); }
   .status.ok .title::before { content: "[OK] "; color: var(--success); font-family: var(--font-mono); }
   .status.bad .title::before { content: "[ERR] "; color: var(--danger); font-family: var(--font-mono); }
   .bar { height: var(--progress-height); border-radius: var(--radius-pill); background: var(--meter-track); overflow: hidden; }
-  .bar i { display: block; height: 100%; width: 0; background: var(--control-fill); transition: width var(--dur-base) var(--ease-standard); }
+  .bar i { display: block; height: 100%; width: 0; background: var(--viz-2); transition: width var(--dur-base) var(--ease-standard); }
   details.log summary { cursor: pointer; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   details.log pre {
     margin: var(--space-2) 0 0; max-height: var(--dropzone-min-height); overflow: auto; padding: var(--space-3); border-radius: var(--radius-md);
@@ -579,8 +591,15 @@
     box-shadow: var(--shadow-modal); width: min(var(--modal-width), calc(100% - var(--space-8))); max-height: calc(100% - var(--space-8)); overflow: auto; z-index: var(--z-modal);
   }
   dialog.modal::backdrop { background: var(--scrim); }
-  dialog.modal[open] { animation: modal-in var(--dur-base) var(--ease-standard); }
-  @keyframes modal-in { from { opacity: 0; transform: translateY(var(--space-2)); } to { opacity: 1; transform: none; } }
+  dialog.modal[open] { animation: modal-in var(--dur-mid) var(--ease-standard); }
+  dialog.modal[open]::backdrop { animation: fade-in var(--dur-mid) var(--ease-standard); }
+  dialog.modal.closing { animation: modal-out var(--dur-exit) var(--ease-exit) forwards; }
+  dialog.modal.closing::backdrop { animation: fade-out var(--dur-exit) var(--ease-exit) forwards; }
+  @keyframes modal-in { from { opacity: 0; transform: translateY(var(--space-2)) scale(0.98); } to { opacity: 1; transform: none; } }
+  @keyframes modal-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(var(--space-1)) scale(0.98); } }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(var(--space-2)); } to { opacity: 1; transform: none; } }
   dialog.modal h2 { margin: 0 0 var(--space-3); font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
   dialog.modal dl { margin: 0 0 var(--space-4); display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-4); color: var(--text-muted); }
   dialog.modal dt { color: var(--text-primary); font-weight: var(--weight-medium); }
@@ -588,20 +607,39 @@
   dialog.modal .actions-bar { display: flex; justify-content: flex-end; gap: var(--space-2); }
   dialog.modal p { margin: 0 0 var(--space-4); color: var(--text-muted); }
   /* What it adds: the hero photo and one card per feature (a panel each, not nested in another) */
-  .hero-shot { margin: 0; }
+  .hero-shot { margin: 0; overflow: hidden; border-radius: var(--radius-md); }
   .hero-shot img, .shots img { display: block; width: 100%; height: auto; border-radius: var(--radius-md); border: var(--hairline) solid var(--border-subtle); background: var(--bg-panel); }
   .features { display: grid; gap: var(--space-4); scroll-margin-top: var(--space-16); }
   .features > h2 { margin: 0; font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
   .features > p { margin: 0; color: var(--text-muted); }
-  .card { background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-6); display: grid; gap: var(--space-3); }
+  .card { position: relative; background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-6); display: grid; gap: var(--space-3); box-shadow: inset 0 var(--focus-width) 0 var(--accent, var(--border-subtle)); }
+  .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--shadow-popover); opacity: 0; pointer-events: none; }
   @media (max-width: 520px) { .card { padding: var(--space-4); } }
   .card h3, .card p { margin: 0; }
+  .card h3::before { content: ""; display: inline-block; width: var(--dot-md); height: var(--dot-md); margin-right: var(--space-2); border-radius: var(--radius-pill); background: var(--accent); vertical-align: middle; }
   .card .where { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 280px)); gap: var(--space-3); margin: 0; }
   .shots.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   @media (max-width: 520px) { .shots.three { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 280px)); } }
   .shots figure { margin: 0; display: grid; gap: var(--space-1); align-content: start; }
   .shots figcaption { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  /* Motion: transform and opacity only, nothing that moves the layout. The hero rises in on load (CSS); the script marks cards, headings and
+     steps .rv and the first time each scrolls into view it gets .in. Without script nothing is marked, so nothing is ever hidden. */
+  header > * { animation: rise var(--dur-slow) var(--ease-emphasis) both; }
+  header > :nth-child(2) { animation-delay: var(--dur-stagger); }
+  header > :nth-child(3) { animation-delay: calc(var(--dur-stagger) * 2); }
+  header > :nth-child(4) { animation-delay: calc(var(--dur-stagger) * 3); }
+  header > :nth-child(5) { animation-delay: calc(var(--dur-stagger) * 4); }
+  .rv { opacity: 0; transform: translateY(var(--space-4)); transition: opacity var(--dur-base) var(--ease-emphasis), transform var(--dur-base) var(--ease-emphasis); }
+  .rv.in { opacity: 1; transform: none; }
+  .shots img, .hero-shot img { transition: transform var(--dur-base) var(--ease-move); }
+  .card::after { transition: opacity var(--dur-mid) var(--ease-standard); }
+  @media (hover: hover) {
+    .card:hover { transform: translateY(calc(-1 * var(--space-1))); }
+    .card:hover::after { opacity: 1; }
+    .shots figure:hover img, .hero-shot:hover img { transform: scale(1.03); }
+  }
+  @media print { .rv { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
     html { scroll-behavior: auto; }
@@ -1154,8 +1192,37 @@ var LANG_NAMES = {
   $("aboutBtn").addEventListener("click", function () {
     if (about.showModal) about.showModal(); else about.setAttribute("open", "");
   });
-  $("aboutClose").addEventListener("click", function () { if (about.close) about.close(); else about.removeAttribute("open"); });
-  about.addEventListener("click", function (e) { if (e.target === about && about.close) about.close(); });
+  // closing plays the exit fade first (not under reduced motion), then the dialog closes
+  function closeAbout() {
+    if (!about.close) { about.removeAttribute("open"); return; }
+    if (!about.open || about.classList.contains("closing")) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { about.close(); return; }
+    about.classList.add("closing");
+    // animationend, or the exit duration token plus a margin if the browser never reports it (a hidden tab)
+    var wait = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--dur-exit")) + 100, fin = false;
+    function done() {
+      if (fin) return;
+      fin = true; clearTimeout(timer); about.removeEventListener("animationend", onEnd);
+      about.classList.remove("closing");
+      about.close();
+    }
+    function onEnd(e) { if (e.target === about) done(); }
+    var timer = setTimeout(done, wait);
+    about.addEventListener("animationend", onEnd);
+  }
+  $("aboutClose").addEventListener("click", closeAbout);
+  about.addEventListener("click", function (e) { if (e.target === about) closeAbout(); });
+  about.addEventListener("cancel", function (e) { if (about.close) { e.preventDefault(); closeAbout(); } });
+
+  // ---- Scroll reveal: the first time a card, heading or step comes into view it fades up; never when motion is reduced or there is no script
+  if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    var seen = new IntersectionObserver(function (list) {
+      list.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); seen.unobserve(en.target); } });
+    }, { threshold: 0.05, rootMargin: "0px 0px -6% 0px" });
+    Array.prototype.forEach.call(document.querySelectorAll(".features > h2, .features > p, .card, section.step"), function (el) {
+      el.classList.add("rv"); seen.observe(el);
+    });
+  }
 
   // ---- Language ------------------------------------------------------------------------------
   var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n]"));
