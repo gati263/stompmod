@@ -57,7 +57,7 @@ python tools/build_site.py --cache build/m4cache.json
 npx wrangler deploy -c deploy/stompmod/wrangler.jsonc
 ```
 
-Run both from a clean checkout of a release, so the page always matches the cache. Serve `build/site` with any static server to try it: the page is then at `/stompmod/web/`.
+`python tools/release_site.py <stock.hxf> v1.0.0` does the cache, the web tests and the site in one go from a clean, pushed checkout, and prints the deploy command without running it. Run it from a clean checkout of the release, so the page always matches the cache. Serve `build/site` with any static server to try it: the page is then at `/stompmod/web/`.
 
 ## Try it first, from RAM
 

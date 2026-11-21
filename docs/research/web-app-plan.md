@@ -1,6 +1,9 @@
 # Web app plan: this fork's Full build in the browser
 
-Status: plan only, nothing implemented. Written against commit 1e308c6. Line numbers are of that tree.
+Status: tasks 1 to 8 of section 7 are done (the feature set and worker, verification, the boot picture panel, the model pictures from the
+user's HX Edit folder, branding on the GaTi UI tokens, hosting as the `stompmod` Worker on gatistudio.com/stompmod, the release script
+`tools/release_site.py`); task 9, the end-to-end run, is checked in a browser against the live site and on the unit by its owner. The
+text below is the plan as written, against commit 1e308c6 (line numbers are of that tree), where the Decisions section overrides it.
 
 Goal: the user drops the stock `HX_Stomp_v3.80.0_0x103966115.hxf` on a page and gets this fork's Full build
 (`HX_CC_TAP HX_BPM HX_SPLASH_LINE=hide HX_MODEL_PICTURES HX_DSP_METER HX_TUNER HX_TAP_COLOR HX_LONG_PRESS HX_MORE_SNAPSHOTS HX_REAL_NAMES`,

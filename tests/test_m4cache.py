@@ -91,23 +91,3 @@ def test_make_refuses_a_cache_build(monkeypatch):
     monkeypatch.setenv(m4asm.CACHE, "m4cache.json")
     with pytest.raises(SystemExit, match="unset HX_M4_CACHE"):
         m4cache.make("stock.hxf")
-
-
-def test_release_repo():
-    import release
-    assert release.repo("https://github.com/wisemandenny/hxtra.git") == "wisemandenny/hxtra"
-    assert release.repo("git@github.com:wisemandenny/hxtra.git") == "wisemandenny/hxtra"
-    with pytest.raises(SystemExit):
-        release.repo("https://example.com/hxtra.git")
-
-
-@pytest.mark.parametrize("tag, text, ok", [("v1.0.0", "v1.0.0", True), ("v1.0.1", "v1.0.0", False),
-                                           ("v1.0.0", "HXtra", True), ("1.0.0", "HXtra", False),
-                                           ("v1.1.0-rc.1", "HXtra", True)])
-def test_release_version(tag, text, ok):
-    import release
-    if ok:
-        release.check_version(tag, text)
-    else:
-        with pytest.raises(SystemExit):
-            release.check_version(tag, text)

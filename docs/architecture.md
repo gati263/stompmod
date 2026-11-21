@@ -42,7 +42,7 @@ tools/features/               the features: tuner.py, bpm.py, breathing_line.py,
 tools/setting_ids.py          which setting ID each feature's setting uses
 tools/m4asm.py                assembles a feature's src/m4/*.s with clang, or takes it from a release's m4cache.json
 tools/m4cache.py              a release's m4cache.json: the M4 code of the setup page's features
-tools/release.py              makes a release: its m4cache.json on a GitHub release, which publishes the setup page
+tools/release_site.py          prepares a release of the web page: its m4cache.json, the tests, build/site (tools/build_site.py), the deploy command
 src/m4/                       the features' M4 code (tuner.s, bpm.s, breathing_line.s, dsp_meter.s, long_press.s, more_snapshots.s)
 tools/image_store.py          the image store (Entries 7 and 8): images, fonts, items
 tools/icon_library.py         the icon library: every stock icon drawn from your firmware file (docs/icons.md)
@@ -60,6 +60,6 @@ tools/sharc/entry4_blob.py    DSP graph library parser
 tools/sharc/sasm.py, ssim.py  SHARC assembler and simulator
 src/sharc/nam_a2.asm          reference NAM A2 implementation for the check
 src/ramboot/                  the RAM loader and its eMMC overlay hook (C, Cortex-M4; make -C src/ramboot)
-web/                          the setup page: build, RAM run and converter in the browser (published per release: .github/workflows/pages.yml)
+web/                          the setup page: build, RAM run and converter in the browser (deployed per release as a Cloudflare Worker: deploy/stompmod, tools/release_site.py)
 tests/                        pytest: unit, M4 code in unicorn (m4emu.py), web parity, kernel (slow), firmware (firmware.py; needs a stock .hxf)
 ```

@@ -5,8 +5,8 @@ usage: m4cache.py <HX_Stomp_v3.80.0_0x103966115.hxf> [-o build/m4cache.json] [--
 
 Runs the features of tools/patch_menu.py, all those the page builds, on the image build.py gives them (the stock file with
 NAM A2 Lite added: the features' code reads addresses in it), keeping what every module assembled to (keyed by m4asm.key),
-then builds the same with build.py to pin its MD5. tools/release.py attaches the file to
-the GitHub release, and the Pages workflow publishes it next to the page; m4asm reads it when HX_M4_CACHE names it.
+then builds the same with build.py to pin its MD5. tools/release_site.py makes it for a release and
+tools/build_site.py publishes it next to the page; m4asm reads it when HX_M4_CACHE names it.
 """
 import argparse
 import hashlib

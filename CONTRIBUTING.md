@@ -36,12 +36,10 @@ M4 code (the caves `tools/patch_menu.py` writes, and each feature's `.s` module)
 
 ## Releases
 
-For maintainers.
-
-On a Mac, from a clean checkout of the pushed commit to release (usually `main`):
+For maintainers. A release is the StompMod page at `gatistudio.com/stompmod` with the M4 code made for its tag (`m4cache.json`). From a clean checkout of the pushed commit to release (usually `main`):
 
 ```sh
-python3 tools/release.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf v1.0.0
+python tools/release_site.py path/to/HX_Stomp_v3.80.0_0x103966115.hxf v1.0.0
 ```
 
-It makes the release's `m4cache.json` (about 15 s), then creates the GitHub release `v1.0.0` of that commit with the file attached (`gh release create`, notes generated from the pull requests). Publishing the release starts `.github/workflows/pages.yml`, which publishes the setup page of that tag with the release's `m4cache.json`. `--dry-run` only makes `build/m4cache.json`. It refuses a tag the boot text doesn't show (`tools/features/splash.py` `TEXT`), a checkout with changes, and a commit that isn't pushed. To publish a release's page again, run the workflow by hand with its tag. The repository's Pages are set to deploy from workflows, and its `github-pages` environment lets `v*` tags deploy as well as `main`.
+It refuses a checkout with changes or a commit that isn't pushed, makes `build/m4cache.json` for the tag (from the stock file and an installed HX Edit), runs the web tests, builds `build/site`, and prints the `wrangler deploy` command, which you run yourself. Nothing is deployed or tagged by the script; see [Building](docs/building.md#build-in-the-browser).
