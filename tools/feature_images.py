@@ -33,7 +33,6 @@ SHOTS = {
     'S7b-fs3-fs5-hold': (782, 931, 1000),
     'S7c-fs6-fs8-function': (786, 871, 1000),
     'S8-command-center-tap': (815, 903, 1000),
-    'S9a-tuner-stock-page': (850, 903, 1000),
     'S9b-tuner-activate-lock': (815, 915, 1000),
 }
 WHOLE = {'P1-home-full-unit': (272, 207, 1542, 1135)}
