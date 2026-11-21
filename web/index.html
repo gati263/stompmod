@@ -417,7 +417,7 @@
   /* Steps: panels */
   section.step {
     background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md);
-    padding: var(--space-6); display: grid; gap: var(--space-4); scroll-margin-top: var(--space-16);
+    padding: var(--space-6); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); scroll-margin-top: var(--space-16);
   }
   @media (max-width: 520px) { section.step { padding: var(--space-4); } }
   .step-head { display: grid; grid-template-columns: var(--control-lg) minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center; }
@@ -502,6 +502,7 @@
 
   /* Status blocks: a text prefix as well as colour */
   .status { display: grid; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-sm); border: var(--hairline) solid var(--border-subtle); background: var(--bg-base); }
+  .status p { overflow-wrap: anywhere; }
   .status .title { font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); }
   .status.ok { border-color: var(--success); }
   .status.bad { border-color: var(--danger); }
@@ -517,6 +518,7 @@
     white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-primary);
   }
   .row-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  #ramWhy { min-width: 0; overflow-wrap: anywhere; }
   .note { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
 
   /* Converted captures */
@@ -626,6 +628,16 @@
   .features { display: grid; gap: var(--space-4); scroll-margin-top: var(--space-16); }
   .features > h2 { margin: 0; font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
   .features > p { margin: 0; color: var(--text-muted); }
+  .mp { display: grid; gap: var(--space-3); padding: var(--space-6); background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); }
+  .mp > h3 { margin: 0; }
+  .mp > p { margin: 0; }
+  .mp-shots { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: 0; }
+  .mp-shots figure { margin: 0; display: grid; gap: var(--space-1); }
+  .mp-shots img { display: block; width: 100%; height: auto; border-radius: var(--radius-md); border: var(--hairline) solid var(--border-subtle); }
+  .mp-shots figcaption { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  .mp, #options { scroll-margin-top: var(--space-16); }
+  .mp-see { display: inline-block; margin: var(--space-1) 0 0 var(--space-6); }
+  @media (max-width: 520px) { .mp { padding: var(--space-4); } }
   .fgroup { display: grid; gap: var(--space-3); }
   div.fgroup:nth-of-type(1) { --accent: var(--viz-1); }
   div.fgroup:nth-of-type(2) { --accent: var(--viz-2); }
@@ -687,6 +699,7 @@
     nav.steps-nav li:nth-child(7) { margin-top: var(--space-3); padding-top: var(--space-3); border-top: var(--hairline) solid var(--border-subtle); }
     section.step > p, section.step > ol, section.step > ul { max-width: var(--prose-max); }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mp-shots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .build-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
     .build-main, .build-side { display: grid; gap: var(--space-4); align-content: start; min-width: 0; }
     .build-side { position: sticky; top: var(--space-6); }
@@ -744,6 +757,7 @@
       <li><a href="#convert-captures" id="nav5"><span class="n">5</span><span class="t" data-i18n="nav.4">Convert captures</span></a></li>
       <li><a href="#play-nam" id="nav6"><span class="n">6</span><span class="t" data-i18n="nav.5">Play NAM</span></a></li>
       <li class="extra"><a href="#what-it-adds" id="navFeatures"><span class="n">+</span><span class="t" data-i18n="nav.feat">What it adds</span></a></li>
+      <li class="extra"><a href="#model-pictures" id="navPictures"><span class="n">+</span><span class="t" data-i18n="nav.mp">Model pictures</span></a></li>
       <li class="extra"><a href="#recovery" id="navRecovery"><span class="n">!</span><span class="t" data-i18n="nav.rec">Recovery</span></a></li>
       <li class="extra"><a href="#questions" id="navQuestions"><span class="n">?</span><span class="t" data-i18n="nav.faq">Questions</span></a></li>
     </ol>
@@ -808,6 +822,7 @@
       <div class="options" id="options" hidden>
       <div class="checks" id="opts" hidden>
         <div class="feat" data-option="HX_MODEL_PICTURES" hidden><label><input type="checkbox"> <span data-i18n="feat.pics"><b>Model pictures</b> (optional, off unless you tick it)</span></label>
+        <a class="mp-see" href="#model-pictures" data-i18n="mp.see">See what it looks like</a>
           <ul data-i18n="feat.picsS">
             <li>A picture of the selected block's model in the Edit view and of the model under the cursor in the model browser.</li>
             <li>The pictures are HX Edit's own, read from the HX Edit installed on this computer: you pick its <b>res</b> folder, and nothing is uploaded. <b>The build takes about a minute longer with this ticked.</b></li>
@@ -974,6 +989,21 @@
   <section class="features" id="what-it-adds" aria-labelledby="hfa">
     <h2 id="hfa">What it adds</h2>
     <p>Everything below is in the firmware you build in step 2, with the Model pictures box as the one exception. Photos are of an HX Stomp running it.</p>
+    <section class="mp" id="model-pictures" aria-labelledby="hmp">
+      <h3 id="hmp" data-i18n="gmp">Model pictures</h3>
+      <p>A picture of the selected model in the Edit view and of the model under the cursor in the model browser. They are HX Edit's own pictures, read from the HX Edit on this computer, and nothing is uploaded.</p>
+      <div class="mp-shots">
+        <figure><img src="img/features/mp-edit.webp" width="800" height="608" loading="lazy" alt="The Edit view with a picture of the SLO-100 amp above the block's knobs, Drive, Bass and Mid"><figcaption>Edit view</figcaption></figure>
+        <figure><img src="img/features/mp-browser.webp" width="800" height="608" loading="lazy" alt="The model browser's Distortion list with a picture of the Timmy overdrive pedal beside it"><figcaption>Model browser</figcaption></figure>
+      </div>
+      <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; Model Pictures (on by default) and Browser Icons (off by default).</p>
+      <details class="more"><summary data-i18n="more">More</summary>
+        <div class="shots"><figure><img src="img/features/s6a.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the Model Pictures, Browser Icons and Snapshot Names settings"><figcaption>The settings</figcaption></figure></div>
+      </details>
+      <p><b>Optional.</b> It needs HX Edit installed on this computer: tick the Model pictures box before you build, and the build then takes about a minute longer.</p>
+      <div class="hero-cta"><a class="btn primary" href="#options" data-i18n="mp.go">Go to the Model pictures box</a></div>
+    </section>
+
     <div class="fgroup">
       <h3 id="gdisp" data-i18n="gdisp">Displays</h3>
       <div class="grid">
@@ -1015,19 +1045,6 @@
         <p class="where"><b>Where:</b> model browser and Edit view. No setting.</p>
         <details class="more"><summary data-i18n="more">More</summary>
           <p>Presets are the same with or without it.</p>
-        </details>
-      </article>
-      <article class="card">
-        <h4>Model pictures</h4>
-        <p>A picture of the selected model in the Edit view and of the model under the cursor in the model browser.</p>
-        <figure class="rep"><a class="zoom" href="img/features/s2.webp"><img src="img/features/s2.webp" width="640" height="486" loading="lazy" alt="The Edit view with a picture of the SLO-100 amp above the block's knobs"><span class="count">3 photos</span></a><figcaption>Edit view</figcaption></figure>
-        <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; Model Pictures (on by default) and Browser Icons (off by default).</p>
-        <details class="more"><summary data-i18n="more">More</summary>
-          <p>They are HX Edit's own pictures, read from the HX Edit on this computer, and nothing is uploaded. Optional: tick the Model pictures box before you build; the build then takes about a minute longer.</p>
-          <div class="shots">
-            <figure><img src="img/features/s3.webp" width="640" height="486" loading="lazy" alt="The model browser with a picture of the Timmy overdrive pedal beside the list"><figcaption>Model browser</figcaption></figure>
-            <figure><img src="img/features/s6a.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the Model Pictures, Browser Icons and Snapshot Names settings"><figcaption>The settings</figcaption></figure>
-          </div>
         </details>
       </article>
       <article class="card">
@@ -1382,7 +1399,7 @@ var LANG_NAMES = {
     var seen = new IntersectionObserver(function (list) {
       list.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); seen.unobserve(en.target); } });
     }, { threshold: 0.05, rootMargin: "0px 0px -6% 0px" });
-    Array.prototype.forEach.call(document.querySelectorAll(".features > h2, .features > p, .card, section.step"), function (el) {
+    Array.prototype.forEach.call(document.querySelectorAll(".features > h2, .features > p, .card, .mp, section.step"), function (el) {
       el.classList.add("rv"); seen.observe(el);
     });
   }

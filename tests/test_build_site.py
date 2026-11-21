@@ -27,7 +27,7 @@ def test_layout_is_the_stompmod_folder_with_headers_beside_it(site):
 
 def test_the_feature_pictures_the_page_shows_are_in_the_site(site):
     out, _ = site
-    for name in ("p1", "s1", "s11a", "s11b", "s2", "s3", "s5", "s6a", "s6b", "s6c", "s7a", "s7b", "s7c", "s8", "s9b"):
+    for name in ("p1", "s1", "s11a", "s11b", "s2", "s3", "s5", "s6a", "s6b", "s6c", "s7a", "s7b", "s7c", "s8", "s9b", "mp-edit", "mp-browser"):
         assert (out / "stompmod" / "web" / "img" / "features" / f"{name}.webp").is_file(), name
 
 

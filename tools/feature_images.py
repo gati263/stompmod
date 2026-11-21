@@ -37,6 +37,12 @@ SHOTS = {
     'S9b-tuner-activate-lock': (815, 915, 1000),
 }
 WHOLE = {'P1-home-full-unit': (272, 207, 1542, 1135)}
+# Close crops of the screen for the Model pictures section, shown at half the content width: output name: (original, x, y, w, h).
+CLOSE = {
+    'mp-edit': ('S2-edit-dsp-model-picture', 413, 661, 800, 608),
+    'mp-browser': ('S3-browser-real-names-picture', 362, 624, 800, 608),
+}
+C_WIDTH = 800
 
 
 def box(name):
@@ -63,11 +69,18 @@ def main():
     os.makedirs(a.out, exist_ok=True)
     jobs = [(n, box(n), S_WIDTH) for n in SHOTS] + [(n, c, P_WIDTH) for n, c in WHOLE.items()]
     total = 0
+    close = [(o, (x, y, w, h), n) for n, (o, x, y, w, h) in CLOSE.items()]
     for name, crop, width in jobs:
         dst = os.path.join(a.out, name.split('-')[0].lower() + '.webp')
         convert(os.path.join(a.src, name + '.jpg'), dst, crop, width)
         total += os.path.getsize(dst)
         print(f'{os.path.basename(dst):12} {os.path.getsize(dst) / 1024:6.1f} KB  from {name}')
+    for src, crop, n in close:
+        dst = os.path.join(a.out, n + '.webp')
+        convert(os.path.join(a.src, src + '.jpg'), dst, crop, C_WIDTH)
+        total += os.path.getsize(dst)
+        print(f'{n + ".webp":12} {os.path.getsize(dst) / 1024:6.1f} KB  from {src}')
+    jobs = jobs + close
     print(f'[+] {len(jobs)} pictures, {total / 1024:.0f} KB')
 
 
