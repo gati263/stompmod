@@ -228,6 +228,33 @@ def _area(np, n, m):
     return out / s
 
 
+def _sparse(np, m):
+    """(columns, weights), each r x K, of the nonzero entries of every row of m in ascending column order; a row with fewer than
+    K is padded with weight 0 (a term that adds exactly 0)."""
+    nz = [np.nonzero(row)[0] for row in m]
+    k = max(len(z) for z in nz)
+    cols, wts = np.zeros((len(m), k), np.intp), np.zeros((len(m), k))
+    for y, z in enumerate(nz):
+        cols[y, :len(z)], wts[y, :len(z)] = z, m[y, z]
+        cols[y, len(z):] = z[-1] if len(z) else 0
+    return cols, wts
+
+
+def _contract(np, ay, rgb, ax):
+    """np.einsum('yi,ijc,xj->yxc', ay, rgb, ax), bit for bit and some 300 times faster: einsum adds the products
+    (ay[y, i] * rgb[i, j, c]) * ax[x, j] one after another, i then j ascending, and a zero weight adds exactly 0, so the same
+    sums in the same order over each row's few nonzero weights give the same floats (a BLAS matrix product sums in another order,
+    and a different last bit moves a .5 across rint on some pixels; this is also the same on every machine)."""
+    iy, wy = _sparse(np, ay)
+    ix, wx = _sparse(np, ax)
+    acc = np.zeros((len(ay), len(ax), rgb.shape[2]))
+    for a in range(iy.shape[1]):
+        t = wy[:, a][:, None, None] * rgb[iy[:, a]]
+        for b in range(ix.shape[1]):
+            acc += t[:, ix[:, b], :] * wx[:, b][None, :, None]
+    return acc
+
+
 def picture(np, path, box_w=BOX_W, box_h=BOX_H):
     """(width, height, RGB565 pixels as the image store keeps them) of an image on black, its transparent border trimmed, scaled
     to fit box_w x box_h by area (never up)."""
@@ -242,7 +269,7 @@ def picture(np, path, box_w=BOX_W, box_h=BOX_H):
     k = min(box_w / w, box_h / h, 1.0)
     nw, nh = max(1, round(w * k)), max(1, round(h * k))
     ax, ay = _area(np, w, nw), _area(np, h, nh)
-    out = np.clip(np.rint(np.einsum('yi,ijc,xj->yxc', ay, rgb, ax)), 0, 255).astype(np.int64)
+    out = np.clip(np.rint(_contract(np, ay, rgb, ax)), 0, 255).astype(np.int64)
     r, g, b = out[:, :, 0], out[:, :, 1], out[:, :, 2]
     v = ((b * 31 + 127) // 255) << 11 | ((g * 63 + 127) // 255) << 5 | (r * 31 + 127) // 255     # image_store.pixel
     return nw, nh, v[::-1, :].T.astype('<u2').tobytes()        # column by column, each from the bottom

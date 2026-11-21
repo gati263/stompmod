@@ -102,6 +102,44 @@ def test_picture_trims_scales_into_the_box_and_keeps_its_orientation(tmp_path):
     assert mp.picture(np, str(tmp_path / 's.png'), 80, 48)[:2] == (10, 40)      # never scaled up
 
 
+def reference_picture(path, box_w, box_h):
+    """picture() as it was written with einsum: the straightforward reference _contract must equal bit for bit."""
+    img = mp.read_rgba(np, path)
+    alpha = img[:, :, 3] / 255
+    rgb = img[:, :, :3] * alpha[:, :, None]
+    ys, xs = np.nonzero(alpha > 0.03)
+    rgb = rgb[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    h, w = rgb.shape[:2]
+    k = min(box_w / w, box_h / h, 1.0)
+    nw, nh = max(1, round(w * k)), max(1, round(h * k))
+    out = np.clip(np.rint(np.einsum('yi,ijc,xj->yxc', mp._area(np, h, nh), rgb, mp._area(np, w, nw))), 0, 255).astype(np.int64)
+    r, g, b = out[:, :, 0], out[:, :, 1], out[:, :, 2]
+    v = ((b * 31 + 127) // 255) << 11 | ((g * 63 + 127) // 255) << 5 | (r * 31 + 127) // 255
+    return nw, nh, v[::-1, :].T.astype('<u2').tobytes()
+
+
+@pytest.mark.parametrize('seed, h, w, box', [(1, 100, 200, (80, 48)), (2, 97, 61, (64, 80)), (3, 300, 310, (80, 38)),
+                                             (4, 41, 83, (80, 48)), (5, 256, 256, (80, 48))])
+def test_picture_equals_the_einsum_reference_bit_for_bit(tmp_path, seed, h, w, box):
+    """Random pictures, some quantised so that many sums land on exactly .5 (a half a level moves under any change of summing order)."""
+    rng = np.random.default_rng(seed)
+    rgba = rng.integers(0, 256, (h, w, 4)).astype(np.uint8)
+    rgba[:, :, 3] = np.where(rng.random((h, w)) < 0.3, 0, rgba[:, :, 3])
+    if seed % 2:
+        rgba[:, :, :3] = rgba[:, :, :3] // 64 * 64 + 1
+        rgba[:, :, 3] = 255
+    (tmp_path / 'r.png').write_bytes(png(rgba))
+    assert mp.picture(np, str(tmp_path / 'r.png'), *box) == reference_picture(str(tmp_path / 'r.png'), *box)
+
+
+@pytest.mark.parametrize('n, m', [(200, 80), (97, 38), (64, 64), (1, 1), (83, 80), (310, 38)])
+def test_contract_is_einsum_bit_for_bit(n, m):
+    rng = np.random.default_rng(n * m)
+    rgb = rng.integers(0, 256, (n + 7, n, 3)).astype(np.float64)
+    ay, ax = mp._area(np, n + 7, max(1, m * (n + 7) // n)), mp._area(np, n, m)
+    assert np.array_equal(mp._contract(np, ay, rgb, ax), np.einsum('yi,ijc,xj->yxc', ay, rgb, ax))
+
+
 def test_mono_and_stereo_share_the_plain_models_picture(tmp_path):
     (tmp_path / 'icons_models').mkdir()
     (tmp_path / 'icons_models' / 'k.png').write_bytes(b'')
