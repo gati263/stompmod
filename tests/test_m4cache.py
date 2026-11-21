@@ -72,7 +72,8 @@ def test_make_pins_every_option_combination(monkeypatch):
     monkeypatch.delenv(m4asm.CACHE, raising=False)
     monkeypatch.setattr(m4cache, "web_flags", lambda: ["HX_B", "HX_A"])
     monkeypatch.setattr(m4cache, "web_options", lambda: ["HX_X", "HX_MODEL_PICTURES"])
-    monkeypatch.setattr(m4cache, "built", lambda stock, flags, res=None: (m4cache.combo_key(flags), {8: m4cache.combo_key(flags)}))
+    monkeypatch.setattr(m4cache, "built", lambda stock, flags, res=None: (m4cache.combo_key(flags), {8: m4cache.combo_key(flags)},
+                                                                      "fp" if "HX_MODEL_PICTURES" in flags else None))
     monkeypatch.setattr(m4cache, "modules", lambda stock, flags, res=None: {"flags": flags})
     cache = m4cache.make("stock.hxf", "v1")
     assert cache["features"] == ["HX_B", "HX_A"] and cache["options"] == ["HX_X", "HX_MODEL_PICTURES"] and cache["env"] == m4cache.FULL_ENV
@@ -80,6 +81,7 @@ def test_make_pins_every_option_combination(monkeypatch):
     assert sorted(cache["md5"]["HX_Stomp"]) == ["HX_A+HX_B", "HX_A+HX_B+HX_MODEL_PICTURES", "HX_A+HX_B+HX_MODEL_PICTURES+HX_X",
                                                 "HX_A+HX_B+HX_X"]
     assert sorted(cache["entries"]["HX_Stomp"]) == ["HX_A+HX_B", "HX_A+HX_B+HX_X"], "none for a combo with the model pictures"
+    assert cache["hxedit"]["HX_Stomp"] == {"HX_A+HX_B+HX_MODEL_PICTURES": "fp", "HX_A+HX_B+HX_MODEL_PICTURES+HX_X": "fp"}
     assert cache["modules"] == {"flags": ["HX_B", "HX_A", "HX_X", "HX_MODEL_PICTURES"]}
 
 

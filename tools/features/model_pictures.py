@@ -7,6 +7,7 @@ for its usual place, or the path of its res folder), scaled into an 80x48 box (a
 HX Edit's catalog names each model's image by the model's internal name, which the firmware's Entry 3 string table gives every
 browser item and block record (a name index).
 tools/model_pictures_preview.py draws these layouts offline to judge them before a RAM run."""
+import hashlib
 import json
 import os
 import re
@@ -141,6 +142,16 @@ def catalog_images(res):
         elif isinstance(o, list):
             todo += o
     return out
+
+
+def fingerprint(used):
+    """The sha256 of the model pictures a build reads, from [(model name, picture file)]: the same HX Edit pictures give the same
+    one. tools/m4cache.py pins the release machine's; the web page compares its build's with it (it is printed by apply)."""
+    h = hashlib.sha256()
+    for name, path in sorted(used):
+        with open(path, 'rb') as f:
+            h.update(name.encode() + b'\0' + f.read() + b'\0')
+    return h.hexdigest()
 
 
 def image_file(images, res, name):
@@ -306,11 +317,12 @@ def apply(p):
     res = res_dir(p.input(FLAG))
     images = catalog_images(res)
     models, nstr = name_indices(p)
-    by_file, table, btable = {}, [0] * nstr, [0] * nstr
+    by_file, table, btable, used = {}, [0] * nstr, [0] * nstr, []
     for ni, name in sorted(models.items()):
         path = image_file(images, res, name)
         if path is None:
             continue
+        used.append((name, path))
         if path not in by_file:
             w, h, px = picture(np, path)
             small = p.add_image(LIKE, w, h, px)
@@ -319,6 +331,7 @@ def apply(p):
                 big = p.add_image(LIKE, *picture(np, path, TALL_W, TALL_H))
             by_file[path] = small, big
         table[ni], btable[ni] = by_file[path]
+    print(f'model_pictures: HX Edit fingerprint {fingerprint(used)} ({len(used)} models, {len(by_file)} pictures)')
     added = sum(len(d) for d in p.entry(8).items)
     if len(p.entry(8).data) + added > E8_WINDOW:
         raise SystemExit(f'model_pictures: the image store would be {len(p.entry(8).data) + added:#x} bytes, more than the '

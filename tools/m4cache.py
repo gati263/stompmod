@@ -14,6 +14,7 @@ import importlib.util
 import itertools
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -30,6 +31,7 @@ UNIT = 'HX_Stomp'                   # the features are the HX Stomp's only
 # the cache as 'env', so the page sets what the pinned builds had. The boot picture is the repository's own; the user's replaces it.
 FULL_ENV = {'HX_SPLASH_LINE': 'hide', 'HX_SPLASH': 'assets/boot/signal_chain.png', 'HX_SPLASH_FIT': 'fill'}
 MODEL_PICTURES = 'HX_MODEL_PICTURES'    # the option whose value is HX Edit's res folder, not '1'
+FINGERPRINT = r'HX Edit fingerprint ([0-9a-f]{64})'     # the line features/model_pictures.py prints; the page reads it from the log
 
 
 def web_flags():
@@ -95,7 +97,8 @@ def modules(stock, flags, res=None):
 
 
 def built(stock, flags, res=None):
-    """(the MD5 of build.py's .hxf with flags on, FULL_ENV and no other HX_ variable, its build_verify.entry_hashes())."""
+    """(the MD5 of build.py's .hxf with flags on, FULL_ENV and no other HX_ variable, its build_verify.entry_hashes(), and the
+    fingerprint of the HX Edit pictures it was built from, None without the model pictures)."""
     env = build_env(flags, res)
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, 'out.hxf')
@@ -103,7 +106,9 @@ def built(stock, flags, res=None):
                            env=env, cwd=ROOT, capture_output=True, text=True)
         if r.returncode or 'ALL OK' not in r.stdout:
             raise SystemExit(f'm4cache: the build with {combo_key(flags) or "no features"} failed:\n{r.stdout}{r.stderr}')
-        return hashlib.md5(open(out, 'rb').read()).hexdigest(), build_verify.entry_hashes(pa.load_l6ia_from_any(out)[0])
+        fp = re.search(FINGERPRINT, r.stdout)
+        return (hashlib.md5(open(out, 'rb').read()).hexdigest(), build_verify.entry_hashes(pa.load_l6ia_from_any(out)[0]),
+                fp and fp.group(1))
 
 
 def make(stock, release=None, res=None):
@@ -115,9 +120,12 @@ def make(stock, release=None, res=None):
     # 'entries': per combo, the hashes a build with the user's boot picture is checked against (tools/build_verify.py). Not for a
     # combo with the model pictures: they change Entries 0, 7 and 8 by what is in the user's HX Edit, so that combo is checked by
     # its file MD5 only (and not with a boot picture of the user's) until its pictures have a tier of their own (plan, task 5).
+    # 'hxedit': per combo with them, the fingerprint of the release machine's HX Edit pictures: the page gives "exact" to a build
+    # from an HX Edit with the same one, and says "not verified byte for byte" to a build from another.
     return {'release': release, 'unit': UNIT, 'features': flags, 'options': options, 'env': FULL_ENV,
             'md5': {UNIT: {k: v[0] for k, v in pins.items()}},
             'entries': {UNIT: {combo_key(c): pins[combo_key(c)][1] for c in combos if MODEL_PICTURES not in c}},
+            'hxedit': {UNIT: {combo_key(c): pins[combo_key(c)][2] for c in combos if MODEL_PICTURES in c}},
             'modules': modules(stock, flags + options, res)}
 
 

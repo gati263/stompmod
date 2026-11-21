@@ -15,10 +15,11 @@
 // ramrun.js: the regions to send and the eMMC checks.
 //
 // Messages out: { type: "progress", step, of, text } | { type: "log", text }
-//               { type: "done", unit, file, bytes: ArrayBuffer, md5,
+//               { type: "done", unit, file, bytes: ArrayBuffer, md5, why: "hxedit" | null,
 //                 verify: "exact" (the file is the tested build's, byte for byte) | "picture" (your boot picture is the only
 //                 difference from it, and it is in the file as you gave it) | "failed" (it differs from the tested build) |
-//                 null (nothing to compare with: no tested build for this combination),
+//                 null (nothing to compare with: no tested build for this combination, or the model pictures come from an
+//                 HX Edit that is not the tested one: then why: "hxedit"),
 //                 ram: { regions: [{ addr, label, bytes: ArrayBuffer }], checks } | { error } }
 //               { type: "error", text }
 "use strict";
@@ -238,7 +239,7 @@ async function build(stock, flags, splash, hxedit) {
       if (base !== "build/stock.hxf") p.FS.unlink("/repo/" + base);
       base = out;
     });
-    step(4, "Adding NAM A2 Lite…", ["tools/patch_menu.py", base, "build/nam_lite_menu.l6ia"]);
+    var menuOut = step(4, "Adding NAM A2 Lite…", ["tools/patch_menu.py", base, "build/nam_lite_menu.l6ia"]);
     p.FS.unlink("/repo/" + base);
     base = "build/nam_lite_menu.l6ia";
     step(5, "Adding the kernel to the DSP program…",
@@ -263,9 +264,23 @@ async function build(stock, flags, splash, hxedit) {
   var buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   // With the repository's boot picture the file is compared with the pinned build's MD5. A boot picture of the user's changes
   // the file, so then only what it cannot change is (verifyBuild).
-  var want = splash ? null : flags.length ? (cache.md5[unit] || {})[flags.slice().sort().join("+")] : BUILT_MD5[unit];
-  if (!splash) verify = want ? (outMd5 === want ? "exact" : "failed") : null;
-  post({ type: "done", unit: unit, file: file, bytes: buf, md5: outMd5, verify: verify, ram: ram },
+  var key = flags.slice().sort().join("+");
+  var want = splash ? null : flags.length ? (cache.md5[unit] || {})[key] : BUILT_MD5[unit];
+  var why = null;
+  if (flags.indexOf("HX_MODEL_PICTURES") >= 0) {
+    // The pictures are the user's HX Edit's: the pinned file is the release machine's, so it is compared only when the
+    // fingerprint of the pictures read (printed by features/model_pictures.py) is the one pinned (tools/m4cache.py 'hxedit').
+    var seen = /HX Edit fingerprint ([0-9a-f]{64})/.exec(menuOut);
+    var pinned = cache && cache.hxedit && (cache.hxedit[unit] || {})[key];
+    var same = !!(seen && pinned && seen[1] === pinned);
+    post({ type: "log", text: "model pictures: HX Edit fingerprint " + (seen ? seen[1] : "unknown") + "\n" +
+           (same ? "that is the tested HX Edit's: the file is compared byte for byte\n"
+                 : "that is not the tested HX Edit's" + (pinned ? " (" + pinned + ")" : "") + ": the file cannot be compared byte for byte\n") });
+    if (!same) { want = null; verify = null; why = "hxedit"; }
+  }
+  if (!splash && want) verify = outMd5 === want ? "exact" : "failed";
+  else if (!splash && !why) verify = null;
+  post({ type: "done", unit: unit, file: file, bytes: buf, md5: outMd5, verify: verify, why: why, ram: ram },
        [buf].concat(ram.regions ? ram.regions.map(function (r) { return r.bytes; }) : []));
 }
 

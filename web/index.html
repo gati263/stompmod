@@ -262,6 +262,14 @@
   #bootMsg.bad { color: var(--bad); }
   #bootMsg.warn { color: var(--warn, var(--muted)); }
   .boot.over { border-color: var(--accent); }
+  .hxedit { display: grid; gap: 10px; margin-top: 10px; }
+  .hxedit p { margin: 0; color: var(--muted); font-size: 14px; }
+  .hxedit .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .hxedit input[type=file] { display: none; }
+  .checks .hxedit label.btn { display: inline-block; width: auto; padding: 10px 16px; white-space: nowrap; cursor: pointer; }
+  #hxeditMsg { min-height: 1.3em; }
+  #hxeditMsg.bad { color: var(--bad); }
+  #hxeditMsg.warn { color: var(--warn, var(--muted)); }
   @media (max-width: 640px) { .boot-body { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -287,8 +295,16 @@
       <div class="feat" data-option="HX_MODEL_PICTURES" hidden><label><input type="checkbox"> <span data-i18n="feat.pics"><b>Model pictures</b> (optional, off unless you tick it)</span></label>
         <ul data-i18n="feat.picsS">
           <li>A picture of the selected block's model in the Edit view and of the model under the cursor in the model browser.</li>
-          <li>The pictures are HX Edit's own, read from the HX Edit installed on this computer: you pick its <b>res</b> folder, and nothing is uploaded. <b>The build takes much longer with this ticked.</b></li>
+          <li>The pictures are HX Edit's own, read from the HX Edit installed on this computer: you pick its <b>res</b> folder, and nothing is uploaded. <b>The build takes about a minute longer with this ticked.</b></li>
         </ul>
+        <div class="hxedit" id="hxedit" hidden>
+          <p data-i18n="pics.hint">Pick HX Edit's <b>res</b> folder. On Windows it is usually <code>C:\Program Files (x86)\Line6\HX Edit\res</code>; if your browser will not open a system folder, copy the folder somewhere else first. Only HX Edit's model pictures are read.</p>
+          <div class="row">
+            <label class="btn" for="hxeditDir" data-i18n="pics.choose">Choose the res folder</label>
+            <input id="hxeditDir" type="file" webkitdirectory multiple>
+          </div>
+          <p id="hxeditMsg" role="status"></p>
+        </div>
       </div>
     </div>
     <p class="tip" id="featNone" hidden data-i18n="feat.none">This copy of the page has no feature code, so it builds NAM A2 Lite and the boot screen only. The page published with each HXtra release has it.</p>
@@ -564,6 +580,17 @@ var EN = {
   "rel": " · {release}",
   "fw.sizeTitle": "This doesn't look like an HX Stomp, XL or HX Effects firmware file.",
   "fw.sizeText": "“{name}” is {mb} MB; the stock file is about 45 MB (HX Effects: about 4 MB) and ends in .hxf.",
+  "pics.nocatalog": "That folder has no HX_ModelCatalog.json. Pick HX Edit's res folder.",
+  "pics.badcatalog": "HX_ModelCatalog.json in that folder can't be read. Pick HX Edit's res folder.",
+  "pics.nopictures": "That folder has no icons_models folder of pictures next to HX_ModelCatalog.json. Pick HX Edit's res folder.",
+  "pics.reading": "Reading {done} of {n} pictures…",
+  "pics.found": "Found {n} model pictures.",
+  "pics.missing": "Found {n} model pictures; {m} more that the catalog names are missing, and those models get none.",
+  "pics.readFail": "A file of that folder could not be read. Pick the folder again.",
+  "fw.picsTitle": "Choose HX Edit's res folder first.",
+  "fw.picsText": "Model pictures are ticked. Pick HX Edit's res folder above, or untick them.",
+  "fw.picsOddTitle": "Built: your {unit} firmware is ready.",
+  "fw.picsOddText": "Every checksum passed. The model pictures come from your HX Edit, which is not the one the project tested, so the file can't be compared byte for byte with the tested build. Download it, then go to step 4.",
   "boot.size": "That file is {mb} MB; use a picture of at most 20 MB.",
   "boot.decode": "This browser can't read “{name}”. Save it as a PNG or JPEG and try again.",
   "boot.pixels": "That picture is {mp} megapixels; use one of at most 50.",
@@ -624,6 +651,7 @@ var LANG_NAMES = {
   en: "English"
 };
 </script>
+<script src="hxedit-res.js"></script>
 <script>
 (function () {
   "use strict";
@@ -753,6 +781,39 @@ var LANG_NAMES = {
     }, function () { $("featNone").hidden = $("options").hidden = false; });
   }
 
+  // ---- The model pictures' folder pick: HX Edit's res folder, read here and sent to the worker (web/hxedit-res.js) ---------
+  var picsBox = document.querySelector("[data-option=HX_MODEL_PICTURES]");
+  var picsFiles = null;       // [{ path, bytes }] of the folder picked: HX_ModelCatalog.json and the pictures it names
+  function picsTicked() { return !!picsBox && !picsBox.hidden && picsBox.querySelector("input[type=checkbox]").checked; }
+  function picsSay(kind, key, vars) {
+    var m = $("hxeditMsg");
+    m.className = kind || "";
+    m.textContent = key ? t(key, vars) : "";
+  }
+  if (picsBox) {
+    picsBox.querySelector("input[type=checkbox]").addEventListener("change", function () { $("hxedit").hidden = !picsTicked(); });
+    $("hxeditDir").addEventListener("change", function (e) {
+      var entries = Array.prototype.map.call(e.target.files, function (f) { return { path: f.webkitRelativePath || f.name, file: f }; });
+      picsFiles = null;
+      if (!entries.length) { picsSay(""); return; }
+      HXEDIT.select(entries).then(function (sel) {
+        var out = [], n = sel.files.length;
+        function next(i) {
+          if (i >= n) return Promise.resolve();
+          picsSay("", "pics.reading", { done: i, n: n });
+          return sel.files[i].file.arrayBuffer().then(function (b) { out.push({ path: sel.files[i].path, bytes: b }); return next(i + 1); });
+        }
+        return next(0).then(function () {
+          picsFiles = out;
+          if (sel.missing.length) picsSay("warn", "pics.missing", { n: sel.named - sel.missing.length, m: sel.missing.length });
+          else picsSay("", "pics.found", { n: sel.named });
+        });
+      }, function (err) { picsSay("bad", "pics." + (err.code || "bad")); })
+        .catch(function () { picsFiles = null; picsSay("bad", "pics.readFail"); });
+      e.target.value = "";
+    });
+  }
+
   // ---- The boot screen panel: the user's picture made 320 x 240 for the build (the worker's splash) ------------------------
   // The geometry is the firmware's (read offline): the boot view (constructor 0x28d92708, paint 0x28d92950) counts y up from the
   // bottom of the 240-row screen. The loading bar is a rect at y = 121, so row 240 - 121 = 119 from the top; Icon_Firmware (30 x 19,
@@ -856,6 +917,7 @@ var LANG_NAMES = {
       fwShow("bad", ["fw.sizeTitle"], ["fw.sizeText", { name: file.name, mb: (file.size / 1e6).toFixed(1) }]);
       return;
     }
+    if (picsTicked() && !picsFiles) { fwShow("bad", ["fw.picsTitle"], ["fw.picsText"]); return; }
     busy = true;
     built = null;
     $("fwDrop").classList.add("busy");
@@ -883,6 +945,7 @@ var LANG_NAMES = {
           ramReady(m.ram);
           if (m.verify === "exact") fwShow("ok", ["fw.okTitle", { unit: unit }], ["fw.okText"]);
           else if (m.verify === "picture") fwShow("ok", ["fw.pictureTitle", { unit: unit }], ["fw.pictureText"]);
+          else if (m.verify === null && m.why === "hxedit") fwShow("ok", ["fw.picsOddTitle", { unit: unit }], ["fw.picsOddText"]);
           else if (m.verify === null) fwShow("ok", ["fw.unpinnedTitle", { unit: unit }], ["fw.unpinnedText"]);
           else fwShow("ok", ["fw.oddTitle"], ["fw.oddText"]);
           markDone(2);
@@ -898,9 +961,11 @@ var LANG_NAMES = {
         fwShow("bad", ["fw.startTitle"], ["fw.startText", { err: e.message || "Worker error" }]);
       };
       var splash = bootBytes ? bootBytes.slice(0) : null;     // the user's 320 x 240 PNG; null: the repository's picture
-      worker.postMessage({ stock: buf, splash: splash, features: features.concat(optBoxes.filter(function (o) {
+      var hxedit = picsTicked() ? picsFiles.map(function (f) { return { path: f.path, bytes: f.bytes.slice(0) }; }) : null;
+      var send = [buf].concat(splash ? [splash] : [], hxedit ? hxedit.map(function (f) { return f.bytes; }) : []);
+      worker.postMessage({ stock: buf, splash: splash, hxedit: hxedit, features: features.concat(optBoxes.filter(function (o) {
         return !o.hidden && o.querySelector("input").checked;
-      }).map(function (o) { return o.dataset.option; })) }, splash ? [buf, splash] : [buf]);
+      }).map(function (o) { return o.dataset.option; })) }, send);
     }, function () {
       finish();
       fwShow("bad", ["fw.readTitle"], ["fw.readText"]);
