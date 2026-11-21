@@ -25,6 +25,12 @@ def test_layout_is_the_stompmod_folder_with_headers_beside_it(site):
     assert not any("__pycache__" in str(f) or str(f).endswith((".hxf", ".l6ia", ".pyc")) for f in files)
 
 
+def test_the_feature_pictures_the_page_shows_are_in_the_site(site):
+    out, _ = site
+    for name in ("p1", "s1", "s11a", "s11b", "s2", "s3", "s5", "s6a", "s6b", "s6c", "s7a", "s7b", "s7c", "s8", "s9b"):
+        assert (out / "stompmod" / "web" / "img" / "features" / f"{name}.webp").is_file(), name
+
+
 def test_every_header_pattern_is_a_public_path_and_the_page_is_never_cached(site):
     out, _ = site
     text = (out / "_headers").read_text()
