@@ -242,6 +242,27 @@
   .trybox h3 { margin: 0; }
   .trybox .status { background: var(--panel); }
   .trybox .note { color: var(--muted); font-size: 14px; }
+  /* The boot screen panel (step 2): the picture the HX Stomp shows at power-on, 320x240 */
+  .boot { display: grid; gap: 12px; margin: 0 0 16px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
+  .boot h3 { margin: 0; font-size: 16px; }
+  .boot p { margin: 0; color: var(--muted); font-size: 14px; }
+  .boot-body { display: grid; grid-template-columns: minmax(0, 320px) 1fr; gap: 16px; align-items: start; }
+  .boot-stage { position: relative; aspect-ratio: 4 / 3; background: #000; border: 1px solid var(--line); line-height: 0; }
+  .boot-stage img { width: 100%; height: 100%; image-rendering: pixelated; }
+  .boot-mark { position: absolute; pointer-events: none; font: 600 11px/1 var(--font-mono); color: #fff; }
+  .boot-bar { left: 0; right: 0; border-top: 1px dashed #ffd24a; }
+  .boot-bar span { position: absolute; right: 4px; top: 4px; padding: 4px 8px; background: rgba(0, 0, 0, .65); color: #ffd24a; }
+  .boot-icon { outline: 1px dashed #4ad2ff; }
+  .boot-icon span { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 4px; padding: 4px 8px; white-space: nowrap; background: rgba(0, 0, 0, .65); color: #4ad2ff; }
+  .boot-ctl { display: grid; gap: 10px; }
+  .boot-ctl .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .boot-ctl input[type=file] { display: none; }
+  .boot-fit label { display: inline-flex; gap: 6px; align-items: center; margin-right: 14px; }
+  #bootMsg { min-height: 1.3em; }
+  #bootMsg.bad { color: var(--bad); }
+  #bootMsg.warn { color: var(--warn, var(--muted)); }
+  .boot.over { border-color: var(--accent); }
+  @media (max-width: 640px) { .boot-body { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -314,6 +335,31 @@
     <div id="fwOffline" class="status bad" hidden>
       <span class="title" data-i18n="s2.offTitle">This step needs the page opened from a web address.</span>
       <p data-i18n="s2.off1">You opened the page as a file on your computer, and browsers don't let a file page run the build. Open the online page instead: <a href="https://wisemandenny.github.io/hxtra/web/">wisemandenny.github.io/hxtra</a>. It does the same thing and still uploads nothing. (Steps 5 and 6 work either way.)</p>
+    </div>
+
+    <div class="boot" id="boot">
+      <h3 data-i18n="boot.title">Boot screen</h3>
+      <p data-i18n="boot.sub">The picture the HX Stomp shows while it starts. Leave it as it is, or use your own.</p>
+      <div class="boot-body">
+        <div class="boot-stage" id="bootStage">
+          <img id="bootImg" src="../assets/boot/signal_chain.png" width="320" height="240" alt="Preview of the boot picture">
+          <div class="boot-mark boot-bar" id="bootBar"><span data-i18n="boot.bar">loading bar</span></div>
+          <div class="boot-mark boot-icon" id="bootIcon"><span data-i18n="boot.icon">hidden text</span></div>
+        </div>
+        <div class="boot-ctl">
+          <div class="row">
+            <label class="btn" for="bootPick" data-i18n="boot.use">Use my own picture</label>
+            <input id="bootPick" type="file" accept="image/*">
+            <button class="btn" id="bootReset" type="button" hidden data-i18n="boot.reset">Use the default</button>
+          </div>
+          <div class="boot-fit" id="bootFit" hidden>
+            <label><input type="radio" name="bootFit" value="fill" checked><span data-i18n="boot.fill">Fill (crop the edges)</span></label>
+            <label><input type="radio" name="bootFit" value="fit"><span data-i18n="boot.fit">Fit (black bars)</span></label>
+          </div>
+          <p id="bootMsg" role="status"></p>
+          <p data-i18n="boot.note">The picture is made 320 x 240 here and stays on this computer. The dashed lines show where the loading bar crosses it and where the firmware paints over its corner to hide the boot text. How the bar looks over your picture can only be judged on the HX Stomp itself.</p>
+        </div>
+      </div>
     </div>
 
     <label class="drop" id="fwDrop">
@@ -518,6 +564,12 @@ var EN = {
   "rel": " · {release}",
   "fw.sizeTitle": "This doesn't look like an HX Stomp, XL or HX Effects firmware file.",
   "fw.sizeText": "“{name}” is {mb} MB; the stock file is about 45 MB (HX Effects: about 4 MB) and ends in .hxf.",
+  "boot.size": "That file is {mb} MB; use a picture of at most 20 MB.",
+  "boot.decode": "This browser can't read “{name}”. Save it as a PNG or JPEG and try again.",
+  "boot.pixels": "That picture is {mp} megapixels; use one of at most 50.",
+  "boot.small": "That picture is only {w} x {h}: it will look soft at 320 x 240.",
+  "boot.ok": "Your picture, {w} x {h}, is ready as 320 x 240.",
+  "boot.canvas": "This browser could not make the picture.",
   "fw.building": "Building…",
   "fw.reading": "Reading {name}…",
   "fw.step": "Step {step} of {of}: {text}",
@@ -701,6 +753,100 @@ var LANG_NAMES = {
     }, function () { $("featNone").hidden = $("options").hidden = false; });
   }
 
+  // ---- The boot screen panel: the user's picture made 320 x 240 for the build (the worker's splash) ------------------------
+  // The geometry is the firmware's (read offline): the boot view (constructor 0x28d92708, paint 0x28d92950) counts y up from the
+  // bottom of the 240-row screen. The loading bar is a rect at y = 121, so row 240 - 121 = 119 from the top; Icon_Firmware (30 x 19,
+  // anchor 6 = top left) is put at y = 29, so rows 211 to 229, at x = 160 - (30 + the hidden line's width) / 2; the hidden line
+  // is " ", 1 px wide in hx21_regularFont, so x = 145 (tools/features/splash.py hide_line paints that icon in the picture's corner
+  // colour). Not seen on a unit.
+  var BOOT = { w: 320, h: 240, barRow: 119, icon: { x: 145, y: 211, w: 30, h: 19 }, maxBytes: 20e6, maxPixels: 50e6, minSide: 64 };
+  var bootBlob = null, bootBytes = null, bootSource = null;   // the PNG made, its bytes for the worker, and the decoded picture
+  function bootPlace() {
+    var bar = $("bootBar"), ic = $("bootIcon");
+    bar.style.top = (100 * BOOT.barRow / BOOT.h) + "%";
+    ic.style.left = (100 * BOOT.icon.x / BOOT.w) + "%";
+    ic.style.top = (100 * BOOT.icon.y / BOOT.h) + "%";
+    ic.style.width = (100 * BOOT.icon.w / BOOT.w) + "%";
+    ic.style.height = (100 * BOOT.icon.h / BOOT.h) + "%";
+  }
+  bootPlace();
+  function bootSay(kind, key, vars) {
+    var m = $("bootMsg");
+    m.className = kind || "";
+    m.textContent = key ? t(key, vars) : "";
+  }
+  function bootFitValue() { return document.querySelector("input[name=bootFit]:checked").value; }
+  function bootDraw() {
+    if (!bootSource) return Promise.resolve();
+    var c = document.createElement("canvas");
+    c.width = BOOT.w; c.height = BOOT.h;
+    var g = c.getContext("2d");
+    if (!g) { bootSay("bad", "boot.canvas"); return Promise.resolve(); }
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, BOOT.w, BOOT.h);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "high";
+    var sw = bootSource.width, sh = bootSource.height;
+    var k = (bootFitValue() === "fill" ? Math.max : Math.min)(BOOT.w / sw, BOOT.h / sh);
+    var dw = sw * k, dh = sh * k;
+    g.drawImage(bootSource, (BOOT.w - dw) / 2, (BOOT.h - dh) / 2, dw, dh);
+    return new Promise(function (res) {
+      c.toBlob(function (b) {
+        if (!b) { bootSay("bad", "boot.canvas"); res(); return; }
+        b.arrayBuffer().then(function (bytes) {
+          bootBlob = b;
+          bootBytes = bytes;
+          var old = $("bootImg").src;
+          $("bootImg").src = URL.createObjectURL(b);
+          if (/^blob:/.test(old)) URL.revokeObjectURL(old);
+          $("bootReset").hidden = false;
+          $("bootFit").hidden = false;
+          res();
+        });
+      }, "image/png");
+    });
+  }
+  function bootUse(file) {
+    if (!file) return;
+    if (file.size > BOOT.maxBytes) { bootSay("bad", "boot.size", { mb: (file.size / 1e6).toFixed(1) }); return; }
+    var open = window.createImageBitmap
+      ? createImageBitmap(file, { imageOrientation: "from-image" })
+      : Promise.reject(new Error("no createImageBitmap"));
+    open.then(function (bmp) {
+      if (bmp.width * bmp.height > BOOT.maxPixels) {
+        bmp.close();
+        bootSay("bad", "boot.pixels", { mp: (bmp.width * bmp.height / 1e6).toFixed(0) });
+        return;
+      }
+      if (bootSource) bootSource.close();
+      bootSource = bmp;
+      return bootDraw().then(function () {
+        if (!bootBlob) return;
+        if (Math.min(bmp.width, bmp.height) < BOOT.minSide) bootSay("warn", "boot.small", { w: bmp.width, h: bmp.height });
+        else bootSay("", "boot.ok", { w: bmp.width, h: bmp.height });
+      });
+    }, function () { bootSay("bad", "boot.decode", { name: file.name }); });
+  }
+  function bootDefault() {
+    if (bootSource) bootSource.close();
+    bootSource = null; bootBlob = null; bootBytes = null;
+    var old = $("bootImg").src;
+    $("bootImg").src = "../assets/boot/signal_chain.png";
+    if (/^blob:/.test(old)) URL.revokeObjectURL(old);
+    $("bootReset").hidden = true;
+    $("bootFit").hidden = true;
+    document.querySelector("input[name=bootFit][value=fill]").checked = true;
+    bootSay("");
+  }
+  $("bootPick").addEventListener("change", function (e) { bootUse(e.target.files[0]); e.target.value = ""; });
+  $("bootReset").addEventListener("click", bootDefault);
+  Array.prototype.forEach.call(document.querySelectorAll("input[name=bootFit]"), function (r) {
+    r.addEventListener("change", function () { bootDraw(); });
+  });
+  dropZone($("boot"), function (files) { bootUse(files[0]); });
+  $("boot").addEventListener("dragenter", function () { $("boot").classList.add("over"); });
+  ["dragleave", "drop"].forEach(function (ty) { $("boot").addEventListener(ty, function () { $("boot").classList.remove("over"); }); });
+
   function buildFirmware(files) {
     if (busy || !files || !files.length) return;
     var file = files[0];
@@ -751,9 +897,10 @@ var LANG_NAMES = {
         finish();
         fwShow("bad", ["fw.startTitle"], ["fw.startText", { err: e.message || "Worker error" }]);
       };
-      worker.postMessage({ stock: buf, features: features.concat(optBoxes.filter(function (o) {
+      var splash = bootBytes ? bootBytes.slice(0) : null;     // the user's 320 x 240 PNG; null: the repository's picture
+      worker.postMessage({ stock: buf, splash: splash, features: features.concat(optBoxes.filter(function (o) {
         return !o.hidden && o.querySelector("input").checked;
-      }).map(function (o) { return o.dataset.option; })) }, [buf]);
+      }).map(function (o) { return o.dataset.option; })) }, splash ? [buf, splash] : [buf]);
     }, function () {
       finish();
       fwShow("bad", ["fw.readTitle"], ["fw.readText"]);

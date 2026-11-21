@@ -143,13 +143,12 @@ Conversion (JS, no library):
 5. Post the PNG's bytes to the worker; the worker writes `/repo/build/splash.png` and sets `HX_SPLASH` (absolute path). The default
    path sends no bytes: `HX_SPLASH=/repo/assets/boot/signal_chain.png`.
 
-Preview: the 320x240 canvas drawn at 2x with two marks: the loading bar at **y = 121** (`splash.py` l.6-8: the boot view draws the
-bar across the picture at y = 121; the picture itself sits top-aligned at y 0, so the mark is at row 121 of the 240) as a dashed
-line with a label, and the strip that `hide_line` repaints (`Icon_Firmware`, painted with the picture's bottom-left pixel,
-`splash.py` l.109-119). The icon's exact rectangle is not written in the docs: measure it from `image_store.image(..., b'Icon_Firmware')`
-(width x height) and its draw position in `docs/research/m4/boot-screen.md` when implementing, and warn when the bottom-left pixel
-colour differs a lot from the pixels around that rectangle. The bar's width and colour are the firmware's: **how the bar looks over a
-custom picture can only be judged on the unit** (or a RAM run), so the preview marks position only.
+Preview: the 320x240 picture with two marks. Correction (task 4): the firmware counts y **up from the bottom** of the 240-row screen
+(`docs/research/m4/text-and-fonts.md`), so the loading bar at y = 121 is **row 119 from the top**, not row 121. The hidden line's
+`Icon_Firmware` (30x19, anchor 6 = top left, put at y = 29 by the boot view constructor `0x28d92708`) covers rows 211 to 229 from the top,
+at x = 145 (x = 160 - (30 + 1) / 2: the hidden line is a space, 1 px wide in `hx21_regularFont`); this is read from the disassembly, not
+seen on a unit. The bar's width and colour are the firmware's: **how the bar looks over a custom picture can only be judged on the
+unit**, so the preview marks position only.
 
 ## 4. Verification
 
