@@ -15,280 +15,609 @@
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>HXtra Setup</title>
-<meta name="description" content="Custom firmware for HX Stomp">
+<title>StompMod Setup</title>
+<meta name="description" content="StompMod: custom firmware for the Line 6 HX Stomp, built in your browser from your own firmware file">
+<script>
+/* GaTi UI: Light is the default; Dark and System apply only when the person chose them (saved), set before the page paints. */
+(function () {
+  var t = "light";
+  try { t = localStorage.getItem("stompmod-theme") || "light"; } catch (e) { /* private mode */ }
+  var dark = t === "dark" || (t === "system" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
 <style>
-  /* Layout: one column of numbered steps (a step nav on top), each a card; the firmware builder and the
-     capture converter live inside their steps. Recovery is its own card after the steps. */
-  :root {
-    --bg: #f3f4f6;
-    --panel: #ffffff;
-    --ink: #1b1e24;
-    --muted: #5d6470;
-    --line: #d9dce2;
-    --accent: #c24a12;
-    --accent-ink: #ffffff;
-    --accent-soft: #fbe9df;
-    --ok: #1d7a46;
-    --ok-soft: #e1f3e8;
-    --bad: #b3261e;
-    --bad-soft: #fbe5e3;
-    --warn: #8a5a00;
-    --warn-soft: #fbf0d5;
-    --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-    --r: 10px;
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #121418; --panel: #1b1e24; --ink: #eceef2; --muted: #a0a7b3; --line: #2e333c;
-      --accent: #f07a3c; --accent-ink: #1b0d05; --accent-soft: #3a2014;
-      --ok: #5fcf8d; --ok-soft: #143222; --bad: #ff8a80; --bad-soft: #3b1715; --warn: #f2c050; --warn-soft: #362a0f;
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #121418; --panel: #1b1e24; --ink: #eceef2; --muted: #a0a7b3; --line: #2e333c;
-    --accent: #f07a3c; --accent-ink: #1b0d05; --accent-soft: #3a2014;
-    --ok: #5fcf8d; --ok-soft: #143222; --bad: #ff8a80; --bad-soft: #3b1715; --warn: #f2c050; --warn-soft: #362a0f;
-    color-scheme: dark;
-  }
+  /* GaTi UI tokens (Light and Dark), generated from the design system's tokens.json by its gen_tokens.py rules: names and values are
+     the artifact's (https://claude.ai/artifact/KZxCozNTu6DdCnnRL8eav5, version 1795086159-5820); do not edit them here. */
+:root, [data-theme="light"] {
+  --sage-50: #F0F5F3;
+  --sage-100: #E1EAE8;
+  --sage-200: #C3D5D0;
+  --sage-300: #9EBCB4;
+  --sage-400: #80A89D;
+  --sage-500: #57877A;
+  --sage-600: #476E64;
+  --sage-700: #395850;
+  --sage-800: #29403A;
+  --sage-900: #1B2A26;
+  --bg-base: #FDFBF7;
+  --bg-panel: #F4F2EE;
+  --bg-elevated: #FFFFFF;
+  --bg-brand-soft: #E1EAE8;
+  --scrim: rgba(30, 29, 28, 0.40);
+  --bg-selected: #F0EDE8;
+  --bg-pressed: #E5E2DC;
+  --control-fill: #5A5754;
+  --border-subtle: #E5E2DC;
+  --border-strong: #8A857F;
+  --text-primary: #2D2B2A;
+  --text-muted: #6F6B68;
+  --text-disabled: #A8A5A0;
+  --text-inactive: #6F6B68;
+  --action-inactive: #6F6B68;
+  --text-brand: #476E64;
+  --text-link: #37515F;
+  --text-link-hover: #263A46;
+  --brand: #57877A;
+  --action-primary: #476E64;
+  --action-primary-hover: #395850;
+  --action-primary-pressed: #29403A;
+  --on-action-primary: #FFFFFF;
+  --focus-ring: #2D2B2A;
+  --success: #56703E;
+  --warning: #8D6225;
+  --warning-fill: #D29E55;
+  --on-warning-fill: #2D2B2A;
+  --danger: #9F4D3C;
+  --action-danger: #B85A46;
+  --action-danger-hover: #9F4D3C;
+  --action-danger-pressed: #853F31;
+  --on-action-danger: #FFFFFF;
+  --param: #788891;
+  --meter-track: #E5E2DC;
+  --meter-safe: #56703E;
+  --meter-warn: #AD782E;
+  --meter-clip: #B85A46;
+  --viz-1: #AD782E;
+  --viz-2: #37515F;
+  --viz-3: #B85A46;
+  --viz-4: #9470A6;
+  --viz-5: #56703E;
+  --viz-6: #57877A;
+  --viz-1-soft: #F7F1E7;
+  --viz-2-soft: #EDEDEB;
+  --viz-3-soft: #F7EEE9;
+  --viz-4-soft: #F5F0F1;
+  --viz-5-soft: #F0F0E8;
+  --viz-6-soft: #F0F2ED;
+  --scrim-video: rgba(30, 29, 28, 0.72);
+  --on-video: #FDFBF7;
+  --on-video-muted: rgba(253, 251, 247, 0.8);
+  --shadow-popover: 0 4px 12px rgba(45, 43, 42, 0.10);
+  --shadow-modal: 0 12px 32px rgba(45, 43, 42, 0.16);
+}
+[data-theme="dark"] {
+  --sage-50: #F0F5F3;
+  --sage-100: #E1EAE8;
+  --sage-200: #C3D5D0;
+  --sage-300: #9EBCB4;
+  --sage-400: #80A89D;
+  --sage-500: #57877A;
+  --sage-600: #476E64;
+  --sage-700: #395850;
+  --sage-800: #29403A;
+  --sage-900: #1B2A26;
+  --bg-base: #1E1D1C;
+  --bg-panel: #2A2928;
+  --bg-elevated: #353332;
+  --bg-brand-soft: #29403A;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --bg-selected: #3A3836;
+  --bg-pressed: #454341;
+  --control-fill: #C2BEB7;
+  --border-subtle: #454341;
+  --border-strong: #8A857F;
+  --text-primary: #EBE9E4;
+  --text-muted: #A8A5A0;
+  --text-disabled: #6E6A66;
+  --text-inactive: #A8A5A0;
+  --action-inactive: #A8A5A0;
+  --text-brand: #9EBCB4;
+  --text-link: #9DB3C1;
+  --text-link-hover: #B9CBD6;
+  --brand: #80A89D;
+  --action-primary: #80A89D;
+  --action-primary-hover: #9EBCB4;
+  --action-primary-pressed: #C3D5D0;
+  --on-action-primary: #1E1D1C;
+  --focus-ring: #EBE9E4;
+  --success: #8DAA6C;
+  --warning: #D29E55;
+  --warning-fill: #D29E55;
+  --on-warning-fill: #1E1D1C;
+  --danger: #CD998E;
+  --action-danger: #BD796B;
+  --action-danger-hover: #CD998E;
+  --action-danger-pressed: #DDB5AC;
+  --on-action-danger: #1E1D1C;
+  --param: #8E9CA3;
+  --meter-track: #454341;
+  --meter-safe: #8DAA6C;
+  --meter-warn: #D29E55;
+  --meter-clip: #BD796B;
+  --viz-1: #D29E55;
+  --viz-2: #6B8190;
+  --viz-3: #CD998E;
+  --viz-4: #D1ACD3;
+  --viz-5: #8DAA6C;
+  --viz-6: #80A89D;
+  --viz-1-soft: #2C2721;
+  --viz-2-soft: #242525;
+  --viz-3-soft: #2C2725;
+  --viz-4-soft: #2C282B;
+  --viz-5-soft: #272822;
+  --viz-6-soft: #262826;
+  --scrim-video: rgba(30, 29, 28, 0.72);
+  --on-video: #FDFBF7;
+  --on-video-muted: rgba(253, 251, 247, 0.8);
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --control-sm: 24px;
+  --control-md: 32px;
+  --control-lg: 40px;
+  --control-xl: 48px;
+  --skeleton-line: 12px;
+  --popover-width: 280px;
+  --kbd-height: 20px;
+  --radial-size: 48px;
+  --textarea-min-height: 96px;
+  --badge-size: 18px;
+  --text-min: 12px;
+  --hit-pointer: 24px;
+  --hit-touch: 44px;
+  --knob-sm: 32px;
+  --knob-md: 48px;
+  --knob-lg: 72px;
+  --meter-width: 6px;
+  --arc-width: 3px;
+  --hairline: 1px;
+  --focus-width: 2px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --tag-height: 24px;
+  --dot-md: 8px;
+  --dot-sm: 6px;
+  --toggle-width: 36px;
+  --toggle-height: 20px;
+  --toggle-thumb: 12px;
+  --fader-length: 120px;
+  --fader-rail: 4px;
+  --fader-thumb-width: 24px;
+  --fader-thumb-height: 12px;
+  --meter-length: 140px;
+  --peak-hold: 2px;
+  --clip-led-width: 14px;
+  --clip-led-height: 6px;
+  --dropzone-min-height: 160px;
+  --spinner-stroke: 2px;
+  --check-size: 16px;
+  --slider-rail: 4px;
+  --slider-thumb: 16px;
+  --progress-height: 4px;
+  --handle-size: 12px;
+  --puck-size: 16px;
+  --menu-min-width: 192px;
+  --tooltip-max-width: 240px;
+  --modal-width: 480px;
+  --sidebar-width: 240px;
+  --header-height: 40px;
+  --icon-stroke: 1.5;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --opacity-dim: 0.35;
+  --opacity-tint: 0.14;
+  --opacity-ring: 0.5;
+  --opacity-reduced: 0.4;
+  --bottomnav-height: 56px;
+  --sheet-handle-width: 36px;
+  --sheet-handle-height: 4px;
+  --sheet-width: 560px;
+  --plan-min-width: 240px;
+  --mod-cell-width: 56px;
+  --share-width: 1200px;
+  --share-height: 630px;
+  --swipe-action-width: 72px;
+  --bp-md: 640px;
+  --bp-lg: 1024px;
+  --bp-xl: 1440px;
+  --grid-columns-sm: 4;
+  --grid-columns-md: 8;
+  --grid-columns-lg: 12;
+  --gutter-sm: 16px;
+  --gutter-lg: 24px;
+  --container-max: 1200px;
+  --prose-max: 720px;
+  --site-nav-height: 56px;
+  --bp-xs: 480px;
+  --type-display-size: 36px;
+  --type-display-line: 42px;
+  --type-display-weight: 600;
+  --type-display-tracking: -0.01em;
+  --type-title-size: 26px;
+  --type-title-line: 32px;
+  --type-title-weight: 600;
+  --type-title-tracking: -0.005em;
+  --type-heading-size: 22px;
+  --type-heading-line: 28px;
+  --type-heading-weight: 600;
+  --type-heading-tracking: 0em;
+  --type-panel-header-size: 18px;
+  --type-panel-header-line: 24px;
+  --type-panel-header-weight: 600;
+  --type-panel-header-tracking: 0em;
+  --type-hero-size: 56px;
+  --type-hero-line: 60px;
+  --type-hero-weight: 600;
+  --type-hero-tracking: -0.015em;
+  --type-body-size: 14px;
+  --type-body-line: 21px;
+  --type-body-weight: 400;
+  --type-body-tracking: 0em;
+  --type-label-size: 14px;
+  --type-label-line: 21px;
+  --type-label-weight: 500;
+  --type-label-tracking: 0em;
+  --type-label-lg-size: 16px;
+  --type-label-lg-line: 24px;
+  --type-label-lg-weight: 500;
+  --type-label-lg-tracking: 0em;
+  --type-lead-size: 18px;
+  --type-lead-line: 28px;
+  --type-lead-weight: 400;
+  --type-lead-tracking: 0em;
+  --type-caption-size: 12px;
+  --type-caption-line: 18px;
+  --type-caption-weight: 400;
+  --type-caption-tracking: 0.01em;
+  --type-readout-lg-size: 16px;
+  --type-readout-lg-line: 20px;
+  --type-readout-lg-weight: 500;
+  --type-readout-lg-tracking: 0em;
+  --type-log-size: 13px;
+  --type-log-line: 20px;
+  --type-log-weight: 400;
+  --type-log-tracking: 0em;
+  --type-readout-size: 12px;
+  --type-readout-line: 16px;
+  --type-readout-weight: 500;
+  --type-readout-tracking: 0em;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 310;
+  --z-toast: 400;
+  --z-tooltip: 500;
+  --dur-fast: 120ms;
+  --dur-mid: 200ms;
+  --dur-base: 300ms;
+  --dur-slow: 450ms;
+  --dur-shimmer: 1400ms;
+  --dur-exit: 150ms;
+  --dur-stagger: 40ms;
+  --dur-spin: 800ms;
+  --dur-flash: 900ms;
+  --dur-blink: 1000ms;
+  --dur-live: 2400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --font-serif: Newsreader, Georgia, "Times New Roman", serif;
+  --font-sans: "Be Vietnam Pro", "Segoe UI", "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, "SF Mono", Menlo, monospace;
+}
 
+  /* Page styles: every colour, size, space, radius, type and motion value is a GaTi UI token (the block above), never a literal.
+     One column of numbered steps, each a panel; the firmware builder and the capture converter live inside their steps. */
+  html { color-scheme: light; -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  html[data-theme="dark"] { color-scheme: dark; }
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.55 var(--font-ui);
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-    padding-block: 32px 56px;
+    margin: 0; background: var(--bg-base); color: var(--text-primary);
+    font: var(--type-body-weight) var(--type-body-size)/var(--type-body-line) var(--font-sans);
+    padding: var(--space-8) max(var(--space-6), env(safe-area-inset-right, 0px)) var(--space-16) max(var(--space-6), env(safe-area-inset-left, 0px));
   }
   [hidden] { display: none !important; }
-  .wrap { max-width: 780px; margin: 0 auto; display: grid; gap: 20px; }
-  a { color: var(--accent); }
-  code, .mono { font-family: var(--font-mono); font-size: .9em; }
+  .wrap { max-width: var(--prose-max); margin: 0 auto; display: grid; gap: var(--space-6); }
+  a { color: var(--text-link); text-decoration: underline; }
+  a:hover { color: var(--text-link-hover); }
+  code, .mono { font-family: var(--font-mono); font-size: var(--type-log-size); }
   code { overflow-wrap: anywhere; }
+  :focus-visible { outline: var(--focus-width) solid var(--focus-ring); outline-offset: 2px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  header { display: grid; gap: 8px; }
-  .eyebrow { font: 600 12px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
-  h1 { margin: 0; font-size: clamp(28px, 5vw, 38px); line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; }
-  .lede { margin: 0; color: var(--muted); max-width: 62ch; font-size: 17px; }
+  /* Header: the name, the theme switch and About */
+  header { display: grid; gap: var(--space-3); }
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+  .brand { display: grid; gap: var(--space-1); }
+  .eyebrow { font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-mono); color: var(--text-muted); }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+  h1 { margin: 0; font: var(--type-display-weight) var(--type-display-size)/var(--type-display-line) var(--font-serif); letter-spacing: var(--type-display-tracking); text-wrap: balance; }
+  @media (min-width: 640px) { h1 { font: var(--type-hero-weight) var(--type-hero-size)/var(--type-hero-line) var(--font-serif); letter-spacing: var(--type-hero-tracking); } }
+  .lede { margin: 0; color: var(--text-muted); max-width: var(--prose-max); font: var(--type-lead-weight) var(--type-lead-size)/var(--type-lead-line) var(--font-sans); }
+
+  /* ThemeSwitch: Light, Dark, System (a segmented control) */
+  .seg { display: inline-flex; background: var(--bg-panel); border: var(--hairline) solid var(--border-strong); border-radius: var(--radius-sm); padding: 0; }
+  .seg button {
+    font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); color: var(--text-muted);
+    background: transparent; border: var(--hairline) solid transparent; border-radius: var(--radius-sm); height: var(--control-md);
+    padding: 0 var(--space-3); cursor: pointer; margin: calc(-1 * var(--hairline));
+  }
+  .seg button:hover { color: var(--text-primary); }
+  .seg button[aria-checked="true"] { background: var(--bg-elevated); border-color: var(--border-strong); color: var(--text-primary); }
 
   .warning {
-    padding: 12px 14px; border-radius: var(--r); background: var(--warn-soft); color: var(--ink);
-    border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); font-size: 14.5px;
+    padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--warning-fill); color: var(--on-warning-fill);
+    font: var(--type-body-weight) var(--type-body-size)/var(--type-body-line) var(--font-sans);
   }
-  .warning b { color: var(--warn); }
+  .warning a { color: inherit; }
 
-  nav.steps-nav { position: sticky; top: 0; z-index: 2; margin-inline: -4px; padding: 8px 4px; background: var(--bg); }
-  nav.steps-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  /* Step navigation */
+  nav.steps-nav { position: sticky; top: 0; z-index: var(--z-sticky); margin-inline: calc(-1 * var(--space-2)); padding: var(--space-2); background: var(--bg-base); }
+  nav.steps-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-2); }
   nav.steps-nav a {
-    display: grid; justify-items: center; gap: 4px; padding: 8px 4px; border-radius: 8px; text-decoration: none;
-    color: var(--muted); font-size: 12.5px; line-height: 1.2; text-align: center; border: 1px solid var(--line); background: var(--panel);
+    display: grid; justify-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-1); border-radius: var(--radius-md); text-decoration: none;
+    color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); text-align: center;
+    border: var(--hairline) solid var(--border-subtle); background: var(--bg-panel);
   }
-  nav.steps-nav a:hover { border-color: var(--accent); color: var(--ink); }
+  nav.steps-nav a:hover { border-color: var(--border-strong); color: var(--text-primary); }
   nav.steps-nav .n {
-    display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
-    background: var(--accent-soft); color: var(--accent); font: 700 12px/1 var(--font-mono);
+    display: grid; place-items: center; width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-pill);
+    background: var(--bg-selected); color: var(--text-primary); font: var(--type-readout-weight) var(--type-readout-size)/1 var(--font-mono);
   }
-  nav.steps-nav a.done .n { background: var(--ok-soft); color: var(--ok); }
+  nav.steps-nav a.done .n { background: var(--text-primary); color: var(--bg-base); }
   @media (max-width: 560px) { nav.steps-nav .t { display: none; } }
 
+  /* Steps: panels */
   section.step {
-    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
-    padding: 22px 22px 24px; display: grid; gap: 14px; scroll-margin-top: 72px;
+    background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md);
+    padding: var(--space-6); display: grid; gap: var(--space-4); scroll-margin-top: var(--space-16);
   }
-  @media (max-width: 520px) { section.step { padding: 18px 16px 20px; } }
-  .step-head { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 4px 12px; align-items: center; }
-  .step-head.solo { grid-template-columns: minmax(0, 1fr); }
-  .step-head.solo p { grid-column: 1; }
+  @media (max-width: 520px) { section.step { padding: var(--space-4); } }
+  .step-head { display: grid; grid-template-columns: var(--control-lg) minmax(0, 1fr); gap: var(--space-1) var(--space-3); align-items: center; }
   .step-head .n {
-    display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-    background: var(--accent); color: var(--accent-ink); font: 700 16px/1 var(--font-mono);
+    display: grid; place-items: center; width: var(--control-lg); height: var(--control-lg); border-radius: var(--radius-pill);
+    background: var(--text-primary); color: var(--bg-base); font: var(--type-readout-lg-weight) var(--type-readout-lg-size)/1 var(--font-mono);
   }
-  .step.done .step-head .n { background: var(--ok); color: var(--panel); }
-  .step-head h2 { margin: 0; font-size: 21px; line-height: 1.25; }
-  .step-head p { grid-column: 2; margin: 0; color: var(--muted); font-size: 15px; }
+  .step.done .step-head .n { outline: var(--focus-width) solid var(--success); outline-offset: 2px; }
+  .step-head h2 { margin: 0; font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
+  .step-head p { grid-column: 2; margin: 0; color: var(--text-muted); }
   .step p { margin: 0; }
-  h3 { margin: 6px 0 0; font-size: 15px; }
+  h3 { margin: 0; font: var(--type-panel-header-weight) var(--type-panel-header-size)/var(--type-panel-header-line) var(--font-serif); letter-spacing: var(--type-panel-header-tracking); }
 
-  ol.how { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
-  ol.how li::marker { color: var(--accent); font-weight: 700; }
-  ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+  ol.how { margin: 0; padding-left: var(--space-6); display: grid; gap: var(--space-2); }
+  ol.how li::marker { color: var(--text-muted); font-family: var(--font-mono); }
+  ul.plain { margin: 0; padding-left: var(--space-6); display: grid; gap: var(--space-2); }
 
-  .checks { display: grid; gap: 8px; }
+  /* Checkbox and Radio: ink, never Sage */
+  input[type="checkbox"], input[type="radio"] {
+    appearance: none; -webkit-appearance: none; flex: none; position: relative; width: var(--check-size); height: var(--check-size); margin: 0;
+    background: var(--bg-elevated); border: var(--hairline) solid var(--border-strong); cursor: pointer;
+  }
+  input[type="checkbox"] { border-radius: var(--radius-sm); }
+  input[type="radio"] { border-radius: var(--radius-pill); }
+  input[type="checkbox"]:checked { background: var(--text-primary); border-color: var(--text-primary); }
+  input[type="checkbox"]:checked::after {
+    content: ""; position: absolute; left: 30%; top: 8%; width: 25%; height: 55%; border: solid var(--bg-base); border-width: 0 var(--focus-width) var(--focus-width) 0; transform: rotate(45deg);
+  }
+  input[type="radio"]:checked { border-color: var(--text-primary); }
+  input[type="radio"]:checked::after { content: ""; position: absolute; inset: 25%; border-radius: var(--radius-pill); background: var(--text-primary); }
+  .checks { display: grid; gap: var(--space-2); }
   .checks label {
-    display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; cursor: pointer;
-    padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    display: grid; grid-template-columns: var(--check-size) minmax(0, 1fr); gap: var(--space-3); align-items: start; cursor: pointer;
+    padding: var(--space-3); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-sm); min-height: var(--control-md);
   }
-  .checks label:hover { border-color: var(--muted); }
-  .checks input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--ok); }
-  .checks small { display: block; color: var(--muted); font-size: 13.5px; }
+  .checks label:hover { border-color: var(--border-strong); }
+  .checks label { overflow-wrap: anywhere; }
+  .checks input { margin-top: var(--space-1); }
+  .checks small { display: block; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   html.os-mac .os-win, html.os-win .os-mac { display: none; }
-  .checks .feat { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
-  .feat ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; }
-  .feat li { margin: 2px 0; }
-  .feat li:first-child { list-style: none; margin-left: -18px; }
-  /* recorded with tools/hx_mirror.py; GitHub hosts them, as the recordings stay out of the repository */
-  .demo { display: flex; gap: 6px; margin-top: 8px; }
-  .demo img, .demo video { flex: 0 1 calc(50% - 3px); min-width: 0; aspect-ratio: 4 / 3; border-radius: 6px; background: #0d1117; }
-  .demo video { aspect-ratio: 1280 / 914; }
+  .checks .feat { padding: var(--space-3); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-sm); display: grid; gap: var(--space-2); }
+  .checks .feat > label { border: 0; padding: 0; }
+  #options .checks .feat { border: 0; padding: 0; }
+  .feat ul { margin: 0; padding-left: var(--space-6); color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  .feat li { margin: var(--space-1) 0; }
+  .feat li:first-child { list-style: none; margin-left: calc(-1 * var(--space-6)); }
 
-  .files { display: grid; gap: 6px; font-size: 14px; }
-  .files div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--bg); }
-  .files b { font-weight: 600; }
-  @media (max-width: 520px) { .files div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+  /* Buttons */
+  .btn {
+    --btn-h: var(--control-md); --btn-px: var(--space-3); --btn-bg: transparent; --btn-bg-hover: var(--bg-panel); --btn-fg: var(--text-primary); --btn-border: var(--border-strong);
+    display: inline-flex; align-items: center; justify-content: center; height: var(--btn-h); padding: 0 var(--btn-px); border-radius: var(--radius-sm);
+    border: var(--hairline) solid var(--btn-border); background: var(--btn-bg); color: var(--btn-fg); cursor: pointer; text-decoration: none; white-space: nowrap;
+    font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); letter-spacing: var(--type-label-tracking);
+  }
+  .btn:hover { background: var(--btn-bg-hover); }
+  .btn:active { background: var(--bg-pressed); }
+  .btn.primary { --btn-bg: var(--action-primary); --btn-bg-hover: var(--action-primary-hover); --btn-fg: var(--on-action-primary); --btn-border: var(--action-primary); }
+  .btn.primary:active { background: var(--action-primary-pressed); }
+  .btn.big { --btn-h: var(--control-lg); --btn-px: var(--space-4); }
+  .btn.icon { --btn-border: transparent; --btn-fg: var(--text-muted); }
+  .btn.ghost { --btn-border: transparent; }
+  .btn:disabled { color: var(--text-disabled); border-color: var(--border-subtle); cursor: default; }
+  .btn.primary:disabled { background: var(--bg-selected); border-color: var(--bg-selected); }
 
+  /* Dropzone */
   .drop {
-    position: relative; display: grid; place-items: center; gap: 8px; text-align: center;
-    padding: 30px 20px; border: 2px dashed var(--line); border-radius: var(--r);
-    background: var(--bg); cursor: pointer; transition: border-color .15s, background .15s;
+    position: relative; display: grid; place-items: center; align-content: center; gap: var(--space-2); text-align: center; min-height: var(--dropzone-min-height);
+    padding: var(--space-6); border: var(--hairline) dashed var(--border-strong); border-radius: var(--radius-lg); background: var(--bg-base); cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard);
   }
-  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
-  .drop:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-  .drop strong { font-size: 17px; }
-  .drop small { color: var(--muted); }
-  .drop.busy { pointer-events: none; opacity: .55; }
-  .jack { width: 40px; height: 40px; color: var(--accent); }
+  .drop:hover { border-color: var(--text-primary); }
+  .drop.over { border-style: solid; border-color: var(--text-primary); background: var(--bg-selected); }
+  .drop:focus-within { outline: var(--focus-width) solid var(--focus-ring); outline-offset: 2px; }
+  .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop strong { font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); }
+  .drop small { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  .drop.busy { pointer-events: none; color: var(--text-disabled); }
+  .jack { width: var(--icon-md); height: var(--icon-md); color: var(--text-muted); }
 
-  .status { display: grid; gap: 10px; padding: 14px; border-radius: var(--r); border: 1px solid var(--line); }
-  .status.ok { background: var(--ok-soft); border-color: transparent; }
-  .status.bad { background: var(--bad-soft); border-color: transparent; }
-  .status.bad .title { color: var(--bad); }
-  .status.ok .title { color: var(--ok); }
-  .status .title { font-weight: 700; }
-  .bar { height: 8px; border-radius: 999px; background: var(--bg); overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
-  details.log summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+  /* Status blocks: a text prefix as well as colour */
+  .status { display: grid; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-sm); border: var(--hairline) solid var(--border-subtle); background: var(--bg-base); }
+  .status .title { font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); }
+  .status.ok { border-color: var(--success); }
+  .status.bad { border-color: var(--danger); }
+  .status.ok .title::before { content: "[OK] "; color: var(--success); font-family: var(--font-mono); }
+  .status.bad .title::before { content: "[ERR] "; color: var(--danger); font-family: var(--font-mono); }
+  .bar { height: var(--progress-height); border-radius: var(--radius-pill); background: var(--meter-track); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--control-fill); transition: width var(--dur-base) var(--ease-standard); }
+  details.log summary { cursor: pointer; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   details.log pre {
-    margin: 8px 0 0; max-height: 260px; overflow: auto; padding: 10px; border-radius: 8px;
-    background: var(--bg); border: 1px solid var(--line); font: 12px/1.45 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere;
+    margin: var(--space-2) 0 0; max-height: var(--dropzone-min-height); overflow: auto; padding: var(--space-3); border-radius: var(--radius-md);
+    background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); font: var(--type-log-weight) var(--type-log-size)/var(--type-log-line) var(--font-mono);
+    white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-primary);
   }
-  .row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .note { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
 
-  .list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-  .list-head h3 { margin: 0; }
-  .list { display: grid; gap: 8px; }
+  /* Converted captures */
+  .list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .list { display: grid; gap: var(--space-2); }
   .row {
-    display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 4px 14px; align-items: center;
-    padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+    display: grid; grid-template-columns: var(--control-lg) minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center;
+    padding: var(--space-3); border-top: var(--hairline) solid var(--border-subtle);
   }
-  .row.bad { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
-  .mark {
-    grid-row: span 2; align-self: start; display: grid; place-items: center; width: 32px; height: 32px;
-    border-radius: 50%; background: var(--ok-soft); color: var(--ok); font: 700 15px/1 var(--font-ui);
+  .row.bad { border-top-color: var(--danger); }
+  .mark { grid-row: span 2; align-self: start; font: var(--type-readout-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-mono); color: var(--success); }
+  .row.bad .mark { color: var(--danger); }
+  .name { min-width: 0; overflow-wrap: anywhere; font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); }
+  .name .out { display: block; font: var(--type-log-weight) var(--type-log-size)/var(--type-log-line) var(--font-mono); color: var(--text-muted); }
+  .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
+  .chip {
+    display: inline-flex; align-items: center; gap: var(--space-1); height: var(--tag-height); padding: 0 var(--space-2); border-radius: var(--radius-pill);
+    background: var(--bg-elevated); border: var(--hairline) solid var(--border-subtle); color: var(--text-primary);
+    font: var(--type-caption-weight) var(--type-caption-size)/1 var(--font-sans);
   }
-  .row.bad .mark { background: var(--bad-soft); color: var(--bad); }
-  .name { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
-  .name .out { display: block; font: 400 13px/1.4 var(--font-mono); color: var(--muted); }
-  .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
-  .chip { font: 600 11.5px/1 var(--font-mono); padding: 5px 7px; border-radius: 999px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
-  .chip.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
-  .chip.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
-  .err { grid-column: 2 / -1; color: var(--bad); background: var(--bad-soft); padding: 8px 10px; border-radius: 8px; font-size: 14px; }
-  .actions { grid-row: span 2; display: flex; gap: 6px; align-items: center; }
+  .chip::before { content: ""; width: var(--dot-sm); height: var(--dot-sm); border-radius: var(--radius-pill); background: var(--text-muted); }
+  .chip.ok::before { background: var(--success); }
+  .chip.warn { background: var(--warning-fill); border-color: var(--warning-fill); color: var(--on-warning-fill); }
+  .chip.warn::before { background: var(--on-warning-fill); }
+  .err { grid-column: 2 / -1; color: var(--danger); font: var(--type-body-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  .actions { grid-row: span 2; display: flex; gap: var(--space-2); align-items: center; }
   @media (max-width: 520px) {
-    .row { grid-template-columns: 32px minmax(0, 1fr); }
+    .row { grid-template-columns: var(--control-lg) minmax(0, 1fr); }
     .meta, .err { order: 1; }
     .actions { grid-column: 1 / -1; grid-row: auto; order: 2; }
     .actions .btn.primary { flex: 1; }
   }
-  .empty { padding: 14px; border: 1px dashed var(--line); border-radius: var(--r); color: var(--muted); font-size: 14px; }
+  .empty { padding: var(--space-4); border: var(--hairline) dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
 
-  .btn {
-    font: 600 14px/1 var(--font-ui); padding: 10px 15px; border-radius: 8px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none; display: inline-block;
-  }
-  .btn:hover { border-color: var(--muted); }
-  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  .btn.primary:hover { filter: brightness(1.08); }
-  .btn.big { font-size: 16px; padding: 13px 20px; }
-  .btn.icon { padding: 8px 10px; color: var(--muted); }
-  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .btn:disabled { opacity: .5; cursor: default; }
+  .tip { padding: var(--space-3) var(--space-4); background: var(--bg-base); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-muted); }
+  .knob { font: var(--type-readout-weight) var(--type-readout-size)/1 var(--font-mono); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); background: var(--bg-base); border: var(--hairline) solid var(--border-subtle); white-space: nowrap; }
+  .path { font-weight: var(--weight-semibold); white-space: nowrap; }
 
-  .tip { padding: 10px 12px; background: var(--accent-soft); border-radius: 8px; font-size: 14.5px; }
-  .knob { font: 600 13px/1 var(--font-mono); padding: 2px 6px; border-radius: 4px; background: var(--bg); border: 1px solid var(--line); white-space: nowrap; }
-  .path { font: 600 14px/1.4 var(--font-ui); white-space: nowrap; }
-
-  table.knobs { width: 100%; border-collapse: collapse; font-size: 14.5px; }
-  table.knobs th, table.knobs td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  table.knobs th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table.knobs { width: 100%; border-collapse: collapse; }
+  table.knobs th, table.knobs td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: var(--hairline) solid var(--border-subtle); vertical-align: top; }
+  table.knobs th { font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); color: var(--text-primary); background: var(--bg-panel); border-bottom-color: var(--border-strong); }
   table.knobs td:first-child { white-space: nowrap; }
 
-  section.recovery { border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
-  section.recovery .step-head .n { background: var(--bad); color: var(--panel); }
+  section.recovery { border-color: var(--danger); }
+  section.recovery .step-head .n { background: var(--action-danger); color: var(--on-action-danger); }
 
-  details.faq { border-top: 1px solid var(--line); padding-top: 10px; }
-  details.faq + details.faq { border-top: 1px solid var(--line); }
-  details.faq summary { cursor: pointer; font-weight: 600; }
-  details.faq p, details.faq ul { margin: 8px 0 4px; color: var(--muted); font-size: 15px; }
+  details.faq { border-top: var(--hairline) solid var(--border-subtle); padding-top: var(--space-3); }
+  details.faq summary { cursor: pointer; font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); }
+  details.faq p, details.faq ul { margin: var(--space-2) 0 var(--space-1); color: var(--text-muted); }
 
-  footer { color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
-  footer a { color: inherit; }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } html { scroll-behavior: auto; } }
-  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .lang { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
-  .lang svg { width: 16px; height: 16px; }
-  .lang select {
-    font: 500 14px/1.2 var(--font-ui); color: var(--ink); background: var(--panel);
-    border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-width: 160px;
-  }
-  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .lang select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .trybox { display: grid; gap: 10px; padding: 14px 16px; border: 1px dashed var(--line); border-radius: var(--r); background: var(--bg); }
-  .trybox h3 { margin: 0; }
-  .trybox .status { background: var(--panel); }
-  .trybox .note { color: var(--muted); font-size: 14px; }
-  /* The boot screen panel (step 2): the picture the HX Stomp shows at power-on, 320x240 */
-  .boot { display: grid; gap: 12px; margin: 0 0 16px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
-  .boot h3 { margin: 0; font-size: 16px; }
-  .boot p { margin: 0; color: var(--muted); font-size: 14px; }
-  .boot-body { display: grid; grid-template-columns: minmax(0, 320px) 1fr; gap: 16px; align-items: start; }
-  .boot-stage { position: relative; aspect-ratio: 4 / 3; background: #000; border: 1px solid var(--line); line-height: 0; }
-  .boot-stage img { width: 100%; height: 100%; image-rendering: pixelated; }
-  .boot-mark { position: absolute; pointer-events: none; font: 600 11px/1 var(--font-mono); color: #fff; }
-  .boot-bar { left: 0; right: 0; border-top: 1px dashed #ffd24a; }
-  .boot-bar span { position: absolute; right: 4px; top: 4px; padding: 4px 8px; background: rgba(0, 0, 0, .65); color: #ffd24a; }
-  .boot-icon { outline: 1px dashed #4ad2ff; }
-  .boot-icon span { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 4px; padding: 4px 8px; white-space: nowrap; background: rgba(0, 0, 0, .65); color: #4ad2ff; }
-  .boot-ctl { display: grid; gap: 10px; }
-  .boot-ctl .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .boot-ctl input[type=file] { display: none; }
-  .boot-fit label { display: inline-flex; gap: 6px; align-items: center; margin-right: 14px; }
-  #bootMsg { min-height: 1.3em; }
-  #bootMsg.bad { color: var(--bad); }
-  #bootMsg.warn { color: var(--warn, var(--muted)); }
-  .boot.over { border-color: var(--accent); }
-  .hxedit { display: grid; gap: 10px; margin-top: 10px; }
-  .hxedit p { margin: 0; color: var(--muted); font-size: 14px; }
-  .hxedit .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .hxedit input[type=file] { display: none; }
-  .checks .hxedit label.btn { display: inline-block; width: auto; padding: 10px 16px; white-space: nowrap; cursor: pointer; }
-  #hxeditMsg { min-height: 1.3em; }
-  #hxeditMsg.bad { color: var(--bad); }
-  #hxeditMsg.warn { color: var(--warn, var(--muted)); }
+  /* Boot screen panel and the HX Edit folder pick: a section of the Build step, divided by a line, not a nested panel */
+  .boot { display: grid; gap: var(--space-3); padding-top: var(--space-4); border-top: var(--hairline) solid var(--border-subtle); }
+  .boot p, .hxedit p { margin: 0; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
+  .boot-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+  .boot-stage { position: relative; aspect-ratio: 4 / 3; background: var(--scrim-video); border: var(--hairline) solid var(--border-strong); line-height: 0; }
+  .boot-stage img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+  .boot-mark { position: absolute; pointer-events: none; font: var(--type-caption-weight) var(--type-caption-size)/1 var(--font-mono); color: var(--on-video); }
+  .boot-bar { left: 0; right: 0; border-top: var(--hairline) dashed var(--on-video); }
+  .boot-icon { outline: var(--hairline) dotted var(--on-video); }
+  .boot-mark span { position: absolute; padding: var(--space-1) var(--space-2); background: var(--scrim-video); color: var(--on-video); white-space: nowrap; }
+  .boot-bar span { right: var(--space-1); top: var(--space-1); }
+  .boot-icon span { left: 50%; bottom: 100%; transform: translateX(-50%); margin-bottom: var(--space-1); }
+  .boot-ctl { display: grid; gap: var(--space-3); align-content: start; }
+  .boot-ctl .row, .hxedit .row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; padding: 0; border: 0; }
+  .boot-ctl input[type=file], .hxedit input[type=file] { display: none; }
+  .boot-fit { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+  .boot-fit label { display: inline-flex; gap: var(--space-2); align-items: center; cursor: pointer; }
+  #bootMsg, #hxeditMsg { min-height: calc(var(--type-caption-line) * 1); }
+  #bootMsg.bad, #hxeditMsg.bad { color: var(--danger); }
+  #bootMsg.warn, #hxeditMsg.warn { color: var(--text-primary); }
+  .boot.over { border-top-color: var(--text-primary); }
+  .hxedit { display: grid; gap: var(--space-3); }
+  .checks .hxedit label.btn { display: inline-flex; width: auto; min-height: 0; padding: 0 var(--space-3); border: var(--hairline) solid var(--border-strong); }
   @media (max-width: 640px) { .boot-body { grid-template-columns: 1fr; } }
+
+  /* Footer and About */
+  footer { display: grid; gap: var(--space-2); color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); padding-top: var(--space-4); border-top: var(--hairline) solid var(--border-subtle); }
+  footer p { margin: 0; }
+  dialog.modal {
+    padding: var(--space-6); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--bg-elevated); color: var(--text-primary);
+    box-shadow: var(--shadow-modal); width: min(var(--modal-width), calc(100% - var(--space-8))); max-height: calc(100% - var(--space-8)); overflow: auto; z-index: var(--z-modal);
+  }
+  dialog.modal::backdrop { background: var(--scrim); }
+  dialog.modal[open] { animation: modal-in var(--dur-base) var(--ease-standard); }
+  @keyframes modal-in { from { opacity: 0; transform: translateY(var(--space-2)); } to { opacity: 1; transform: none; } }
+  dialog.modal h2 { margin: 0 0 var(--space-3); font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
+  dialog.modal dl { margin: 0 0 var(--space-4); display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-4); color: var(--text-muted); }
+  dialog.modal dt { color: var(--text-primary); font-weight: var(--weight-medium); }
+  dialog.modal dd { margin: 0; overflow-wrap: anywhere; }
+  dialog.modal .actions-bar { display: flex; justify-content: flex-end; gap: var(--space-2); }
+  dialog.modal p { margin: 0 0 var(--space-4); color: var(--text-muted); }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    html { scroll-behavior: auto; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="top">
-      <span class="eyebrow">HXtra · HX Stomp<span id="release" hidden></span></span>
+      <div class="brand">
+        <span class="eyebrow">HX Stomp firmware mod<span id="release" hidden></span></span>
+      </div>
+      <div class="tools">
+        <div class="seg" role="radiogroup" aria-label="Theme" id="themeSwitch">
+          <button type="button" role="radio" aria-checked="true" tabindex="0" data-theme-choice="light">Light</button>
+          <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-choice="dark">Dark</button>
+          <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-choice="system">System</button>
+        </div>
+        <button class="btn ghost" id="aboutBtn" type="button" aria-haspopup="dialog">About</button>
+      </div>
       <label class="lang" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
         <span class="sr" data-i18n="lang">Language</span>
         <select id="lang"></select>
       </label>
     </div>
-    <h1 data-i18n="hero.title">Set up HXtra for HX Stomp</h1>
-    <p class="lede" data-i18n="hero.lede">Setup instructions</p>
+    <h1 data-i18n="hero.title">StompMod</h1>
+    <p class="lede" data-i18n="hero.lede">Custom firmware for the Line 6 HX Stomp, built in your browser from your own copy of Line 6's firmware.</p>
   </header>
 
-  <div class="warning" data-i18n="warn"><b>Unofficial and experimental.</b> HXtra isn't made or supported by Line 6. Installing modified firmware is at your own risk and may void your warranty. Don't worry though: if anything goes wrong, the <a href="#recovery">Recovery</a> steps put the stock firmware back easily.</div>
+  <div class="warning" data-i18n="warn"><b>Unofficial and experimental.</b> StompMod isn't made or supported by Line 6. Installing modified firmware is at your own risk and may void your warranty. Don't worry though: if anything goes wrong, the <a href="#recovery">Recovery</a> steps put the stock firmware back easily.</div>
 
   <section class="step" id="options" hidden>
     <div class="checks" id="opts" hidden>
@@ -307,7 +636,7 @@
         </div>
       </div>
     </div>
-    <p class="tip" id="featNone" hidden data-i18n="feat.none">This copy of the page has no feature code, so it builds NAM A2 Lite and the boot screen only. The page published with each HXtra release has it.</p>
+    <p class="tip" id="featNone" hidden data-i18n="feat.none">This copy of the page has no feature code, so it builds NAM A2 Lite and the boot screen only. The page published with each StompMod release has it.</p>
   </section>
 
   <nav class="steps-nav" aria-label="Steps">
@@ -329,11 +658,11 @@
     </div>
     <div class="checks" id="checks">
       <label><input type="checkbox"><span><span data-i18n="s1.c1">I have an <b>HX Stomp</b>.</span>
-        <small data-i18n="s1.c1s">HXtra is made for the HX Stomp ONLY. HX Stomp XL, HX Effects, Helix Floor, Helix LT, Helix Rack are UNSUPPORTED.</small></span></label>
+        <small data-i18n="s1.c1s">StompMod is made for the HX Stomp ONLY. HX Stomp XL, HX Effects, Helix Floor, Helix LT, Helix Rack are UNSUPPORTED.</small></span></label>
       <label><input type="checkbox"><span><span data-i18n="s1.c2"><b>HX Edit</b> and <b>Line 6 Updater</b> are installed on this computer.</span>
         <small data-i18n="s1.c2s">Both are free from Line 6 if you make a free account. <a class="os-mac" href="https://line6.com/software/readeula.html?rid=12240" target="_blank" rel="noopener">Line 6 Updater</a><a class="os-win" href="https://line6.com/software/readeula.html?rid=12239" target="_blank" rel="noopener">Line 6 Updater</a> installs the firmware; <a class="os-mac" href="https://line6.com/software/readeula.html?rid=12926" target="_blank" rel="noopener">HX Edit</a><a class="os-win" href="https://line6.com/software/readeula.html?rid=12927" target="_blank" rel="noopener">HX Edit</a> imports NAM captures.</small></span></label>
       <label><input type="checkbox"><span><span data-i18n="s1.c3">I backed up my presets and IRs in HX Edit.</span>
-        <small data-i18n="s1.c3s">Use <b>File -> Create Backup...</b> in HX Edit. Installing HXtra doesn't erase anything on your device. </small></span></label>
+        <small data-i18n="s1.c3s">Use <b>File -> Create Backup...</b> in HX Edit. Installing StompMod doesn't erase anything on your device. </small></span></label>
       <label><input type="checkbox"><span><span data-i18n="s1.c4">I have <a href="https://line6.com/software/readeula.html?rid=12906" target="_blank" rel="noopener">Line 6's own firmware file</a>, HX_Stomp_v3.80.0_0x103966115.hxf</span>
         <small data-i18n="s1.c4s">Available from Line 6 if you make an account. </small></span></label>
     </div>
@@ -344,13 +673,13 @@
   <section class="step" id="build" aria-labelledby="h2s">
     <div class="step-head">
       <span class="n">2</span>
-      <h2 id="h2s" data-i18n="s2.title">Build HXtra</h2>
-      <p data-i18n="s2.sub">This step builds HXtra from the stock firmware file and gives you the modified firmware file to install.</p>
+      <h2 id="h2s" data-i18n="s2.title">Build StompMod</h2>
+      <p data-i18n="s2.sub">This step builds StompMod from the stock firmware file and gives you the modified firmware file to install.</p>
     </div>
 
     <div id="fwOffline" class="status bad" hidden>
       <span class="title" data-i18n="s2.offTitle">This step needs the page opened from a web address.</span>
-      <p data-i18n="s2.off1">You opened the page as a file on your computer, and browsers don't let a file page run the build. Open the online page instead: <a href="https://wisemandenny.github.io/hxtra/web/">wisemandenny.github.io/hxtra</a>. It does the same thing and still uploads nothing. (Steps 5 and 6 work either way.)</p>
+      <p data-i18n="s2.off1">You opened the page as a file on your computer, and browsers don't let a file page run the build. Open the online page instead (gatistudio.com/stompmod). It does the same thing and still uploads nothing. (Steps 5 and 6 work either way.)</p>
     </div>
 
     <div class="boot" id="boot">
@@ -397,7 +726,7 @@
       </div>
       <details class="log"><summary data-i18n="s2.log">Technical details</summary><pre id="fwLog"></pre></details>
     </div>
-    <p style="color:var(--muted); font-size:14px" data-i18n="s2.note">The first build downloads the build tools (about 15 MB) and takes 20–60 seconds, depending on the computer. Keep this tab open until it finishes.</p>
+    <p class="note" data-i18n="s2.note">The first build downloads the build tools (about 15 MB) and takes 20–60 seconds, depending on the computer. Keep this tab open until it finishes.</p>
   </section>
 
   <!-- 3 -->
@@ -407,7 +736,7 @@
       <h2 id="h3s" data-i18n="ram.title">Try it without installing</h2>
     </div>
 
-      <p data-i18n="ram.p1">Run HXtra from the unit's memory for one session. Nothing is written to the unit and no changes you make will save. Power cycling takes you back to stock.</p>
+      <p data-i18n="ram.p1">Run StompMod from the unit's memory for one session. Nothing is written to the unit and no changes you make will save. Power cycling takes you back to stock.</p>
       <ol class="how">
         <li data-i18n="ram.li1">Your HX Stomp has Line 6's stock firmware <b>3.80.0</b> installed.</li>
         <li data-i18n="ram.li2">Use <b>Chrome</b> or <b>Edge</b> on a computer, and <b>quit HX Edit and Line 6 Updater</b>: they hold the USB connection.</li>
@@ -415,7 +744,7 @@
         <li data-i18n="ram.li4">If the HX Stomp isn't in the list, turn it off, <b>hold Page › while you turn it on</b> (update mode, dark screen), and click <b>Run from RAM</b> again.</li>
       </ol>
       <p class="note" data-i18n="ram.note">Knobs can react slowly in a RAM run; an installed firmware doesn't do that.</p>
-      <p class="note" data-i18n="ram.note2">Every HXtra feature was tried this way on a real HX Stomp. On Windows the browser may not see the HX Stomp, because Line 6's driver holds it.</p>
+      <p class="note" data-i18n="ram.note2">Every StompMod feature was tried this way on a real HX Stomp. On Windows the browser may not see the HX Stomp, because Line 6's driver holds it.</p>
       <div class="row-actions">
         <button class="btn primary" id="ramGo" type="button" data-i18n="ram.go">Run from RAM</button>
         <button class="btn primary" id="ramNext" type="button" hidden data-i18n="ram.continue">Continue</button>
@@ -444,7 +773,7 @@
       <li data-i18n="s3.li3">Open <b>Line 6 Updater</b>, sign in, and select your HX Stomp.</li>
       <li><span data-i18n="s3.li4">Choose <b>Choose File</b> (not the normal update) and pick the file you downloaded in step 2:</span> <code id="fwName">HX_Stomp_v3.80.0_HXtra.hxf</code></li>
       <li data-i18n="s3.li5">Let it finish. <b>Don't unplug or switch off the HX Stomp</b> while it updates. It restarts on its own when done. This process can take up to 20 minutes.</li>
-      <li data-i18n="s3.li6">Check it worked. If the boot screen says <b>HXtra STOMP</b>, then congratulations, the setup is complete!</li>
+      <li data-i18n="s3.li6">Check it worked. If the boot screen shows <b>your picture</b>, then congratulations, the setup is complete!</li>
       <li data-i18n="s3.li7">Proceed to steps 5 and 6 only if using NAM.</li>
     </ol>
     <p class="tip" data-i18n="s3.tip">Stuck on the boot screen after the install? Don't worry: follow <a href="#recovery">Recovery</a>.</p>
@@ -468,7 +797,7 @@
 
     <div class="list-head">
       <h3 id="count"></h3>
-      <div style="display:flex; gap:8px">
+      <div class="row-actions">
         <button class="btn" id="clear" type="button" hidden data-i18n="s4.clear">Clear</button>
         <button class="btn primary" id="all" type="button" hidden data-i18n="s4.all">Download all</button>
       </div>
@@ -492,7 +821,7 @@
       <li data-i18n="s5.li3">Add a block and pick <span class="path">Amp › NAM › NAM A2 Lite</span>.</li>
       <li data-i18n="s5.li4">Turn <span class="knob">Model</span> (the first knob of page 3) to that slot number. You hear the capture.</li>
     </ol>
-    <table class="knobs">
+    <div class="table-wrap"><table class="knobs">
       <thead><tr><th data-i18n="s5.thKnob">Knob</th><th data-i18n="s5.thWhat">What it does</th></tr></thead>
       <tbody>
         <tr><td><span class="knob">Model</span></td><td data-i18n="s5.kModel">Which capture plays: the User IR slot (1–128) that holds it. A slot with a normal cab IR, or nothing, is silent.</td></tr>
@@ -503,7 +832,7 @@
         <tr><td><span class="knob">Output</span></td><td data-i18n="s5.kVol">Output level. 5.0 is unchanged; 10 is +12 dB.</td></tr>
         <tr><td><span class="knob">Polarity</span></td><td data-i18n="s5.kPol">Normal or Inverted: Inverted flips the output's polarity (phase).</td></tr>
       </tbody>
-    </table>
+    </table></div>
     <ul class="plain">
       <li data-i18n="s5.n1">Presets remember the model number, so if you move a capture to another slot, update the presets that use it.</li>
       <li data-i18n="s5.n2">Changing Model, by hand or in a snapshot, switches smoothly with no gap.</li>
@@ -540,7 +869,7 @@
     <details class="faq"><summary data-i18n="faq.q3">How do I know the built file is right?</summary>
       <p data-i18n="faq.a3">The build checks every checksum inside the firmware, then compares the result's fingerprint with the build the project tested. When they match, the page says <b>Verified</b>: your file is byte for byte the same as the tested one.</p></details>
     <details class="faq"><summary data-i18n="faq.q7">Is there more than this page offers?</summary>
-      <p data-i18n="faq.a7">The command-line build (<code>build.py</code>) has a few more options: your own boot picture and boot text. See the <a href="https://github.com/wisemandenny/hxtra#readme">README</a>.</p></details>
+      <p data-i18n="faq.a7">The command-line build (<code>build.py</code>) has a few more options: it can leave any feature out and set the boot text.</p></details>
     <details class="faq"><summary data-i18n="faq.q4">My capture says “No 3-channel A2 Lite model inside”.</summary>
       <p data-i18n="faq.a4">NAM captures come in several sizes. The HX Stomp's DSP can run only the A2 Lite size. Look for the A2 Lite version of the capture, or a multi-size .nam that includes it.</p></details>
     <details class="faq"><summary data-i18n="faq.q5">The build says it isn't the right firmware.</summary>
@@ -549,7 +878,25 @@
         <li>If the file was renamed, that's fine: only its contents count.</li></ul></details>
   </section>
 
+  <footer>
+    <p>StompMod is an unofficial firmware mod for the Line 6 HX Stomp. It is not made or supported by Line 6 or Yamaha Guitar Group; Line 6, Helix, HX Stomp and HX Edit are their trademarks.</p>
+    <p>Based on <a href="https://github.com/wisemandenny/hxtra" target="_blank" rel="noopener">hxtra</a> by wisemandenny, GPL-3.0-or-later. <a href="../LICENSE">Licence</a> and <a href="../NOTICE">third-party notices</a>.</p>
+    <p>Contact: <a href="mailto:contact@gatistudio.com">contact@gatistudio.com</a></p>
+  </footer>
 </div>
+
+<dialog class="modal" id="about" aria-labelledby="aboutTitle">
+  <h2 id="aboutTitle">About StompMod</h2>
+  <p>Custom firmware for the Line 6 HX Stomp, built in your browser from your own copy of Line 6's firmware. Nothing is uploaded.</p>
+  <dl>
+    <dt>Developer</dt><dd>Gia Thinh (GaTi)</dd>
+    <dt>Email</dt><dd><a href="mailto:contact@gatistudio.com">contact@gatistudio.com</a></dd>
+    <dt>Facebook</dt><dd><a href="https://www.facebook.com/ga.ti.35/" target="_blank" rel="noopener">facebook.com/ga.ti.35</a></dd>
+    <dt>More apps</dt><dd><a href="https://gati263.gumroad.com/" target="_blank" rel="noopener">Gumroad store</a></dd>
+  </dl>
+  <p>Based on hxtra by wisemandenny, GPL-3.0-or-later.</p>
+  <div class="actions-bar"><button class="btn" id="aboutClose" type="button" autofocus>Close</button></div>
+</dialog>
 
 <script src="nam2ir-core.js"></script>
 <script src="ramrun.js"></script>
@@ -559,7 +906,7 @@
 // {placeholders}; tests/test_web_i18n.py checks that. A key a language lacks falls back to English.
 var EN = {
   "lang": "Language",
-  "doc.title": "HXtra Setup",
+  "doc.title": "StompMod Setup",
   "count.none": "No captures yet",
   "count.some": "{good} of {n} converted",
   "conv.download": "Download",
@@ -635,8 +982,8 @@ var EN = {
   "ram.s.start": "Starting the firmware…",
   "ram.ask.dfu": "The HX Stomp is in update mode. Click Continue and pick it in the browser's list (it may be called “LPC” or an unknown device).",
   "ram.ask.loader": "The RAM loader is running. Click Continue and pick it in the browser's list (an unknown device, 1209:0001).",
-  "ram.okTitle": "HXtra is running from RAM.",
-  "ram.okText": "Try it out on the HX Stomp. Turn it off and on to go back to the installed firmware. To keep HXtra, install the file as below.",
+  "ram.okTitle": "StompMod is running from RAM.",
+  "ram.okText": "Try it out on the HX Stomp. Turn it off and on to go back to the installed firmware. To keep StompMod, install the file as below.",
   "ram.errTitle": "The RAM run stopped.",
   "ram.err.busy": "Another program is using the HX Stomp. Quit HX Edit and Line 6 Updater, then click Run from RAM again.",
   "ram.err.cancel": "No device was picked. Click Run from RAM to try again.",
@@ -656,6 +1003,46 @@ var LANG_NAMES = {
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
+
+  // ---- Theme: Light by default; Dark and System only by choice, saved (GaTi UI ThemeSwitch) ---------------------------------
+  var themeBtns = Array.prototype.slice.call(document.querySelectorAll("[data-theme-choice]"));
+  var darkQuery = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+  var theme = "light";
+  try { theme = localStorage.getItem("stompmod-theme") || "light"; } catch (e) { /* private mode */ }
+  function applyTheme(choice) {
+    var dark = choice === "dark" || (choice === "system" && darkQuery && darkQuery.matches);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    themeBtns.forEach(function (b) {
+      var on = b.dataset.themeChoice === choice;
+      b.setAttribute("aria-checked", on ? "true" : "false");
+      b.tabIndex = on ? 0 : -1;
+    });
+  }
+  function chooseTheme(choice, focus) {
+    theme = choice;
+    try { localStorage.setItem("stompmod-theme", choice); } catch (e) { /* private mode */ }
+    applyTheme(choice);
+    if (focus) themeBtns.filter(function (b) { return b.dataset.themeChoice === choice; })[0].focus();
+  }
+  themeBtns.forEach(function (b, i) {
+    b.addEventListener("click", function () { chooseTheme(b.dataset.themeChoice); });
+    b.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      chooseTheme(themeBtns[(i + d + themeBtns.length) % themeBtns.length].dataset.themeChoice, true);
+    });
+  });
+  if (darkQuery) darkQuery.addEventListener("change", function () { if (theme === "system") applyTheme("system"); });
+  applyTheme(theme);
+
+  // ---- About: a modal; Esc closes it and the browser returns focus to the button --------------------------------------------
+  var about = $("about");
+  $("aboutBtn").addEventListener("click", function () {
+    if (about.showModal) about.showModal(); else about.setAttribute("open", "");
+  });
+  $("aboutClose").addEventListener("click", function () { if (about.close) about.close(); else about.removeAttribute("open"); });
+  about.addEventListener("click", function (e) { if (e.target === about && about.close) about.close(); });
 
   // ---- Language ------------------------------------------------------------------------------
   var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n]"));
@@ -1094,7 +1481,7 @@ var LANG_NAMES = {
 
     items.forEach(function (it, i) {
       var row = el("div", "row" + (it.ok ? "" : " bad"));
-      var mark = el("div", "mark", it.ok ? "✓" : "✕");
+      var mark = el("div", "mark", it.ok ? "OK" : "ERR");
       mark.setAttribute("aria-label", t(it.ok ? "conv.ok" : "conv.bad"));
       row.appendChild(mark);
 
@@ -1109,7 +1496,7 @@ var LANG_NAMES = {
         dl.addEventListener("click", function () { save(i); });
         actions.appendChild(dl);
       }
-      var rm = el("button", "btn icon", "✕");
+      var rm = el("button", "btn icon", "Remove");
       rm.type = "button";
       rm.setAttribute("aria-label", t("conv.remove", { name: it.file.name }));
       rm.addEventListener("click", function () { items.splice(i, 1); render(); });
