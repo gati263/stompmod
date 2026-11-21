@@ -283,9 +283,9 @@ def test_without_its_flag_the_tuner_is_stock():
 
 @pytest.mark.firmware
 def test_hxtra_holds_only_the_other_features_settings():
-    read, on = built({'HX_TUNER': '1', 'HX_BPM': '1'})
-    assert on == ['tuner', 'bpm', 'splash']
+    read, on = built({'HX_TUNER': '1', 'HX_BREATHING_LINE': '1'})      # BPM is in Displays: Breathing Line makes the section
+    assert on == ['tuner', 'breathing_line', 'splash']
     assert read(pm.NAV_CMP, 2) == b'\x06\x2b'
     pages = struct.unpack('<I', read(pm.ARRAYS['pages'][1][0], 4))[0]
-    assert struct.unpack('<I', read(pages + 4 * 6, 4))[0] == 1, "BPM's three settings: one page"
-    assert read(pm.VIRTUAL_HOOKS['label'][0], 4) != pm.VIRTUAL_HOOKS['label'][1], 'the engine labels BPM\'s virtual settings'
+    assert struct.unpack('<I', read(pages + 4 * 6, 4))[0] == 1, "Breathing Line's three settings: one page"
+    assert read(pm.VIRTUAL_HOOKS['label'][0], 4) != pm.VIRTUAL_HOOKS['label'][1], 'the engine labels Breathing Line\'s virtual settings'

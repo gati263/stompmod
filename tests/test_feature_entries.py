@@ -801,7 +801,7 @@ def test_bpm_builds_beside_an_owned_text_renderer(stock):
     load = lambda n: pa.get_entry_swapped(stock, n)
     alone, _ = pm.menu_entries(load, env={'HX_BPM': '1'})
     both, on = pm.menu_entries(load, without_splash() + [renderer_owner()], {'HX_BPM': '1'})
-    assert [features.name(m) for m in on] == ['bpm', 'demo'] and sorted(both) == [0, 7, 8]     # 7 and 8: its strip icons
+    assert [features.name(m) for m in on] == ['bpm', 'demo'] and sorted(both) == [0]     # BPM is in Displays: no section, so no strip icons (Entries 7 and 8)
     segs = [pa._parse_e0_segments(e[0]) for e in (alone, both)]
     read = lambda e, sg, va, n: e[0][pa._e0_vaddr_to_foff(sg, va, n):pa._e0_vaddr_to_foff(sg, va, n) + n]
     assert read(both, segs[1], LED_SEND, 4) == read(alone, segs[0], LED_SEND, 4) != LED_STOCK

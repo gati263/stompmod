@@ -111,8 +111,8 @@ def test_strip_inc_lists_each_category_and_slot():
 
 @pytest.mark.firmware
 def test_built_strip_scrolls_with_new_lit_and_dim_icons(m4emu):
-    """BPM and breathing line: the four stock loops call one strip_update, a carousel over 8 categories; each section icon gets a
-    new lit picture (its border trimmed, white at its brightest, at strip size) and a dim one."""
+    """Breathing line (BPM is in Displays and makes no section): the four stock loops call one strip_update, a carousel over 7
+    categories; its section icon gets a new lit picture (its border trimmed, white at its brightest, at strip size) and a dim one."""
     out, _ = pm.menu_entries(stock_entry, None, {'HX_BPM': '1', 'HX_BREATHING_LINE': '1'})
     read = reader(out[0])
     targets = set()
@@ -125,9 +125,9 @@ def test_built_strip_scrolls_with_new_lit_and_dim_icons(m4emu):
     update, = targets
     stock7, e7, e8 = stock_entry(7), out[7], out[8]
     n = struct.unpack_from('<I', stock7, 0x18)[0]
-    assert struct.unpack_from('<I', e7, 0x18)[0] == n + 4
+    assert struct.unpack_from('<I', e7, 0x18)[0] == n + 2
     px = lambda im: e8[im.offset:im.offset + im.length]
-    for i, (icon, size) in enumerate((('Icon_Tempo', (35, 46)), ('Icon_DualIR', (45, 26)))):     # 22x29, and 28x16 under 6 blank rows
+    for i, (icon, size) in enumerate((('Icon_DualIR', (45, 26)),)):     # 28x16 under 6 blank rows
         src = ims.image_at(e7, e8, pm.ICONS[icon])
         lit, dim = ims.image_at(e7, e8, n + 2 * i), ims.image_at(e7, e8, n + 2 * i + 1)
         assert (lit.width, lit.height) == (dim.width, dim.height) == size, icon
@@ -138,23 +138,23 @@ def test_built_strip_scrolls_with_new_lit_and_dim_icons(m4emu):
     m = m4emu.M4(read(update, 0x100), update, log_regs=('r0', 'r1', 'r2'))
     m.stub(SET_IMAGE)
     m.stub(SET_POS)
-    cats = STOCK_CATS + [(n + 1, n, 35), (n + 3, n + 2, 45)]
-    path = [0] + turned(8, 2 * 8 + 3, 2 * 8 + 5)        # twice round to the right and back twice round to the left
-    for cur, slots in zip(path, shown(8, path)):
+    cats = STOCK_CATS + [(n + 1, n, 45)]
+    path = [0] + turned(7, 2 * 7 + 3, 2 * 7 + 5)        # twice round to the right and back twice round to the left
+    for cur, slots in zip(path, shown(7, path)):
         assert run(m4emu, m, update, cur) == expected(cats, cur, slots), (cur, slots)
 
 
 @pytest.mark.firmware
 def test_a_build_with_one_feature_category_goes_round_seven(m4emu):
-    """The carousel's size is the build's number of categories: BPM alone makes 7, so turning right from BPM Display shows 3..7, 1."""
-    out, _ = pm.menu_entries(stock_entry, None, {'HX_BPM': '1'})
+    """The carousel's size is the build's number of categories: Breathing Line alone makes 7, so turning right from it shows 3..7, 1."""
+    out, _ = pm.menu_entries(stock_entry, None, {'HX_BREATHING_LINE': '1'})
     read = reader(out[0])
     update = branch_target(next(iter(pm.STRIP_LOOPS)) + 2, read(next(iter(pm.STRIP_LOOPS)) + 2, 4))
     n = struct.unpack_from('<I', stock_entry(7), 0x18)[0]
     m = m4emu.M4(read(update, 0x100), update, log_regs=('r0', 'r1', 'r2'))
     m.stub(SET_IMAGE)
     m.stub(SET_POS)
-    cats = STOCK_CATS + [(n + 1, n, 35)]
+    cats = STOCK_CATS + [(n + 1, n, 45)]
     path = [0] + turned(7, 2 * 7 + 2, 9)
     for cur, slots in zip(path, shown(7, path)):
         assert run(m4emu, m, update, cur) == expected(cats, cur, slots), (cur, slots)
