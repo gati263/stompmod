@@ -1,5 +1,5 @@
 """web/index.html's translations: every language has every string of the page, with the
-same HTML tags and {placeholders} as the English, and is listed in the language menu. This fork's page is English only: LANGS is empty."""
+same HTML tags and {placeholders} as the English, and is listed in the language menu. English is the default; Vietnamese is chosen."""
 import json
 import re
 from html.parser import HTMLParser
@@ -46,6 +46,9 @@ def english():
     body = PAGE.index("<body>")
     p.feed(PAGE[body:PAGE.index("<script", body)])
     en = dict(p.out)
+    for kind, attr in (("alt", "alt"), ("aria", "aria-label")):      # attributes: data-i18n-alt (alt), data-i18n-aria (aria-label)
+        for tag in re.findall(r"<[a-z]+[^>]*data-i18n-%s=[^>]*>" % kind, PAGE[body:PAGE.index("<script", body)]):
+            en[re.search(r'data-i18n-%s="([^"]+)"' % kind, tag).group(1)] = re.search(r'(?<![\w-])%s="([^"]*)"' % attr, tag).group(1)
     en.update(json.loads(PAGE.split("var EN = ")[1].split("};")[0] + "}"))
     return en
 
@@ -74,8 +77,20 @@ def test_menu_lists_every_language():
     assert NAMES[0] == "en" and sorted(NAMES[1:]) == sorted(LANGS)
 
 
-def test_the_page_is_english_only():
-    assert LANGS == {} and NAMES == ["en"]
+def test_english_is_the_default_and_vietnamese_is_offered():
+    assert sorted(LANGS) == ["vi"] and NAMES == ["en", "vi"]
+
+
+def test_the_browsers_language_is_not_read():
+    """English is the default; another language only by ?lang=, the saved choice or the picker."""
+    pick = PAGE.split("function pickLang()")[1].split("\n  }\n")[0]
+    assert "navigator" not in pick and "localStorage" in pick and "lang=" in pick
+
+
+def test_every_english_key_has_a_vietnamese_value():
+    vi = LANGS["vi"]
+    assert [k for k in EN if not vi.get(k, "").strip()] == []
+    assert [k for k in vi if k not in EN] == []
 
 
 @pytest.mark.parametrize("lang", sorted(LANGS))

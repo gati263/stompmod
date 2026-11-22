@@ -18,12 +18,11 @@
 <title>StompMod Setup</title>
 <meta name="description" content="StompMod: custom firmware for the Line 6 HX Stomp, built in your browser from your own firmware file">
 <script>
-/* GaTi UI: Light is the default; Dark and System apply only when the person chose them (saved), set before the page paints. */
+/* Light is always the default, whatever the system says; Dark only when the person chose it (saved), set before the page paints. */
 (function () {
   var t = "light";
   try { t = localStorage.getItem("stompmod-theme") || "light"; } catch (e) { /* private mode */ }
-  var dark = t === "dark" || (t === "system" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -370,14 +369,11 @@
   .lede { margin: 0; color: var(--text-muted); max-width: var(--prose-max); font: var(--type-lead-weight) var(--type-lead-size)/var(--type-lead-line) var(--font-sans); }
 
   /* ThemeSwitch: Light, Dark, System (a segmented control) */
-  .seg { display: inline-flex; background: var(--bg-panel); border: var(--hairline) solid var(--border-strong); border-radius: var(--radius-sm); padding: 0; }
-  .seg button {
-    font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); color: var(--text-muted);
-    background: transparent; border: var(--hairline) solid transparent; border-radius: var(--radius-sm); height: var(--control-md);
-    padding: 0 var(--space-3); cursor: pointer; margin: calc(-1 * var(--hairline));
-  }
-  .seg button:hover { color: var(--text-primary); }
-  .seg button[aria-checked="true"] { background: var(--bg-elevated); border-color: var(--border-strong); color: var(--text-primary); }
+  .lang select { height: var(--control-md); padding: 0 var(--space-2); background: var(--bg-panel); color: var(--text-primary); border: var(--hairline) solid var(--border-strong); border-radius: var(--radius-sm); font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-sans); cursor: pointer; }
+  .btn.themebtn { width: var(--control-md); padding: 0; }
+  .themebtn svg { flex: none; }
+  .themebtn .ico-sun, html[data-theme="dark"] .themebtn .ico-moon { display: none; }
+  html[data-theme="dark"] .themebtn .ico-sun { display: block; }
 
   .warning {
     padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--warning-fill); color: var(--on-warning-fill);
@@ -746,21 +742,20 @@
   <header>
     <div class="top">
       <div class="brand">
-        <span class="eyebrow">HX Stomp firmware mod<span id="release" hidden></span></span>
+        <span class="eyebrow"><span data-i18n="eyebrow">HX Stomp firmware mod</span><span id="release" hidden></span></span>
       </div>
       <div class="tools">
-        <div class="seg" role="radiogroup" aria-label="Theme" id="themeSwitch">
-          <button type="button" role="radio" aria-checked="true" tabindex="0" data-theme-choice="light">Light</button>
-          <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-choice="dark">Dark</button>
-          <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-choice="system">System</button>
-        </div>
+        <label class="lang" hidden>
+          <span class="sr" data-i18n="lang">Language</span>
+          <select id="lang"></select>
+        </label>
+        <button class="btn icon themebtn" id="themeBtn" type="button" hidden aria-label="Switch to the dark theme">
+          <svg class="ico ico-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+          <svg class="ico ico-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg>
+        </button>
         <a class="btn" href="#support" data-support data-i18n="sup.btn">Support</a>
-        <button class="btn ghost" id="aboutBtn" type="button" aria-haspopup="dialog">About</button>
+        <button class="btn ghost" id="aboutBtn" type="button" aria-haspopup="dialog" data-i18n="about.btn">About</button>
       </div>
-      <label class="lang" hidden>
-        <span class="sr" data-i18n="lang">Language</span>
-        <select id="lang"></select>
-      </label>
     </div>
     <div class="hero-text">
       <h1 data-i18n="hero.title">StompMod</h1>
@@ -773,20 +768,20 @@
       <p class="warning short" data-i18n="warn.short"><b>Unofficial and experimental.</b> At your own risk. <a href="#recovery">Recovery</a> puts the stock firmware back.</p>
     </div>
     <figure class="hero-shot">
-      <img src="img/features/p1.webp" width="1280" height="942" alt="An HX Stomp with StompMod on the Home screen: the preset Praise, six snapshot names in colour and the snapshot footswitch icons in red, yellow and blue">
+      <img src="img/features/p1.webp" width="1280" height="942" data-i18n-alt="alt.p1" alt="An HX Stomp with StompMod on the Home screen: the preset Praise, six snapshot names in colour and the snapshot footswitch icons in red, yellow and blue">
     </figure>
   </header>
 
-  <ul class="stats" aria-label="StompMod in numbers">
-    <li><b>6</b><span>snapshots per preset, stock has 3</span></li>
-    <li><b>75</b><span>DSP total shown in the Edit view and the model browser</span></li>
-    <li><b>5</b><span>footswitches get a hold function, FS1 to FS5</span></li>
-    <li><b>786</b><span>models get a picture, with the Model pictures box</span></li>
+  <ul class="stats" data-i18n-aria="stats.aria" aria-label="StompMod in numbers">
+    <li><b>6</b><span data-i18n="stat1">snapshots per preset, stock has 3</span></li>
+    <li><b>75</b><span data-i18n="stat2">DSP total shown in the Edit view and the model browser</span></li>
+    <li><b>5</b><span data-i18n="stat3">footswitches get a hold function, FS1 to FS5</span></li>
+    <li><b>786</b><span data-i18n="stat4">models get a picture, with the Model pictures box</span></li>
   </ul>
 
 
   <div class="layout">
-  <nav class="steps-nav" aria-label="Steps">
+  <nav class="steps-nav" data-i18n-aria="nav.aria" aria-label="Steps">
     <ol>
       <li><a href="#get-ready" id="nav1"><span class="n">1</span><span class="t" data-i18n="nav.1">Prepare</span></a></li>
       <li><a href="#build" id="nav2"><span class="n">2</span><span class="t" data-i18n="nav.2">Build</span></a></li>
@@ -809,20 +804,20 @@
       <div>
         <h3 data-i18n="safe.protect">What protects you</h3>
         <ul class="plain">
-          <li>If anything goes wrong, the <a href="#recovery">Recovery</a> steps put the stock firmware back.</li>
-          <li>Installing StompMod doesn't erase anything on your device.</li>
-          <li>The bootloader is never changed.</li>
-          <li>The build runs inside this browser tab. Your firmware and captures never leave the computer.</li>
-          <li>The build checks every checksum, and the page says <b>Verified</b> when your file is byte for byte the tested one.</li>
+          <li data-i18n="safe.p1">If anything goes wrong, the <a href="#recovery">Recovery</a> steps put the stock firmware back.</li>
+          <li data-i18n="safe.p2">Installing StompMod doesn't erase anything on your device.</li>
+          <li data-i18n="safe.p3">The bootloader is never changed.</li>
+          <li data-i18n="safe.p4">The build runs inside this browser tab. Your firmware and captures never leave the computer.</li>
+          <li data-i18n="safe.p5">The build checks every checksum, and the page says <b>Verified</b> when your file is byte for byte the tested one.</li>
         </ul>
       </div>
       <div>
         <h3 data-i18n="safe.accept">What you accept</h3>
         <ul class="plain">
-          <li>StompMod isn't made or supported by Line 6.</li>
-          <li>Installing modified firmware is at your own risk and may void your warranty.</li>
-          <li>It changes a few of the firmware's fifteen parts.</li>
-          <li>Please don't share the file you build: the firmware is Line 6's.</li>
+          <li data-i18n="safe.a1">StompMod isn't made or supported by Line 6.</li>
+          <li data-i18n="safe.a2">Installing modified firmware is at your own risk and may void your warranty.</li>
+          <li data-i18n="safe.a3">It changes a few of the firmware's fifteen parts.</li>
+          <li data-i18n="safe.a4">Please don't share the file you build: the firmware is Line 6's.</li>
         </ul>
       </div>
     </div>
@@ -862,9 +857,9 @@
         <p data-i18n="boot.sub">The picture the HX Stomp shows while it starts. Leave it as it is, or use your own.</p>
         <div class="boot-body">
           <div class="boot-stage" id="bootStage">
-            <img id="bootImg" src="../assets/boot/signal_chain.png" width="320" height="240" alt="Preview of the boot picture">
+            <img id="bootImg" src="../assets/boot/signal_chain.png" width="320" height="240" data-i18n-alt="boot.alt" alt="Preview of the boot picture">
             <div class="boot-mark boot-bar" id="bootBar"><span data-i18n="boot.bar">loading bar</span></div>
-            <div class="boot-mark boot-icon" id="bootIcon"><span data-i18n="boot.icon">hidden text</span></div>
+            <div class="boot-mark boot-icon" id="bootIcon"><span data-i18n="boot.icon">Made by GaTi</span></div>
           </div>
           <div class="boot-ctl">
             <div class="row">
@@ -877,7 +872,7 @@
               <label><input type="radio" name="bootFit" value="fit"><span data-i18n="boot.fit">Fit (black bars)</span></label>
             </div>
             <p id="bootMsg" role="status"></p>
-            <p data-i18n="boot.note">The picture is made 320 x 240 here and stays on this computer. The dashed lines show where the loading bar crosses it and where the firmware paints over its corner to hide the boot text. How the bar looks over your picture can only be judged on the HX Stomp itself.</p>
+            <p data-i18n="boot.note">The picture is made 320 x 240 here and stays on this computer. The dashed lines show where the loading bar crosses it and where the firmware writes its line, Made by GaTi, in grey, which stays as it is. Keep the bottom of your picture dark so that line reads. How the bar and the line look over your picture can only be judged on the HX Stomp itself.</p>
           </div>
         </div>
       </div>
@@ -926,7 +921,7 @@
           <button class="btn primary big" id="fwSave" type="button" data-i18n="s2.save">Download firmware</button>
           <button class="btn" id="fwAgain" type="button" data-i18n="s2.again">Build another</button>
         </div>
-        <p class="support-line"><span data-i18n="sup.line">StompMod is free. If it saved you time, you can support it.</span> <a class="btn" href="#support" data-support data-i18n="sup.btn">Support</a></p>
+        <p class="support-line"><span data-i18n="sup.line">StompMod is free. If it made your HX Stomp more useful, you can support it.</span> <a class="btn" href="#support" data-support data-i18n="sup.btn">Support</a></p>
       <details class="log"><summary data-i18n="s2.log">Technical details</summary><pre id="fwLog"></pre></details>
       </div>
       <p class="note" data-i18n="s2.note">The first build downloads the build tools (about 15 MB) and takes 20–60 seconds, depending on the computer. Keep this tab open until it finishes.</p>
@@ -1051,20 +1046,20 @@
   </section>
 
   <section class="features" id="what-it-adds" aria-labelledby="hfa">
-    <h2 id="hfa">What it adds</h2>
-    <p>Everything below is in the firmware you build in step 2, with the Model pictures box as the one exception. Photos are of an HX Stomp running it.</p>
+    <h2 id="hfa" data-i18n="feat.h">What it adds</h2>
+    <p data-i18n="feat.intro">Everything below is in the firmware you build in step 2, with the Model pictures box as the one exception. Photos are of an HX Stomp running it.</p>
     <section class="mp" id="model-pictures" aria-labelledby="hmp">
       <h3 id="hmp" data-i18n="gmp">Model pictures</h3>
-      <p>A picture of the selected model in the Edit view and of the model under the cursor in the model browser. They are HX Edit's own pictures, read from the HX Edit on this computer, and nothing is uploaded.</p>
+      <p data-i18n="mp.p1">A picture of the selected model in the Edit view and of the model under the cursor in the model browser. They are HX Edit's own pictures, read from the HX Edit on this computer, and nothing is uploaded.</p>
       <div class="mp-shots">
-        <figure><img src="img/features/mp-edit.webp" width="800" height="608" loading="lazy" alt="The Edit view with a picture of the SLO-100 amp above the block's knobs, Drive, Bass and Mid"><figcaption>Edit view</figcaption></figure>
-        <figure><img src="img/features/mp-browser.webp" width="800" height="608" loading="lazy" alt="The model browser's Distortion list with a picture of the Timmy overdrive pedal beside it"><figcaption>Model browser</figcaption></figure>
+        <figure><img src="img/features/mp-edit.webp" width="800" height="608" loading="lazy" data-i18n-alt="mp.alt1" alt="The Edit view with a picture of the SLO-100 amp above the block's knobs, Drive, Bass and Mid"><figcaption data-i18n="mp.cap1">Edit view</figcaption></figure>
+        <figure><img src="img/features/mp-browser.webp" width="800" height="608" loading="lazy" data-i18n-alt="mp.alt2" alt="The model browser's Distortion list with a picture of the Timmy overdrive pedal beside it"><figcaption data-i18n="mp.cap2">Model browser</figcaption></figure>
       </div>
-      <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; Model Pictures (on by default) and Browser Icons (off by default).</p>
+      <p class="where" data-i18n="mp.where"><b>Where:</b> Global Settings &gt; Displays &gt; Model Pictures (on by default) and Browser Icons (off by default).</p>
       <details class="more"><summary data-i18n="more">More</summary>
-        <div class="shots"><figure><img src="img/features/s6a.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the Model Pictures, Browser Icons and Snapshot Names settings"><figcaption>The settings</figcaption></figure></div>
+        <div class="shots"><figure><img src="img/features/s6a.webp" width="640" height="486" loading="lazy" data-i18n-alt="mp.alt3" alt="Global Settings, Displays, with the Model Pictures, Browser Icons and Snapshot Names settings"><figcaption data-i18n="mp.cap3">The settings</figcaption></figure></div>
       </details>
-      <p><b>Optional.</b> It needs HX Edit installed on this computer: tick the Model pictures box before you build, and the build then takes about a minute longer.</p>
+      <p data-i18n="mp.opt"><b>Optional.</b> It needs HX Edit installed on this computer: tick the Model pictures box before you build, and the build then takes about a minute longer.</p>
       <div class="hero-cta"><a class="btn primary" href="#options" data-i18n="mp.go">Go to the Model pictures box</a></div>
     </section>
 
@@ -1072,49 +1067,49 @@
       <h3 id="gdisp" data-i18n="gdisp">Displays</h3>
       <div class="grid">
       <article class="card">
-        <h4>Six snapshots, with their names on Home</h4>
-        <p>The Home screen shows the names of all six snapshots in their colours, the playing one in a box.</p>
-        <figure class="rep"><a class="zoom" href="img/features/s1.webp"><img src="img/features/s1.webp" width="640" height="486" loading="lazy" alt="The Home screen with six snapshot names in colour, Lead, Verse and Chorus above Chorus 2, Verse 2 and Outro"><span class="count">3 photos</span></a><figcaption>Home, six names</figcaption></figure>
-        <p class="where"><b>Where:</b> Footswitch Mode on Snapshot. Names on Home: Global Settings &gt; Displays &gt; Snapshot Names (on by default).</p>
+        <h4 data-i18n="c.snap.t">Six snapshots, with their names on Home</h4>
+        <p data-i18n="c.snap.p">The Home screen shows the names of all six snapshots in their colours, the playing one in a box.</p>
+        <figure class="rep"><a class="zoom" href="img/features/s1.webp"><img src="img/features/s1.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.snap.alt1" alt="The Home screen with six snapshot names in colour, Lead, Verse and Chorus above Chorus 2, Verse 2 and Outro"><span class="count" data-i18n="photos3">3 photos</span></a><figcaption data-i18n="c.snap.cap1">Home, six names</figcaption></figure>
+        <p class="where" data-i18n="c.snap.w"><b>Where:</b> Footswitch Mode on Snapshot. Names on Home: Global Settings &gt; Displays &gt; Snapshot Names (on by default).</p>
         <details class="more"><summary data-i18n="more">More</summary>
-          <p>In Snapshot mode, press the lit footswitch again to preview snapshots 4 to 6 while the current one keeps playing; the next footswitch you press selects it. Names also show in Scroll mode when its up and down switches change snapshots.</p>
+          <p data-i18n="c.snap.m">In Snapshot mode, press the lit footswitch again to preview snapshots 4 to 6 while the current one keeps playing; the next footswitch you press selects it. Names also show in Scroll mode when its up and down switches change snapshots.</p>
           <div class="shots">
-            <figure><img src="img/features/s11a.webp" width="640" height="486" loading="lazy" alt="The Home screen in Snapshot mode after pressing the lit footswitch again, previewing snapshots 4, 5 and 6 by number"><figcaption>Preview of 4 to 6</figcaption></figure>
-            <figure><img src="img/features/s11b.webp" width="640" height="486" loading="lazy" alt="The Home screen on snapshots 4 to 6, showing their names Clean, Crunch and Lead"><figcaption>Snapshots 4 to 6, named</figcaption></figure>
+            <figure><img src="img/features/s11a.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.snap.alt2" alt="The Home screen in Snapshot mode after pressing the lit footswitch again, previewing snapshots 4, 5 and 6 by number"><figcaption data-i18n="c.snap.cap2">Preview of 4 to 6</figcaption></figure>
+            <figure><img src="img/features/s11b.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.snap.alt3" alt="The Home screen on snapshots 4 to 6, showing their names Clean, Crunch and Lead"><figcaption data-i18n="c.snap.cap3">Snapshots 4 to 6, named</figcaption></figure>
           </div>
         </details>
       </article>
       <article class="card">
-        <h4>BPM on Home</h4>
-        <p>The tempo at the top left of the Home screen and a beat dot beside the preset number. Choose the size, the colour and where the dot sits.</p>
-        <figure class="rep"><img src="img/features/s6c.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the BPM Size, BPM Color and BPM Dot settings"></figure>
-        <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; BPM Size, BPM Color, BPM Dot.</p>
+        <h4 data-i18n="c.bpm.t">BPM on Home</h4>
+        <p data-i18n="c.bpm.p">The tempo at the top left of the Home screen and a beat dot beside the preset number. Choose the size, the colour and where the dot sits.</p>
+        <figure class="rep"><img src="img/features/s6c.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.bpm.alt1" alt="Global Settings, Displays, with the BPM Size, BPM Color and BPM Dot settings"></figure>
+        <p class="where" data-i18n="c.bpm.w"><b>Where:</b> Global Settings &gt; Displays &gt; BPM Size, BPM Color, BPM Dot.</p>
       </article>
       <article class="card">
-        <h4>DSP usage</h4>
-        <p>Each block in the Edit view shows its share of the DSP, and the top right shows the total out of 75.</p>
-        <figure class="rep"><a class="zoom" href="img/features/s2.webp"><img src="img/features/s2.webp" width="640" height="486" loading="lazy" alt="The Edit view with the DSP share on each block and the total 75/75 at the top right"><span class="count">2 photos</span></a><figcaption>Edit view</figcaption></figure>
-        <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; DSP Blocks, DSP Browser, DSP Total (all on by default).</p>
+        <h4 data-i18n="c.dsp.t">DSP usage</h4>
+        <p data-i18n="c.dsp.p">Each block in the Edit view shows its share of the DSP, and the top right shows the total out of 75.</p>
+        <figure class="rep"><a class="zoom" href="img/features/s2.webp"><img src="img/features/s2.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.dsp.alt1" alt="The Edit view with the DSP share on each block and the total 75/75 at the top right"><span class="count" data-i18n="photos2">2 photos</span></a><figcaption data-i18n="c.dsp.cap1">Edit view</figcaption></figure>
+        <p class="where" data-i18n="c.dsp.w"><b>Where:</b> Global Settings &gt; Displays &gt; DSP Blocks, DSP Browser, DSP Total (all on by default).</p>
         <details class="more"><summary data-i18n="more">More</summary>
-          <p>The model browser shows the share each model would take before you add it.</p>
+          <p data-i18n="c.dsp.m">The model browser shows the share each model would take before you add it.</p>
           <div class="shots">
-            <figure><img src="img/features/s6b.webp" width="640" height="486" loading="lazy" alt="Global Settings, Displays, with the DSP Blocks, DSP Browser and DSP Total settings"><figcaption>The three settings</figcaption></figure>
+            <figure><img src="img/features/s6b.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.dsp.alt2" alt="Global Settings, Displays, with the DSP Blocks, DSP Browser and DSP Total settings"><figcaption data-i18n="c.dsp.cap2">The three settings</figcaption></figure>
           </div>
         </details>
       </article>
       <article class="card">
-        <h4>Real block names</h4>
-        <p>The model browser and the Edit view title each block by the gear it is based on, such as Xotic EP Booster and Klon Centaur, instead of Line 6's own name.</p>
-        <figure class="rep"><img src="img/features/s3.webp" width="640" height="486" loading="lazy" alt="The model browser's Distortion list showing real names: Xotic EP Boost, Rangemaster, Klon Centaur, Timmy Overdrive and Prince of Tone"></figure>
-        <p class="where"><b>Where:</b> model browser and Edit view. No setting.</p>
+        <h4 data-i18n="c.names.t">Real block names</h4>
+        <p data-i18n="c.names.p">The model browser and the Edit view title each block by the gear it is based on, such as Xotic EP Booster and Klon Centaur, instead of Line 6's own name.</p>
+        <figure class="rep"><img src="img/features/s3.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.names.alt1" alt="The model browser's Distortion list showing real names: Xotic EP Boost, Rangemaster, Klon Centaur, Timmy Overdrive and Prince of Tone"></figure>
+        <p class="where" data-i18n="c.names.w"><b>Where:</b> model browser and Edit view. No setting.</p>
         <details class="more"><summary data-i18n="more">More</summary>
-          <p>Presets are the same with or without it.</p>
+          <p data-i18n="c.names.m">Presets are the same with or without it.</p>
         </details>
       </article>
       <article class="card">
-        <h4>Custom boot screen</h4>
-        <p>Show your own picture or text when the HX Stomp powers on. You set it when you build.</p>
-        <p class="where"><b>Where:</b> the boot screen panel in <a href="#build">Build StompMod</a>.</p>
+        <h4 data-i18n="c.boot.t">Custom boot screen</h4>
+        <p data-i18n="c.boot.p">Show your own picture or text when the HX Stomp powers on. You set it when you build.</p>
+        <p class="where" data-i18n="c.boot.w"><b>Where:</b> the boot screen panel in <a href="#build">Build StompMod</a>.</p>
       </article>
       </div>
     </div>
@@ -1122,32 +1117,32 @@
       <h3 id="gfoot" data-i18n="gfoot">Footswitches</h3>
       <div class="grid">
       <article class="card">
-        <h4>Tap command</h4>
-        <p>A footswitch that taps the tempo, in the presets where you put it.</p>
-        <figure class="rep"><img src="img/features/s8.webp" width="640" height="486" loading="lazy" alt="The Command Center for Footswitch 1, with its command set to Tap"></figure>
-        <p class="where"><b>Where:</b> Menu &gt; Command Center, on FS1 to FS5, command Tap.</p>
+        <h4 data-i18n="c.tapc.t">Tap command</h4>
+        <p data-i18n="c.tapc.p">A footswitch that taps the tempo, in the presets where you put it.</p>
+        <figure class="rep"><img src="img/features/s8.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.tapc.alt1" alt="The Command Center for Footswitch 1, with its command set to Tap"></figure>
+        <p class="where" data-i18n="c.tapc.w"><b>Where:</b> Menu &gt; Command Center, on FS1 to FS5, command Tap.</p>
         <details class="more"><summary data-i18n="more">More</summary>
-          <p>Its ring blinks the tempo. The footswitch must be a Stomp switch.</p>
+          <p data-i18n="c.tapc.m">Its ring blinks the tempo. The footswitch must be a Stomp switch.</p>
         </details>
       </article>
       <article class="card">
-        <h4>Tap LED color</h4>
-        <p>Pick the colour of the TAP footswitch's ring, and of its icon and label on the Home screen.</p>
-        <p class="where"><b>Where:</b> Global Settings &gt; Displays &gt; Tap LED Color, in Tap Tempo LED's place.</p>
+        <h4 data-i18n="c.tapl.t">Tap LED color</h4>
+        <p data-i18n="c.tapl.p">Pick the colour of the TAP footswitch's ring, and of its icon and label on the Home screen.</p>
+        <p class="where" data-i18n="c.tapl.w"><b>Where:</b> Global Settings &gt; Displays &gt; Tap LED Color, in Tap Tempo LED's place.</p>
         <details class="more"><summary data-i18n="more">More</summary>
-          <p>Rainbow steps round the colour wheel on each beat, Random picks a new colour each beat, and Off stops the blink.</p>
+          <p data-i18n="c.tapl.m">Rainbow steps round the colour wheel on each beat, Random picks a new colour each beat, and Off stops the blink.</p>
         </details>
       </article>
       <article class="card">
-        <h4>Long press</h4>
-        <p>Hold FS1 to FS5 for one second to run a function of your choice, such as the tuner.</p>
-        <figure class="rep"><a class="zoom" href="img/features/s7a.webp"><img src="img/features/s7a.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS1 Hold Function and FS2 Hold Function settings"><span class="count">3 photos</span></a><figcaption>FS1 and FS2 Hold</figcaption></figure>
-        <p class="where"><b>Where:</b> Global Settings &gt; Footswitches, FS1 Hold Function to FS5 Hold Function, then FS6 Function to FS10 Function. Works in Stomp footswitch mode.</p>
+        <h4 data-i18n="c.long.t">Long press</h4>
+        <p data-i18n="c.long.p">Hold FS1 to FS5 for one second to run a function of your choice, such as the tuner.</p>
+        <figure class="rep"><a class="zoom" href="img/features/s7a.webp"><img src="img/features/s7a.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.long.alt1" alt="Global Settings, Footswitches, with the FS1 Hold Function and FS2 Hold Function settings"><span class="count" data-i18n="photos3">3 photos</span></a><figcaption data-i18n="c.long.cap1">FS1 and FS2 Hold</figcaption></figure>
+        <p class="where" data-i18n="c.long.w"><b>Where:</b> Global Settings &gt; Footswitches, FS1 Hold Function to FS5 Hold Function, then FS6 Function to FS10 Function. Works in Stomp footswitch mode.</p>
         <details class="more"><summary data-i18n="more">More</summary>
-          <p>FS6 to FS10 are virtual footswitches with the same functions as FS3 to FS5, plus GlobalEQ, which opens the Global EQ.</p>
+          <p data-i18n="c.long.m">FS6 to FS10 are virtual footswitches with the same functions as FS3 to FS5, plus GlobalEQ, which opens the Global EQ.</p>
           <div class="shots">
-            <figure><img src="img/features/s7b.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS3, FS4 and FS5 Hold Function settings"><figcaption>FS3 to FS5 Hold</figcaption></figure>
-            <figure><img src="img/features/s7c.webp" width="640" height="486" loading="lazy" alt="Global Settings, Footswitches, with the FS6, FS7 and FS8 Function settings"><figcaption>FS6 to FS8 Function</figcaption></figure>
+            <figure><img src="img/features/s7b.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.long.alt2" alt="Global Settings, Footswitches, with the FS3, FS4 and FS5 Hold Function settings"><figcaption data-i18n="c.long.cap2">FS3 to FS5 Hold</figcaption></figure>
+            <figure><img src="img/features/s7c.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.long.alt3" alt="Global Settings, Footswitches, with the FS6, FS7 and FS8 Function settings"><figcaption data-i18n="c.long.cap3">FS6 to FS8 Function</figcaption></figure>
           </div>
         </details>
       </article>
@@ -1157,18 +1152,18 @@
       <h3 id="gsnd" data-i18n="gsnd">Sound</h3>
       <div class="grid">
       <article class="card">
-        <h4>NAM A2 Lite</h4>
-        <p>Run Neural Amp Modeler captures as an amp block on the HX Stomp. Convert your captures on this page, then add them in HX Edit.</p>
-        <figure class="rep"><img src="img/features/s5.webp" width="640" height="486" loading="lazy" alt="The model browser on the HX Stomp, in Amp, with NAM A2 Lite listed"></figure>
-        <p class="where"><b>Where:</b> model browser, Amp &gt; NAM A2 Lite. See <a href="#convert-captures">Convert captures</a> and <a href="#play-nam">Play NAM</a>.</p>
+        <h4 data-i18n="c.nam.t">NAM A2 Lite</h4>
+        <p data-i18n="c.nam.p">Run Neural Amp Modeler captures as an amp block on the HX Stomp. Convert your captures on this page, then add them in HX Edit.</p>
+        <figure class="rep"><img src="img/features/s5.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.nam.alt1" alt="The model browser on the HX Stomp, in Amp, with NAM A2 Lite listed"></figure>
+        <p class="where" data-i18n="c.nam.w"><b>Where:</b> model browser, Amp &gt; NAM A2 Lite. See <a href="#convert-captures">Convert captures</a> and <a href="#play-nam">Play NAM</a>.</p>
       </article>
       <article class="card">
-        <h4>Tuner page</h4>
-        <p>A page of its own for two tuner settings.</p>
-        <figure class="rep"><img src="img/features/s9b.webp" width="640" height="486" loading="lazy" alt="The tuner's added page with the Activate and Lock knobs"></figure>
-        <p class="where"><b>Where:</b> open the tuner, then page right past Trails, Offsets and String 6.</p>
+        <h4 data-i18n="c.tuner.t">Tuner page</h4>
+        <p data-i18n="c.tuner.p">A page of its own for two tuner settings.</p>
+        <figure class="rep"><img src="img/features/s9b.webp" width="640" height="486" loading="lazy" data-i18n-alt="c.tuner.alt1" alt="The tuner's added page with the Activate and Lock knobs"></figure>
+        <p class="where" data-i18n="c.tuner.w"><b>Where:</b> open the tuner, then page right past Trails, Offsets and String 6.</p>
         <details class="more"><summary data-i18n="more">More</summary>
-          <p>Activate set to Press opens the tuner with one press instead of a hold, and Lock stops the tuner's other settings from changing by accident.</p>
+          <p data-i18n="c.tuner.m">Activate set to Press opens the tuner with one press instead of a hold, and Lock stops the tuner's other settings from changing by accident.</p>
         </details>
       </article>
       </div>
@@ -1193,7 +1188,7 @@
 
   <section class="support" id="support" aria-labelledby="hsup">
     <h2 id="hsup" data-i18n="sup.title">Support StompMod</h2>
-    <p>StompMod is free, and I build it in my own time. If it saved you time, your support buys hours for new features.</p>
+    <p data-i18n="sup.blurb">StompMod is free, and I build it in my own time. If it made your HX Stomp more useful, your support buys hours for new features.</p>
     <div class="hero-cta"><a class="btn primary" href="#support-ways" data-support data-i18n="sup.btn">Support</a></div>
     <details class="more" id="support-ways"><summary data-i18n="sup.ways">Ways to support</summary>
       <div class="pay">
@@ -1204,7 +1199,7 @@
         </div>
         <div class="pay-opt">
           <h3 data-i18n="sup.momo">VietQR (Vietnam)</h3>
-          <figure><img src="img/support/vietqr.webp" width="560" height="560" loading="lazy" alt="VietQR code for supporting StompMod, scannable with MoMo or any Vietnamese banking app"><figcaption data-i18n="sup.scan">Scan with MoMo or any Vietnamese banking app</figcaption></figure>
+          <figure><img src="img/support/vietqr.webp" width="560" height="560" loading="lazy" data-i18n-alt="sup.alt" alt="VietQR code for supporting StompMod, scannable with MoMo or any Vietnamese banking app"><figcaption data-i18n="sup.scan">Scan with MoMo or any Vietnamese banking app</figcaption></figure>
         </div>
       </div>
     </details>
@@ -1235,42 +1230,42 @@
   </div>
 
   <footer>
-    <p>StompMod is an unofficial firmware mod for the Line 6 HX Stomp. It is not made or supported by Line 6 or Yamaha Guitar Group; Line 6, Helix, HX Stomp and HX Edit are their trademarks.</p>
-    <p>Based on <a href="https://github.com/wisemandenny/hxtra" target="_blank" rel="noopener">hxtra</a> by wisemandenny, GPL-3.0-or-later. <a href="../LICENSE">Licence</a> and <a href="../NOTICE">third-party notices</a>.</p>
-    <p>Contact: <a href="mailto:contact@gatistudio.com">contact@gatistudio.com</a></p>
+    <p data-i18n="foot.p1">StompMod is an unofficial firmware mod for the Line 6 HX Stomp. It is not made or supported by Line 6 or Yamaha Guitar Group; Line 6, Helix, HX Stomp and HX Edit are their trademarks.</p>
+    <p data-i18n="foot.p2">Based on <a href="https://github.com/wisemandenny/hxtra" target="_blank" rel="noopener">hxtra</a> by wisemandenny, GPL-3.0-or-later. <a href="../LICENSE">Licence</a> and <a href="../NOTICE">third-party notices</a>.</p>
+    <p data-i18n="foot.p3">Contact: <a href="mailto:contact@gatistudio.com">contact@gatistudio.com</a></p>
   </footer>
 </div>
 
 <dialog class="modal" id="about" aria-labelledby="aboutTitle">
-  <h2 id="aboutTitle">About StompMod</h2>
-  <p>Custom firmware for the Line 6 HX Stomp, built in your browser from your own copy of Line 6's firmware. Nothing is uploaded.</p>
+  <h2 id="aboutTitle" data-i18n="about.title">About StompMod</h2>
+  <p data-i18n="about.p1">Custom firmware for the Line 6 HX Stomp, built in your browser from your own copy of Line 6's firmware. Nothing is uploaded.</p>
   <dl>
-    <dt>Developer</dt><dd>Gia Thinh (GaTi)</dd>
+    <dt data-i18n="about.dev">Developer</dt><dd>Gia Thinh (GaTi)</dd>
     <dt>Email</dt><dd><a href="mailto:contact@gatistudio.com">contact@gatistudio.com</a></dd>
     <dt>Facebook</dt><dd><a href="https://www.facebook.com/ga.ti.35/" target="_blank" rel="noopener">facebook.com/ga.ti.35</a></dd>
-    <dt>Support</dt><dd><a href="#support" data-support>Support StompMod</a></dd>
-    <dt>More apps</dt><dd><a href="https://gati263.gumroad.com/" target="_blank" rel="noopener">Gumroad store</a></dd>
+    <dt data-i18n="about.sup">Support</dt><dd><a href="#support" data-support data-i18n="about.supl">Support StompMod</a></dd>
+    <dt data-i18n="about.more">More apps</dt><dd><a href="https://gati263.gumroad.com/" target="_blank" rel="noopener" data-i18n="about.store">Gumroad store</a></dd>
   </dl>
-  <p>Based on hxtra by wisemandenny, GPL-3.0-or-later.</p>
-  <div class="actions-bar"><button class="btn" id="aboutClose" type="button" autofocus>Close</button></div>
+  <p data-i18n="about.based">Based on hxtra by wisemandenny, GPL-3.0-or-later.</p>
+  <div class="actions-bar"><button class="btn" id="aboutClose" type="button" autofocus data-i18n="close">Close</button></div>
 </dialog>
 
 <dialog class="modal supportdlg" id="supportDlg" aria-labelledby="supTitle">
-  <h2 id="supTitle">Support StompMod</h2>
-  <p id="supDl" hidden data-i18n="sup.dl">Your firmware is ready. StompMod is free; if it saved you time, you can support it.</p>
-  <p>StompMod is free. If it saved you time, you can support it.</p>
+  <h2 id="supTitle" data-i18n="sup.title">Support StompMod</h2>
+  <p id="supDl" hidden data-i18n="sup.dl">Your firmware is ready. StompMod is free; if it makes your HX Stomp more useful, you can support it.</p>
+  <p data-i18n="sup.p">StompMod is free. If it made your HX Stomp more useful, you can support it.</p>
   <div id="supBody"></div>
-  <div class="actions-bar"><button class="btn primary" id="supSave" type="button" hidden data-i18n="s2.save">Download firmware</button><button class="btn" id="supClose" type="button" autofocus>Close</button></div>
+  <div class="actions-bar"><button class="btn primary" id="supSave" type="button" hidden data-i18n="s2.save">Download firmware</button><button class="btn" id="supClose" type="button" autofocus data-i18n="close">Close</button></div>
 </dialog>
 
-<dialog class="modal lightbox" id="lightbox" aria-label="Photos">
+<dialog class="modal lightbox" id="lightbox" data-i18n-aria="lb.aria" aria-label="Photos">
   <figure class="lb-fig"><div class="lb-stage" id="lbStage"></div><figcaption class="lb-cap" id="lbCap"></figcaption></figure>
   <div class="lb-bar">
     <span class="mono" id="lbCount" aria-live="polite"></span>
     <div class="lb-btns">
-      <button class="btn" id="lbPrev" type="button">Previous</button>
-      <button class="btn" id="lbNext" type="button">Next</button>
-      <button class="btn" id="lbClose" type="button" autofocus>Close</button>
+      <button class="btn" id="lbPrev" type="button" data-i18n="lb.prev">Previous</button>
+      <button class="btn" id="lbNext" type="button" data-i18n="lb.next">Next</button>
+      <button class="btn" id="lbClose" type="button" autofocus data-i18n="close">Close</button>
     </div>
   </div>
 </dialog>
@@ -1284,6 +1279,9 @@
 var EN = {
   "lang": "Language",
   "doc.title": "StompMod Setup",
+  "lb.of": "{n} of {m}",
+  "theme.dark": "Switch to the dark theme",
+  "theme.light": "Switch to the light theme",
   "count.none": "No captures yet",
   "count.some": "{good} of {n} converted",
   "conv.download": "Download",
@@ -1369,10 +1367,351 @@ var EN = {
 };
 
 // LANGS-BEGIN
-var LANGS = {};
+var LANGS = {
+  "vi": {
+    "eyebrow": "Bản mod firmware cho HX Stomp",
+    "about.btn": "Giới thiệu",
+    "sup.btn": "Ủng hộ",
+    "lang": "Ngôn ngữ",
+    "hero.title": "StompMod",
+    "hero.lede": "Firmware tùy biến cho Line 6 HX Stomp, được build ngay trong trình duyệt của bạn từ chính file firmware của Line 6 mà bạn có.",
+    "hero.build": "Build firmware của bạn",
+    "hero.see": "Xem StompMod thêm gì",
+    "ver": "dành cho firmware HX Stomp 3.80.0 · miễn phí, không cần tài khoản",
+    "warn.short": "<b>Không chính thức, còn thử nghiệm.</b> Bạn tự chịu rủi ro. <a href=\"#recovery\">Khôi phục</a> sẽ đưa firmware gốc trở lại.",
+    "nav.1": "Chuẩn bị",
+    "nav.2": "Build",
+    "nav.try": "Thử",
+    "nav.3": "Cài đặt",
+    "nav.4": "Chuyển capture",
+    "nav.5": "Chơi NAM",
+    "nav.feat": "StompMod thêm gì",
+    "nav.mp": "Hình model",
+    "nav.rec": "Khôi phục",
+    "nav.faq": "Câu hỏi thường gặp",
+    "safe.title": "Có an toàn không?",
+    "safe.protect": "Điều bảo vệ bạn",
+    "safe.accept": "Điều bạn chấp nhận",
+    "s1.title": "Chuẩn bị",
+    "s1.c1": "Tôi có một chiếc <b>HX Stomp</b>.",
+    "s1.c1s": "StompMod chỉ dành cho HX Stomp. HX Stomp XL, HX Effects, Helix Floor, Helix LT, Helix Rack KHÔNG được hỗ trợ.",
+    "s1.c2": "Máy tính này đã cài <b>HX Edit</b> và <b>Line 6 Updater</b>.",
+    "s1.c2s": "Cả hai đều miễn phí từ Line 6 nếu bạn tạo tài khoản miễn phí. <a class=\"os-mac\" href=\"https://line6.com/software/readeula.html?rid=12240\" target=\"_blank\" rel=\"noopener\">Line 6 Updater</a><a class=\"os-win\" href=\"https://line6.com/software/readeula.html?rid=12239\" target=\"_blank\" rel=\"noopener\">Line 6 Updater</a> dùng để cài firmware; <a class=\"os-mac\" href=\"https://line6.com/software/readeula.html?rid=12926\" target=\"_blank\" rel=\"noopener\">HX Edit</a><a class=\"os-win\" href=\"https://line6.com/software/readeula.html?rid=12927\" target=\"_blank\" rel=\"noopener\">HX Edit</a> dùng để nhập các capture NAM.",
+    "s1.c3": "Tôi đã sao lưu preset và IR trong HX Edit.",
+    "s1.c3s": "Dùng <b>File -> Create Backup...</b> trong HX Edit. Cài StompMod không xóa bất cứ thứ gì trên thiết bị của bạn. ",
+    "s1.c4": "Tôi có <a href=\"https://line6.com/software/readeula.html?rid=12906\" target=\"_blank\" rel=\"noopener\">file firmware gốc của Line 6</a>, HX_Stomp_v3.80.0_0x103966115.hxf",
+    "s1.c4s": "Bạn lấy được từ Line 6 sau khi tạo tài khoản. ",
+    "s1.tip": "Hãy cất file gốc này ở nơi an toàn. Bạn cũng cần nó cho phần <a href=\"#recovery\">Khôi phục</a> và để quay về firmware bình thường sau này.",
+    "s2.title": "Build StompMod",
+    "s2.sub": "Bước này build StompMod từ file firmware gốc và cho bạn file firmware đã chỉnh sửa để cài đặt.",
+    "boot.title": "Màn hình khởi động",
+    "boot.sub": "Hình HX Stomp hiển thị khi bật máy. Bạn có thể để nguyên hoặc dùng hình của riêng mình.",
+    "boot.bar": "thanh tải",
+    "boot.icon": "Made by GaTi",
+    "boot.use": "Dùng hình của tôi",
+    "boot.reset": "Dùng hình mặc định",
+    "boot.fill": "Lấp đầy (cắt phần rìa)",
+    "boot.fit": "Vừa khung (viền đen)",
+    "boot.note": "Hình được chuyển thành 320 x 240 ngay tại đây và không rời khỏi máy tính của bạn. Các đường nét đứt cho thấy thanh tải cắt ngang hình ở đâu và nơi firmware viết dòng chữ Made by GaTi bằng màu xám, dòng này luôn giữ nguyên. Hãy để phần dưới của hình tối màu để dòng chữ dễ đọc. Thanh tải và dòng chữ trông thế nào trên hình của bạn chỉ xem được trên chính HX Stomp.",
+    "feat.pics": "<b>Hình model</b> (tùy chọn, tắt nếu bạn không tick)",
+    "mp.see": "Xem trông như thế nào",
+    "feat.picsS": "\n            <li>Hình của model block đang chọn trong Edit view, và hình của model dưới con trỏ trong model browser.</li>\n            <li>Các hình là của chính HX Edit, đọc từ HX Edit cài trên máy tính này: bạn chọn thư mục <b>res</b> của nó, và không có gì được tải lên. <b>Khi tick mục này, build lâu hơn khoảng một phút.</b></li>\n          ",
+    "pics.hint": "Chọn thư mục <b>res</b> của HX Edit. Trên Windows thường là <code>C:\\Program Files (x86)\\Line6\\HX Edit\\res</code>; nếu trình duyệt không mở được thư mục hệ thống, hãy sao chép thư mục đó sang nơi khác trước. Chỉ các hình model của HX Edit được đọc.",
+    "pics.choose": "Chọn thư mục res",
+    "feat.none": "Bản sao này của trang không có mã tính năng, nên chỉ build NAM A2 Lite và màn hình khởi động. Trang được công bố cùng mỗi bản phát hành StompMod thì có đủ.",
+    "s2.drop": "Thả file .hxf gốc của bạn vào đây",
+    "s2.dropSub": "hoặc bấm để chọn · khoảng 45 MB · file ở lại trên máy tính của bạn",
+    "s2.offTitle": "Bước này cần mở trang từ một địa chỉ web.",
+    "s2.off1": "Bạn đã mở trang dưới dạng một file trên máy tính, và trình duyệt không cho trang file chạy build. Hãy mở trang trực tuyến (gatistudio.com/stompmod). Nó làm đúng việc đó và vẫn không tải gì lên. (Bước 5 và 6 chạy được ở cả hai cách.)",
+    "s2.save": "Tải firmware",
+    "s2.again": "Build file khác",
+    "sup.line": "StompMod miễn phí. Nếu nó giúp HX Stomp của bạn hữu ích hơn, bạn có thể ủng hộ.",
+    "s2.log": "Chi tiết kỹ thuật",
+    "s2.note": "Lần build đầu tiên tải về công cụ build (khoảng 15 MB) và mất 20–60 giây, tùy máy tính. Hãy giữ tab này mở cho đến khi xong.",
+    "ram.title": "Thử mà không cần cài",
+    "opt": "Tùy chọn",
+    "ram.p1": "Chạy StompMod từ bộ nhớ của thiết bị trong một phiên. Không có gì được ghi vào thiết bị và mọi thay đổi bạn làm sẽ không được lưu. Tắt máy rồi bật lại là về firmware gốc.",
+    "ram.li1": "HX Stomp của bạn đang cài firmware gốc <b>3.80.0</b> của Line 6.",
+    "ram.li2": "Dùng <b>Chrome</b> hoặc <b>Edge</b> trên máy tính, và <b>thoát HX Edit và Line 6 Updater</b>: chúng đang giữ kết nối USB.",
+    "ram.li3": "Nối HX Stomp bằng USB, bật máy rồi bấm <b>Run from RAM</b> (bên dưới). Chọn HX Stomp trong danh sách của trình duyệt. Khi máy khởi động lại, trình duyệt hỏi thêm hai lần nữa: mỗi lần hãy bấm <b>Continue</b> và chọn thiết bị được liệt kê.",
+    "ram.li4": "Nếu HX Stomp không có trong danh sách, hãy tắt máy, <b>giữ Page › khi bật máy</b> (chế độ cập nhật, màn hình tối), rồi bấm <b>Run from RAM</b> lần nữa.",
+    "ram.note": "Các núm xoay có thể phản hồi chậm khi chạy từ RAM; firmware đã cài thì không bị vậy.",
+    "ram.note2": "Mọi tính năng của StompMod đều đã được thử theo cách này trên một chiếc HX Stomp thật. Trên Windows, trình duyệt có thể không thấy HX Stomp vì driver của Line 6 đang giữ nó.",
+    "ram.go": "Run from RAM",
+    "ram.continue": "Continue",
+    "ram.log": "Chi tiết kỹ thuật",
+    "s3.title": "Cài đặt bằng Line 6 Updater",
+    "s3.sub": "Làm giống như một lần cập nhật Line 6 bình thường, chỉ khác là dùng file mới của bạn.",
+    "s3.install": "Cài đặt",
+    "s3.li1": "<b>Đóng HX Edit</b> nếu đang mở. Line 6 Updater không kết nối được với HX Stomp khi HX Edit đang dùng nó.",
+    "s3.li2": "Nối HX Stomp với máy tính bằng USB và bật máy.",
+    "s3.li3": "Mở <b>Line 6 Updater</b>, đăng nhập và chọn HX Stomp của bạn.",
+    "s3.li4": "Chọn <b>Choose File</b> (không phải cập nhật thông thường) và chọn file bạn đã tải ở bước 2:",
+    "s3.li5": "Chờ cho đến khi xong. <b>Đừng rút cáp hay tắt HX Stomp</b> trong lúc đang cập nhật. Máy sẽ tự khởi động lại khi xong. Quá trình này có thể mất đến 20 phút.",
+    "s3.li6": "Kiểm tra kết quả. Nếu màn hình khởi động hiện <b>hình của bạn</b> thì chúc mừng, bạn đã cài xong!",
+    "s3.li7": "Chỉ sang bước 5 và 6 nếu bạn dùng NAM.",
+    "s3.tip": "Bị kẹt ở màn hình khởi động sau khi cài? Đừng lo: hãy làm theo phần <a href=\"#recovery\">Khôi phục</a>.",
+    "s4.title": "Chuyển các capture NAM của bạn",
+    "s4.sub": "HX Stomp nạp capture NAM từ các slot User IR. Bước này đổi mỗi file <b>.nam</b> thành file <b>.wav</b> mà HX Edit có thể nhập vào đó.",
+    "s4.drop": "Thả các file .nam vào đây",
+    "s4.dropSub": "hoặc bấm để chọn · chọn nhiều file cùng lúc cũng được",
+    "s4.clear": "Xóa hết",
+    "s4.all": "Tải tất cả",
+    "s4.empty": "Các capture đã chuyển sẽ hiện ở đây. Chỉ loại <b>A2 Lite</b> 3 kênh dùng được (trên ToneHunt và các trang tương tự, hãy tìm “A2 Lite”). File .nam chứa nhiều cỡ cũng được: model A2 Lite của nó sẽ được dùng.",
+    "s4.tip": "File .wav này không phải âm thanh: nó chứa 1.871 con số của capture. Đừng nạp nó vào block Cab hay IR; nó chỉ dành cho block NAM A2 Lite!",
+    "s5.title": "Nạp capture và chơi",
+    "s5.sub": "Nhập các file .wav bằng HX Edit, rồi trỏ block NAM A2 Lite vào chúng.",
+    "s5.li1": "Mở <b>HX Edit</b> khi HX Stomp đang kết nối, và mở danh sách <b>Impulses</b>.",
+    "s5.li2": "Kéo một file <b>.wav</b> từ bước 5 vào một slot trống. <b>Ghi lại số của slot</b>, ví dụ 5.",
+    "s5.li3": "Thêm một block và chọn <span class=\"path\">Amp › NAM › NAM A2 Lite</span>.",
+    "s5.li4": "Vặn <span class=\"knob\">Model</span> (núm đầu tiên của trang 3) đến số slot đó. Bạn sẽ nghe thấy capture.",
+    "s5.thKnob": "Núm",
+    "s5.thWhat": "Tác dụng",
+    "s5.kModel": "Capture nào được phát: slot User IR (1–128) chứa nó. Slot có cab IR thông thường, hoặc để trống, sẽ im lặng.",
+    "s5.kDrive": "Mức tín hiệu vào capture, từ −20 đến +20 dB. 5.0 là mức gốc của capture.",
+    "s5.kTone": "Chỉnh âm sau capture, mỗi băng ±12 dB. 5.0 là phẳng. Bass là low shelf ở 150 Hz, Mid là một dải ở Mid Freq, Treble là một dải ở 2,5 kHz.",
+    "s5.kMid": "Vị trí của Mid, từ 150 Hz đến 3 kHz (mặc định 650 Hz), và độ rộng: Q 0.7 (rộng), 1.4 hoặc 2.8 (hẹp).",
+    "s5.kCut": "Bộ lọc thông thấp. 10.0 là tắt; vặn xuống sẽ hạ tần số cắt, xuống 2 kHz ở 0.0.",
+    "s5.kVol": "Mức âm lượng ngõ ra. 5.0 là giữ nguyên; 10 là +12 dB.",
+    "s5.kPol": "Normal hoặc Inverted: Inverted đảo cực (pha) của ngõ ra.",
+    "s5.n1": "Preset ghi nhớ số model, nên nếu bạn chuyển một capture sang slot khác, hãy cập nhật các preset đang dùng nó.",
+    "s5.n2": "Đổi Model, bằng tay hay trong một snapshot, đều chuyển mượt và không bị ngắt tiếng.",
+    "s5.n3": "<b>Tối đa hai block NAM A2 Lite trong mỗi preset, mỗi block một capture riêng</b>, đều lấy từ <span class=\"path\">Amp › NAM</span>. Chúng không tính vào giới hạn hai amp của HX Stomp.",
+    "s5.n4": "Mỗi block dùng khoảng một phần tư DSP của HX Stomp, nên hai block vẫn còn chỗ cho các block khác. Với DSP meter, mỗi block hiển thị phần DSP của nó.",
+    "s5.n5": "HX Edit hiển thị nó là <b>Xenomorph Fuzz</b>, với tên núm của Xenomorph: Gain là Input, Tone là Treble, Level là Output, Clipping là Polarity, OscLevel là Bass, OscTone là Mid, MinFreq là Model, MaxFreq là Mid Freq, WaveShape là Q và Sensitivity là High Cut. Nó giữ nguyên các block NAM và cài đặt của chúng khi bạn di chuyển block.",
+    "feat.h": "StompMod thêm gì",
+    "feat.intro": "Mọi thứ dưới đây đều có trong firmware bạn build ở bước 2, ngoại trừ ô Hình model. Ảnh chụp từ một chiếc HX Stomp đang chạy nó.",
+    "gmp": "Hình model",
+    "mp.p1": "Hình của model đang chọn trong Edit view và của model dưới con trỏ trong model browser. Đó là hình của chính HX Edit, đọc từ HX Edit trên máy tính này, và không có gì được tải lên.",
+    "mp.cap1": "Edit view",
+    "mp.cap2": "Model browser",
+    "mp.where": "<b>Ở đâu:</b> Global Settings &gt; Displays &gt; Model Pictures (mặc định bật) và Browser Icons (mặc định tắt).",
+    "more": "Xem thêm",
+    "mp.cap3": "Các cài đặt",
+    "mp.opt": "<b>Tùy chọn.</b> Cần cài HX Edit trên máy tính này: hãy tick ô Hình model trước khi build, và khi đó build lâu hơn khoảng một phút.",
+    "mp.go": "Đến ô Hình model",
+    "gdisp": "Màn hình",
+    "c.snap.t": "Sáu snapshot, hiện tên ngay trên Home",
+    "c.snap.p": "Màn hình Home hiện tên của cả sáu snapshot bằng màu của chúng, snapshot đang chơi nằm trong một khung.",
+    "photos3": "3 ảnh",
+    "c.snap.cap1": "Home, sáu tên",
+    "c.snap.w": "<b>Ở đâu:</b> Footswitch Mode ở Snapshot. Tên trên Home: Global Settings &gt; Displays &gt; Snapshot Names (mặc định bật).",
+    "c.snap.m": "Ở chế độ Snapshot, bấm lại footswitch đang sáng để xem trước snapshot 4 đến 6 trong khi snapshot hiện tại vẫn đang chơi; footswitch tiếp theo bạn bấm sẽ chọn snapshot đó. Tên cũng hiện ở chế độ Scroll khi các nút lên và xuống đổi snapshot.",
+    "c.snap.cap2": "Xem trước 4 đến 6",
+    "c.snap.cap3": "Snapshot 4 đến 6, có tên",
+    "c.bpm.t": "BPM trên Home",
+    "c.bpm.p": "Tempo ở góc trên bên trái màn hình Home và một chấm nhịp cạnh số preset. Bạn chọn cỡ, màu và vị trí của chấm.",
+    "c.bpm.w": "<b>Ở đâu:</b> Global Settings &gt; Displays &gt; BPM Size, BPM Color, BPM Dot.",
+    "c.dsp.t": "Mức dùng DSP",
+    "c.dsp.p": "Mỗi block trong Edit view hiển thị phần DSP nó dùng, và góc trên bên phải hiển thị tổng trên 75.",
+    "photos2": "2 ảnh",
+    "c.dsp.cap1": "Edit view",
+    "c.dsp.w": "<b>Ở đâu:</b> Global Settings &gt; Displays &gt; DSP Blocks, DSP Browser, DSP Total (mặc định đều bật).",
+    "c.dsp.m": "Model browser cho biết mỗi model sẽ chiếm bao nhiêu DSP trước khi bạn thêm nó.",
+    "c.dsp.cap2": "Ba cài đặt",
+    "c.names.t": "Tên block thật",
+    "c.names.p": "Model browser và Edit view đặt tên mỗi block theo thiết bị gốc mà nó mô phỏng, như Xotic EP Booster và Klon Centaur, thay cho tên riêng của Line 6.",
+    "c.names.w": "<b>Ở đâu:</b> model browser và Edit view. Không có cài đặt.",
+    "c.names.m": "Preset vẫn y như nhau dù có hay không có tính năng này.",
+    "c.boot.t": "Màn hình khởi động riêng",
+    "c.boot.p": "Hiện hình hoặc chữ của riêng bạn khi HX Stomp bật lên. Bạn đặt nó lúc build.",
+    "c.boot.w": "<b>Ở đâu:</b> phần màn hình khởi động trong <a href=\"#build\">Build StompMod</a>.",
+    "gfoot": "Footswitch",
+    "c.tapc.t": "Lệnh Tap",
+    "c.tapc.p": "Một footswitch để gõ tempo, trong những preset bạn gán nó.",
+    "c.tapc.w": "<b>Ở đâu:</b> Menu &gt; Command Center, ở FS1 đến FS5, lệnh Tap.",
+    "c.tapc.m": "Vòng sáng của nó nhấp nháy theo tempo. Footswitch phải là loại Stomp.",
+    "c.tapl.t": "Màu LED Tap",
+    "c.tapl.p": "Chọn màu vòng sáng của footswitch TAP, cũng như màu biểu tượng và nhãn của nó trên màn hình Home.",
+    "c.tapl.w": "<b>Ở đâu:</b> Global Settings &gt; Displays &gt; Tap LED Color, ở chỗ của Tap Tempo LED.",
+    "c.tapl.m": "Rainbow đổi màu lần lượt quanh bánh xe màu theo mỗi nhịp, Random chọn màu mới ở mỗi nhịp, và Off tắt nhấp nháy.",
+    "c.long.t": "Nhấn giữ",
+    "c.long.p": "Nhấn giữ FS1 đến FS5 trong một giây để chạy một chức năng bạn chọn, chẳng hạn tuner.",
+    "c.long.cap1": "Giữ FS1 và FS2",
+    "c.long.w": "<b>Ở đâu:</b> Global Settings &gt; Footswitches, FS1 Hold Function đến FS5 Hold Function, rồi FS6 Function đến FS10 Function. Hoạt động ở chế độ footswitch Stomp.",
+    "c.long.m": "FS6 đến FS10 là các footswitch ảo có cùng chức năng với FS3 đến FS5, thêm GlobalEQ, mở Global EQ.",
+    "c.long.cap2": "Giữ FS3 đến FS5",
+    "c.long.cap3": "Chức năng FS6 đến FS8",
+    "gsnd": "Âm thanh",
+    "c.nam.t": "NAM A2 Lite",
+    "c.nam.p": "Chạy các capture Neural Amp Modeler như một block amp trên HX Stomp. Chuyển capture của bạn trên trang này, rồi thêm chúng trong HX Edit.",
+    "c.nam.w": "<b>Ở đâu:</b> model browser, Amp &gt; NAM A2 Lite. Xem <a href=\"#convert-captures\">Chuyển capture</a> và <a href=\"#play-nam\">Chơi NAM</a>.",
+    "c.tuner.t": "Trang tuner",
+    "c.tuner.p": "Một trang riêng cho hai cài đặt của tuner.",
+    "c.tuner.w": "<b>Ở đâu:</b> mở tuner, rồi chuyển trang sang phải qua Trails, Offsets và String 6.",
+    "c.tuner.m": "Activate đặt là Press thì mở tuner bằng một lần bấm thay vì giữ, và Lock giúp các cài đặt khác của tuner không bị đổi nhầm.",
+    "rec.title": "Khôi phục, hay quay về firmware gốc",
+    "rec.sub": "Nếu HX Stomp đứng ở màn hình khởi động, hoặc bạn chỉ muốn dùng lại firmware bình thường.",
+    "warn": "<b>Không chính thức, còn thử nghiệm.</b> StompMod không do Line 6 làm ra hay hỗ trợ. Cài firmware đã chỉnh sửa là việc bạn tự chịu rủi ro và có thể làm mất bảo hành. Nhưng đừng lo: nếu có gì không ổn, các bước <a href=\"#recovery\">Khôi phục</a> sẽ đưa firmware gốc trở lại dễ dàng.",
+    "rec.li1": "Tắt HX Stomp.",
+    "rec.li2": "<b>Giữ nút Page › trong khi bật máy.</b> Máy khởi động ở chế độ cập nhật với màn hình tối.",
+    "rec.li3": "Trong Line 6 Updater, chọn <b>Choose File</b> và chọn file <b>gốc</b> ở bước 1 (<code>HX_Stomp_v3.80.0_0x103966115.hxf</code>).",
+    "rec.li4": "Dùng <b>HX Edit</b> để khôi phục file sao lưu bạn đã tạo ở bước 1 (<b>File &gt; Restore From Backup...</b>).",
+    "sup.title": "Ủng hộ StompMod",
+    "sup.blurb": "StompMod miễn phí, và mình làm nó trong thời gian riêng của mình. Nếu nó giúp HX Stomp của bạn hữu ích hơn, sự ủng hộ của bạn mua thêm thời gian để làm tính năng mới.",
+    "sup.ways": "Các cách ủng hộ",
+    "sup.gum": "Gumroad, trả tùy ý",
+    "sup.gumnote": "Thanh toán bằng thẻ, và bạn tự chọn số tiền.",
+    "sup.gumgo": "Mở Gumroad",
+    "sup.momo": "VietQR (Việt Nam)",
+    "sup.scan": "Quét bằng MoMo hoặc ứng dụng ngân hàng bất kỳ ở Việt Nam",
+    "faq.title": "Câu hỏi thường gặp",
+    "faq.q1": "Vì sao tôi cần file firmware của riêng mình?",
+    "faq.a1": "Firmware là của Line 6, nên dự án này không thể phát hành lại. Trang này lấy bản của bạn, thay đổi một vài trong số mười lăm phần của nó (ứng dụng chính, chương trình DSP và thư viện graph của nó, danh sách model và kho hình ảnh), rồi sửa lại mọi checksum. Bootloader không bao giờ bị thay đổi. Xin đừng chia sẻ file bạn build ra.",
+    "faq.q2": "File của tôi có bị tải lên không?",
+    "faq.a2": "Không. Việc build chạy ngay trong tab trình duyệt này. Chỉ có trang và công cụ build được tải về; firmware và capture của bạn không bao giờ rời khỏi máy tính.",
+    "faq.q3": "Làm sao biết file đã build là đúng?",
+    "faq.a3": "Quá trình build kiểm tra mọi checksum trong firmware, rồi so dấu vân tay của kết quả với bản build mà dự án đã thử nghiệm. Khi hai bên khớp, trang hiện <b>Verified</b>: file của bạn giống hệt từng byte so với bản đã thử nghiệm.",
+    "faq.q7": "Còn gì nhiều hơn những gì trang này cung cấp không?",
+    "faq.a7": "Bản build dòng lệnh (<code>build.py</code>) có thêm vài tùy chọn: nó có thể bỏ bất kỳ tính năng nào và đặt chữ ở màn hình khởi động.",
+    "faq.q4": "Capture của tôi báo “No 3-channel A2 Lite model inside”.",
+    "faq.a4": "Capture NAM có nhiều cỡ. DSP của HX Stomp chỉ chạy được cỡ A2 Lite. Hãy tìm phiên bản A2 Lite của capture đó, hoặc một file .nam nhiều cỡ có chứa nó.",
+    "faq.q5": "Build báo đây không phải firmware đúng.",
+    "faq.a5": "<li>Phải là phiên bản 3.80.0, đúng cho thiết bị của bạn, nguyên bản như Line 6 làm ra. Phiên bản cũ hơn hay mới hơn đều không dùng được.</li>         <li>Đừng chọn file đã build ở đây (tên kết thúc bằng <code>_HXtra.hxf</code>).</li>         <li>Nếu file đã bị đổi tên thì không sao: chỉ nội dung mới được tính.</li>",
+    "foot.p1": "StompMod là một bản mod firmware không chính thức cho Line 6 HX Stomp. Nó không do Line 6 hay Yamaha Guitar Group làm ra hay hỗ trợ; Line 6, Helix, HX Stomp và HX Edit là nhãn hiệu của họ.",
+    "foot.p2": "Dựa trên <a href=\"https://github.com/wisemandenny/hxtra\" target=\"_blank\" rel=\"noopener\">hxtra</a> của wisemandenny, GPL-3.0-or-later. <a href=\"../LICENSE\">Giấy phép</a> và <a href=\"../NOTICE\">thông báo của bên thứ ba</a>.",
+    "foot.p3": "Liên hệ: <a href=\"mailto:contact@gatistudio.com\">contact@gatistudio.com</a>",
+    "about.title": "Giới thiệu StompMod",
+    "about.p1": "Firmware tùy biến cho Line 6 HX Stomp, build ngay trong trình duyệt từ chính file firmware của Line 6 mà bạn có. Không có gì được tải lên.",
+    "about.dev": "Tác giả",
+    "about.sup": "Ủng hộ",
+    "about.supl": "Ủng hộ StompMod",
+    "about.more": "Ứng dụng khác",
+    "about.store": "Cửa hàng Gumroad",
+    "about.based": "Dựa trên hxtra của wisemandenny, GPL-3.0-or-later.",
+    "close": "Đóng",
+    "sup.dl": "Firmware của bạn đã sẵn sàng. StompMod miễn phí; nếu nó giúp HX Stomp của bạn hữu ích hơn, bạn có thể ủng hộ.",
+    "sup.p": "StompMod miễn phí. Nếu nó giúp HX Stomp của bạn hữu ích hơn, bạn có thể ủng hộ.",
+    "lb.prev": "Trước",
+    "lb.next": "Sau",
+    "doc.title": "StompMod - Thiết lập",
+    "lb.of": "{n} trên {m}",
+    "theme.dark": "Chuyển sang giao diện tối",
+    "theme.light": "Chuyển sang giao diện sáng",
+    "count.none": "Chưa có capture nào",
+    "count.some": "Đã chuyển {good} trên {n}",
+    "conv.download": "Tải về",
+    "conv.remove": "Xóa {name}",
+    "conv.ok": "Đã chuyển",
+    "conv.bad": "Chưa chuyển được",
+    "conv.chipOk": "A2 Lite · 1.871 weight",
+    "conv.chipSlim": "từ file .nam nhiều cỡ",
+    "conv.chipScaled": "đã giảm ÷{k}",
+    "conv.chipTrim": "capture ở {dbu} dBu",
+    "conv.chipLoud": "đã chuẩn hóa {db} dB",
+    "conv.chipBy": "bởi {who}",
+    "conv.hxf": "Đó là file firmware. Hãy thả nó ở bước 2, phía trên.",
+    "conv.unread": "Không đọc được file.",
+    "fw.namTitle": "Đó là capture NAM, không phải firmware.",
+    "fw.namText": "Capture thả ở bước 5, bên dưới. Ở đây hãy thả file firmware của Line 6 (đuôi .hxf).",
+    "fw.builtTitle": "File đó đã được build rồi.",
+    "fw.builtText": "Hãy thả file gốc của Line 6 (HX_Stomp_v3.80.0_0x103966115.hxf), không phải file làm ở đây. Để cài file đã build, sang bước 4.",
+    "rel": " · {release}",
+    "fw.sizeTitle": "File này trông không giống firmware của HX Stomp, XL hay HX Effects.",
+    "fw.sizeText": "“{name}” nặng {mb} MB; file gốc nặng khoảng 45 MB (HX Effects: khoảng 4 MB) và có đuôi .hxf.",
+    "pics.nocatalog": "Thư mục đó không có HX_ModelCatalog.json. Hãy chọn thư mục res của HX Edit.",
+    "pics.badcatalog": "Không đọc được HX_ModelCatalog.json trong thư mục đó. Hãy chọn thư mục res của HX Edit.",
+    "pics.nopictures": "Thư mục đó không có thư mục icons_models chứa hình ở cạnh HX_ModelCatalog.json. Hãy chọn thư mục res của HX Edit.",
+    "pics.reading": "Đang đọc {done} trên {n} hình…",
+    "pics.found": "Tìm thấy {n} hình model.",
+    "pics.missing": "Tìm thấy {n} hình model; còn {m} hình khác mà danh mục nêu tên đang thiếu, và các model đó sẽ không có hình.",
+    "pics.readFail": "Không đọc được một file trong thư mục đó. Hãy chọn lại thư mục.",
+    "fw.picsTitle": "Hãy chọn thư mục res của HX Edit trước.",
+    "fw.picsText": "Ô Hình model đang được tick. Hãy chọn thư mục res của HX Edit ở trên, hoặc bỏ tick.",
+    "fw.picsOddTitle": "Đã build: firmware {unit} của bạn đã sẵn sàng.",
+    "fw.picsOddText": "Mọi checksum đều đạt. Các hình model lấy từ HX Edit của bạn, không phải bản mà dự án đã thử nghiệm, nên không thể so file này với bản đã thử nghiệm từng byte. Hãy tải về, rồi sang bước 4.",
+    "boot.size": "File đó nặng {mb} MB; hãy dùng hình tối đa 20 MB.",
+    "boot.decode": "Trình duyệt này không đọc được “{name}”. Hãy lưu nó thành PNG hoặc JPEG rồi thử lại.",
+    "boot.pixels": "Hình đó {mp} megapixel; hãy dùng hình tối đa 50.",
+    "boot.small": "Hình đó chỉ {w} x {h}: khi lên 320 x 240 trông sẽ bị mờ.",
+    "boot.ok": "Hình của bạn, {w} x {h}, đã sẵn sàng ở cỡ 320 x 240.",
+    "boot.canvas": "Trình duyệt này không tạo được hình.",
+    "fw.building": "Đang build…",
+    "fw.reading": "Đang đọc {name}…",
+    "fw.step": "Bước {step} trên {of}: {text}",
+    "fw.p1": "Đang tải công cụ build (khoảng 15 MB, chỉ một lần)…",
+    "fw.p2": "Đang kiểm tra file firmware của bạn…",
+    "fw.p3": "Đang build kernel NAM…",
+    "fw.p4": "Đang thêm NAM A2 Lite và các tính năng…",
+    "fw.p5": "Đang thêm kernel vào chương trình DSP…",
+    "fw.p6": "Đang kiểm tra mọi checksum và đóng gói file…",
+    "fw.okTitle": "Verified: firmware {unit} của bạn đã sẵn sàng.",
+    "fw.okText": "Nó giống hệt từng byte so với bản build mà dự án đã thử nghiệm. Hãy tải về, rồi sang bước 4.",
+    "fw.pictureTitle": "Verified: firmware {unit} của bạn đã sẵn sàng.",
+    "fw.pictureText": "Chỉ có hình khởi động của bạn khác với bản build mà dự án đã thử nghiệm, và hình trong file đúng là hình bạn đưa. Hãy tải về, rồi sang bước 4.",
+    "fw.unpinnedTitle": "Đã build: firmware {unit} của bạn đã sẵn sàng.",
+    "fw.unpinnedText": "Mọi checksum đều đạt. Chưa có bản đã thử nghiệm nào để so với tổ hợp này, nên nó chưa được xác minh từng byte. Hãy tải về, rồi sang bước 4.",
+    "fw.oddTitle": "Đã build, nhưng không phải file đã thử nghiệm.",
+    "fw.oddText": "Mọi checksum đều đạt, nhưng kết quả khác với bản đã thử nghiệm. Điều này không nên xảy ra; xin hãy báo cho mình trước khi cài.",
+    "fw.wrongTitle": "Đây không phải file firmware đúng.",
+    "fw.wrongText": "Hãy dùng file 3.80.0 của Line 6 cho đúng thiết bị của bạn, nguyên bản: HX_Stomp_v3.80.0_0x103966115.hxf, HX_Stomp_XL_v3.80.0_0x103966115.hxf hoặc HX_Effects_v3.80.0_0xd97239907.hxf. Xem “Câu hỏi thường gặp” bên dưới.",
+    "fw.stopTitle": "Quá trình build đã dừng.",
+    "fw.stopText": "Chưa có gì được ghi. Hãy kiểm tra kết nối internet (công cụ build được tải ở lần đầu) rồi thử lại. Chi tiết kỹ thuật bên dưới cho biết đã có chuyện gì.",
+    "fw.startTitle": "Không bắt đầu build được.",
+    "fw.startText": "{err}. Hãy thử Chrome, Edge, Firefox hoặc Safari bản mới.",
+    "fw.readTitle": "Không đọc được file.",
+    "fw.readText": "Hãy chọn lại; nếu file nằm trên USB hoặc ổ mạng, hãy chép nó vào máy tính trước.",
+    "ram.noUsb": "Trình duyệt này không truy cập được thiết bị USB. Hãy dùng Chrome hoặc Edge trên máy tính, với trang mở từ địa chỉ web của nó.",
+    "ram.needBuild": "Hãy build firmware ở bước 2 trước: lần chạy này dùng nó.",
+    "ram.noPlan": "Bản build này không chạy từ RAM được: {err}",
+    "ram.running": "Đang chạy từ RAM…",
+    "ram.s.pick": "Hãy chọn HX Stomp trong danh sách của trình duyệt.",
+    "ram.s.reboot": "Đang yêu cầu HX Stomp khởi động lại ở chế độ cập nhật…",
+    "ram.s.dfu": "Đang gửi RAM loader…",
+    "ram.s.loader": "Đang trao đổi với RAM loader…",
+    "ram.s.emmc": "Đang kiểm tra firmware đang cài có phải bản gốc 3.80.0 không…",
+    "ram.s.upload": "Đang gửi firmware: {pct}%",
+    "ram.s.start": "Đang khởi động firmware…",
+    "ram.ask.dfu": "HX Stomp đang ở chế độ cập nhật. Hãy bấm Continue và chọn nó trong danh sách của trình duyệt (nó có thể tên là “LPC” hoặc một thiết bị không rõ).",
+    "ram.ask.loader": "RAM loader đang chạy. Hãy bấm Continue và chọn nó trong danh sách của trình duyệt (một thiết bị không rõ, 1209:0001).",
+    "ram.okTitle": "StompMod đang chạy từ RAM.",
+    "ram.okText": "Hãy thử trên HX Stomp. Tắt máy rồi bật lại để quay về firmware đã cài. Muốn giữ StompMod, hãy cài file theo hướng dẫn bên dưới.",
+    "ram.errTitle": "Lần chạy từ RAM đã dừng.",
+    "ram.err.busy": "Một chương trình khác đang dùng HX Stomp. Hãy thoát HX Edit và Line 6 Updater, rồi bấm Run from RAM lần nữa.",
+    "ram.err.cancel": "Chưa chọn thiết bị nào. Hãy bấm Run from RAM để thử lại.",
+    "ram.err.emmc": "HX Stomp không cài firmware gốc 3.80.0, nên bản build này không chạy từ RAM trên nó được. Không có gì bị thay đổi. Hãy tắt HX Stomp rồi bật lại.",
+    "ram.err.other": "Chưa có gì được ghi vào HX Stomp. Hãy tắt máy rồi bật lại (nó khởi động firmware đang cài) và thử lại; chi tiết kỹ thuật bên dưới cho biết đã có chuyện gì. Nếu không tìm thấy máy, hãy khởi động với Page › được giữ (chế độ cập nhật) rồi bấm Run from RAM.",
+    "stat1": "snapshot cho mỗi preset, bản gốc có 3",
+    "stat2": "tổng DSP hiển thị trong Edit view và model browser",
+    "stat3": "footswitch có chức năng nhấn giữ, FS1 đến FS5",
+    "stat4": "model có hình, với ô Hình model",
+    "safe.p1": "Nếu có gì không ổn, các bước <a href=\"#recovery\">Khôi phục</a> sẽ đưa firmware gốc trở lại.",
+    "safe.p2": "Cài StompMod không xóa bất cứ thứ gì trên thiết bị của bạn.",
+    "safe.p3": "Bootloader không bao giờ bị thay đổi.",
+    "safe.p4": "Việc build chạy ngay trong tab trình duyệt này. Firmware và capture của bạn không bao giờ rời khỏi máy tính.",
+    "safe.p5": "Quá trình build kiểm tra mọi checksum, và trang hiện <b>Verified</b> khi file của bạn giống hệt từng byte so với bản đã thử nghiệm.",
+    "safe.a1": "StompMod không do Line 6 làm ra hay hỗ trợ.",
+    "safe.a2": "Cài firmware đã chỉnh sửa là việc bạn tự chịu rủi ro và có thể làm mất bảo hành.",
+    "safe.a3": "Nó thay đổi một vài trong số mười lăm phần của firmware.",
+    "safe.a4": "Xin đừng chia sẻ file bạn build ra: firmware là của Line 6.",
+    "alt.p1": "Một chiếc HX Stomp chạy StompMod ở màn hình Home: preset Praise, sáu tên snapshot có màu và các biểu tượng footswitch snapshot màu đỏ, vàng và xanh dương",
+    "boot.alt": "Xem trước hình khởi động",
+    "mp.alt1": "Edit view với hình amp SLO-100 phía trên các núm của block: Drive, Bass và Mid",
+    "mp.alt2": "Danh sách Distortion trong model browser, với hình pedal Timmy overdrive bên cạnh",
+    "mp.alt3": "Global Settings, Displays, với các cài đặt Model Pictures, Browser Icons và Snapshot Names",
+    "c.snap.alt1": "Màn hình Home với sáu tên snapshot có màu: Lead, Verse và Chorus ở trên Chorus 2, Verse 2 và Outro",
+    "c.snap.alt2": "Màn hình Home ở chế độ Snapshot sau khi bấm lại footswitch đang sáng, xem trước snapshot 4, 5 và 6 bằng số",
+    "c.snap.alt3": "Màn hình Home ở snapshot 4 đến 6, hiện tên của chúng: Clean, Crunch và Lead",
+    "c.bpm.alt1": "Global Settings, Displays, với các cài đặt BPM Size, BPM Color và BPM Dot",
+    "c.dsp.alt1": "Edit view với phần DSP của từng block và tổng 75/75 ở góc trên bên phải",
+    "c.dsp.alt2": "Global Settings, Displays, với các cài đặt DSP Blocks, DSP Browser và DSP Total",
+    "c.names.alt1": "Danh sách Distortion trong model browser hiện tên thật: Xotic EP Boost, Rangemaster, Klon Centaur, Timmy Overdrive và Prince of Tone",
+    "c.tapc.alt1": "Command Center của Footswitch 1, với lệnh được đặt là Tap",
+    "c.long.alt1": "Global Settings, Footswitches, với các cài đặt FS1 Hold Function và FS2 Hold Function",
+    "c.long.alt2": "Global Settings, Footswitches, với các cài đặt FS3, FS4 và FS5 Hold Function",
+    "c.long.alt3": "Global Settings, Footswitches, với các cài đặt FS6, FS7 và FS8 Function",
+    "c.nam.alt1": "Model browser trên HX Stomp, ở mục Amp, có NAM A2 Lite trong danh sách",
+    "c.tuner.alt1": "Trang được thêm vào tuner với các núm Activate và Lock",
+    "sup.alt": "Mã VietQR để ủng hộ StompMod, quét được bằng MoMo hoặc ứng dụng ngân hàng bất kỳ ở Việt Nam",
+    "stats.aria": "StompMod qua các con số",
+    "nav.aria": "Các bước",
+    "lb.aria": "Ảnh"
+  }
+};
 // LANGS-END
 var LANG_NAMES = {
-  en: "English"
+  en: "English",
+  vi: "Tiếng Việt"
 };
 </script>
 <script src="hxedit-res.js"></script>
@@ -1381,37 +1720,22 @@ var LANG_NAMES = {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
 
-  // ---- Theme: Light by default; Dark and System only by choice, saved (GaTi UI ThemeSwitch) ---------------------------------
-  var themeBtns = Array.prototype.slice.call(document.querySelectorAll("[data-theme-choice]"));
-  var darkQuery = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+  // ---- Theme: one button toggles Light and Dark. Light is the default whatever the system says; the choice is saved -------------------
+  var themeBtn = $("themeBtn");
   var theme = "light";
-  try { theme = localStorage.getItem("stompmod-theme") || "light"; } catch (e) { /* private mode */ }
+  try { theme = localStorage.getItem("stompmod-theme") === "dark" ? "dark" : "light"; } catch (e) { /* private mode */ }
   function applyTheme(choice) {
-    var dark = choice === "dark" || (choice === "system" && darkQuery && darkQuery.matches);
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-    themeBtns.forEach(function (b) {
-      var on = b.dataset.themeChoice === choice;
-      b.setAttribute("aria-checked", on ? "true" : "false");
-      b.tabIndex = on ? 0 : -1;
-    });
-  }
-  function chooseTheme(choice, focus) {
     theme = choice;
-    try { localStorage.setItem("stompmod-theme", choice); } catch (e) { /* private mode */ }
-    applyTheme(choice);
-    if (focus) themeBtns.filter(function (b) { return b.dataset.themeChoice === choice; })[0].focus();
+    document.documentElement.setAttribute("data-theme", choice);
+    themeBtn.setAttribute("aria-label", t(choice === "dark" ? "theme.light" : "theme.dark"));
+    themeBtn.title = themeBtn.getAttribute("aria-label");
   }
-  themeBtns.forEach(function (b, i) {
-    b.addEventListener("click", function () { chooseTheme(b.dataset.themeChoice); });
-    b.addEventListener("keydown", function (e) {
-      var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
-      if (!d) return;
-      e.preventDefault();
-      chooseTheme(themeBtns[(i + d + themeBtns.length) % themeBtns.length].dataset.themeChoice, true);
-    });
+  themeBtn.hidden = false;        // without script the button would do nothing, so it starts hidden
+  themeBtn.addEventListener("click", function () {
+    var next = theme === "dark" ? "light" : "dark";
+    try { localStorage.setItem("stompmod-theme", next); } catch (e) { /* private mode */ }
+    applyTheme(next);
   });
-  if (darkQuery) darkQuery.addEventListener("change", function () { if (theme === "system") applyTheme("system"); });
-  applyTheme(theme);
 
   // ---- About: a modal; Esc closes it and the browser returns focus to the button --------------------------------------------
   var about = $("about");
@@ -1452,7 +1776,7 @@ var LANG_NAMES = {
     big.width = +src.getAttribute("width"); big.height = +src.getAttribute("height");
     $("lbStage").textContent = ""; $("lbStage").appendChild(big);
     $("lbCap").textContent = src.alt;
-    $("lbCount").textContent = (lbAt + 1) + " of " + lbList.length;
+    $("lbCount").textContent = t("lb.of", { n: lbAt + 1, m: lbList.length });
   }
   Array.prototype.forEach.call(document.querySelectorAll("a.zoom"), function (a) {
     a.addEventListener("click", function (e) {
@@ -1529,8 +1853,13 @@ var LANG_NAMES = {
   var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n]"));
   var PAGE = {};                  // English from the page
   nodes.forEach(function (n) { PAGE[n.getAttribute("data-i18n")] = n.innerHTML; });
+  var altNodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n-alt]"));
+  var ariaNodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n-aria]"));
+  altNodes.forEach(function (n) { PAGE[n.getAttribute("data-i18n-alt")] = n.alt; });
+  ariaNodes.forEach(function (n) { PAGE[n.getAttribute("data-i18n-aria")] = n.getAttribute("aria-label"); });
   var lang = "en";
   var redraw = [];                // what the script wrote, redrawn on a change of language
+  redraw.push(function () { applyTheme(theme); });
 
   function t(key, vars) {
     var d = LANGS[lang] || {};
@@ -1541,6 +1870,8 @@ var LANG_NAMES = {
     lang = LANG_NAMES[code] ? code : "en";
     document.documentElement.lang = lang;
     nodes.forEach(function (n) { n.innerHTML = t(n.getAttribute("data-i18n")); });
+    altNodes.forEach(function (n) { n.alt = t(n.getAttribute("data-i18n-alt")); });
+    ariaNodes.forEach(function (n) { n.setAttribute("aria-label", t(n.getAttribute("data-i18n-aria"))); });
     document.title = t("doc.title");
     $("lang").value = lang;
     redraw.forEach(function (f) { f(); });
@@ -1550,11 +1881,7 @@ var LANG_NAMES = {
     var q = /[?&]lang=(\w+)/.exec(location.search);
     if (q && LANG_NAMES[q[1]]) return q[1];
     try { var saved = localStorage.getItem("lang"); if (saved && LANG_NAMES[saved]) return saved; } catch (e) { /* none */ }
-    var prefs = navigator.languages || [navigator.language || "en"];
-    for (var i = 0; i < prefs.length; i++) {
-      var c = String(prefs[i]).toLowerCase().split("-")[0];
-      if (LANG_NAMES[c]) return c;
-    }
+    // the browser's own language is not read: English is the default, another language only by choice
     return "en";
   }
   Object.keys(LANG_NAMES).forEach(function (code) {
@@ -1565,6 +1892,7 @@ var LANG_NAMES = {
     $("lang").appendChild(o);
   });
   $("lang").addEventListener("change", function (e) { setLang(e.target.value); });
+  $("lang").parentElement.hidden = $("lang").options.length < 2;     // the picker shows when there is another language to pick
 
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -1689,10 +2017,10 @@ var LANG_NAMES = {
   // ---- The boot screen panel: the user's picture made 320 x 240 for the build (the worker's splash) ------------------------
   // The geometry is the firmware's (read offline): the boot view (constructor 0x28d92708, paint 0x28d92950) counts y up from the
   // bottom of the 240-row screen. The loading bar is a rect at y = 121, so row 240 - 121 = 119 from the top; Icon_Firmware (30 x 19,
-  // anchor 6 = top left) is put at y = 29, so rows 211 to 229, at x = 160 - (30 + the hidden line's width) / 2; the hidden line
-  // is " ", 1 px wide in hx21_regularFont, so x = 145 (tools/features/splash.py hide_line paints that icon in the picture's corner
-  // colour). Not seen on a unit.
-  var BOOT = { w: 320, h: 240, barRow: 119, icon: { x: 145, y: 211, w: 30, h: 19 }, maxBytes: 20e6, maxPixels: 50e6, minSide: 64 };
+  // anchor 6 = top left) is put at y = 29, so rows 211 to 229, at x = 160 - (30 + the line's width) / 2, with the boot line, "Made by
+  // GaTi" (HX_SPLASH_TEXT in tools/m4cache.py FULL_ENV), right of it: 133 px wide in hx21_regularFont, so the marked box is x = 79,
+  // 163 wide (30 + 133). The line's colour is the firmware's grey (0xb1b1b1). Not seen on a unit.
+  var BOOT = { w: 320, h: 240, barRow: 119, icon: { x: 79, y: 211, w: 163, h: 19 }, maxBytes: 20e6, maxPixels: 50e6, minSide: 64 };
   var bootBlob = null, bootBytes = null, bootSource = null;   // the PNG made, its bytes for the worker, and the decoded picture
   function bootPlace() {
     var bar = $("bootBar"), ic = $("bootIcon");

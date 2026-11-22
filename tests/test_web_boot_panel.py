@@ -58,13 +58,15 @@ def test_page_marks_the_firmwares_geometry():
     boot = re.search(r"var BOOT = \{ w: (\d+), h: (\d+), barRow: (\d+), icon: \{ x: (\d+), y: (\d+), w: (\d+), h: (\d+) \}", PAGE)
     w, h, bar, ix, iy, iw, ih = map(int, boot.groups())
     assert (w, h) == (ps.W, ps.FULL[1]) and bar == h - 121
-    assert iy == h - 29 and ix == 160 - (iw + 1) // 2      # x = 160 - (30 + 1) / 2, the hidden line " " 1 px wide, rounded down
+    assert iy == h - 29 and ix == 160 - iw // 2      # the icon (30 px) and the line "Made by GaTi" centred as one: x = 160 - (30 + 133) / 2
     assert "../assets/boot/signal_chain.png" in PAGE
 
 
 @pytest.mark.firmware
-def test_icon_firmware_is_the_size_the_page_marks():
+def test_icon_and_the_boot_line_are_the_size_the_page_marks():
+    from features import model_pictures as mp
     e7, e8 = stock_entry(7), stock_entry(8)
     icon = image_store.image(e7, e8, b"Icon_Firmware")
+    line = mp.text_width(e7, "Made by GaTi", 1)             # hx21_regularFont, the boot line's
     boot = re.search(r"icon: \{ x: \d+, y: \d+, w: (\d+), h: (\d+) \}", PAGE)
-    assert (icon.width, icon.height) == tuple(map(int, boot.groups()))
+    assert (icon.width + line, icon.height) == tuple(map(int, boot.groups()))
