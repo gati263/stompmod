@@ -53,8 +53,9 @@ def test_web_options_are_the_opt_in_features():
 
 
 def test_full_env_is_the_full_build_inputs():
-    """The non-switch inputs of the Full build: the boot line hidden, and the repository's signal chain picture, filled."""
-    assert m4cache.FULL_ENV == {"HX_SPLASH_LINE": "hide", "HX_SPLASH": "assets/boot/signal_chain.png", "HX_SPLASH_FIT": "fill"}
+    """The non-switch inputs of the Full build: the boot line "Made by GaTi", and the repository's signal chain picture, filled."""
+    assert m4cache.FULL_ENV == {"HX_SPLASH_LINE": "show", "HX_SPLASH_TEXT": "Made by GaTi", "HX_SPLASH": "assets/boot/signal_chain.png",
+                                "HX_SPLASH_FIT": "fill"}
     assert os.path.isfile(os.path.join(m4cache.ROOT, m4cache.FULL_ENV["HX_SPLASH"]))
 
 
@@ -63,7 +64,7 @@ def test_build_env_is_every_input_of_a_pinned_build(monkeypatch):
     monkeypatch.setenv("PATH_KEPT", "1")
     env = m4cache.build_env(["HX_A", "HX_MODEL_PICTURES"], "C:/res")
     assert env["HX_A"] == "1" and env["HX_MODEL_PICTURES"] == "C:/res" and "HX_BPM" not in env and env["PATH_KEPT"] == "1"
-    assert env["HX_SPLASH_LINE"] == "hide" and env["HX_SPLASH_FIT"] == "fill"
+    assert env["HX_SPLASH_LINE"] == "show" and env["HX_SPLASH_TEXT"] == "Made by GaTi" and env["HX_SPLASH_FIT"] == "fill"
     assert os.path.samefile(env["HX_SPLASH"], os.path.join(m4cache.ROOT, "assets/boot/signal_chain.png")) and os.path.isabs(env["HX_SPLASH"])
     assert m4cache.build_env(["HX_MODEL_PICTURES"])["HX_MODEL_PICTURES"] == "1", "its usual place"
 

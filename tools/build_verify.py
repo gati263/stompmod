@@ -1,8 +1,8 @@
 """build_verify.py - what the web page checks of a build whose boot picture is the user's, which no pinned file MD5 can cover.
 
 A build that differs from the tested one in the boot picture only differs in Entry 8, inside two pixel ranges: the Screen_Boot
-image, and Icon_Firmware, which the hidden boot line (HX_SPLASH_LINE=hide) paints in the picture's corner colour
-(tools/features/splash.py). entry_hashes() is the MD5 of every L6IA entry's payload but Entry 8's, and of Entry 8 with those two
+image, and Icon_Firmware, which a hidden boot line (HX_SPLASH_LINE=hide) paints in the picture's corner colour
+(tools/features/splash.py; the page's builds show the line "Made by GaTi", so Icon_Firmware is stock there and the mask is spare). entry_hashes() is the MD5 of every L6IA entry's payload but Entry 8's, and of Entry 8 with those two
 ranges zeroed; tools/m4cache.py pins them for the default picture build, and web/firmware-worker.js (through this module, run in
 Pyodide) compares them with the result. boot_picture() decodes the picture back out of a result, to compare with the uploaded one.
 tests/test_build_verify.py proves the premise: two builds with different pictures have the same entry_hashes().

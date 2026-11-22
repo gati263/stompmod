@@ -29,7 +29,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 UNIT = 'HX_Stomp'                   # the features are the HX Stomp's only
 # The inputs besides the switches that every build of the page has (this fork's Full build), relative to the repository: written to
 # the cache as 'env', so the page sets what the pinned builds had. The boot picture is the repository's own; the user's replaces it.
-FULL_ENV = {'HX_SPLASH_LINE': 'hide', 'HX_SPLASH': 'assets/boot/signal_chain.png', 'HX_SPLASH_FIT': 'fill'}
+FULL_ENV = {'HX_SPLASH_LINE': 'show', 'HX_SPLASH_TEXT': 'Made by GaTi', 'HX_SPLASH': 'assets/boot/signal_chain.png', 'HX_SPLASH_FIT': 'fill'}
 MODEL_PICTURES = 'HX_MODEL_PICTURES'    # the option whose value is HX Edit's res folder, not '1'
 FINGERPRINT = r'HX Edit fingerprint ([0-9a-f]{64})'     # the line features/model_pictures.py prints; the page reads it from the log
 
