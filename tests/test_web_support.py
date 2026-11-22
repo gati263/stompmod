@@ -27,3 +27,10 @@ def test_every_support_link_has_a_fallback_to_the_block():
     links = re.findall(r'<a [^>]*data-support[^>]*>', PAGE)
     assert len(links) == 4 and all('href="#support' in a for a in links)
     assert 'id="support"' in PAGE and 'id="support-ways"' in PAGE
+
+
+def test_the_dialog_opens_after_a_download_once_and_guards_storage():
+    fn = PAGE.split("function supportAfterDownload()")[1].split("\n  }\n")[0]
+    assert fn.count("try {") == 2 and "supShown" in fn and "600" in fn and "openSupport(true)" in fn
+    assert "supportAfterDownload(); }" in PAGE.split('$("fwSave").addEventListener')[1].split("});")[0]
+    assert 'id="supDl" hidden data-i18n="sup.dl"' in PAGE

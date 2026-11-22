@@ -1257,6 +1257,7 @@
 
 <dialog class="modal supportdlg" id="supportDlg" aria-labelledby="supTitle">
   <h2 id="supTitle">Support StompMod</h2>
+  <p id="supDl" hidden data-i18n="sup.dl">Your firmware is downloading. StompMod is free; if it saved you time, you can support it.</p>
   <p>StompMod is free. If it saved you time, you can support it.</p>
   <div id="supBody"></div>
   <div class="actions-bar"><button class="btn" id="supClose" type="button" autofocus>Close</button></div>
@@ -1474,16 +1475,29 @@ var LANG_NAMES = {
   // ---- Support: every Support link opens one dialog with the options of the block before Questions (the Gumroad link lives there, once);
   //      without script the link goes to that block ------------------------------------------------------------------------
   var sup = $("supportDlg");
+  function openSupport(afterDownload) {
+    $("supBody").textContent = "";
+    $("supBody").appendChild(document.querySelector("#support .pay").cloneNode(true));
+    $("supDl").hidden = !afterDownload;
+    if (about.open) about.close();
+    sup.showModal();
+  }
   Array.prototype.forEach.call(document.querySelectorAll("[data-support]"), function (a) {
     a.addEventListener("click", function (e) {
       if (!sup.showModal) return;
       e.preventDefault();
-      $("supBody").textContent = "";
-      $("supBody").appendChild(document.querySelector("#support .pay").cloneNode(true));
-      if (about.open) about.close();
-      sup.showModal();
+      openSupport(false);
     });
   });
+  // After the file is downloaded the dialog opens once per browser (localStorage; once per page load if storage fails)
+  var supShown = false, SUP_KEY = "stompmod.supportShown";
+  function supportAfterDownload() {
+    if (!sup.showModal || supShown) return;
+    try { if (localStorage.getItem(SUP_KEY)) return; } catch (e) { /* storage blocked: once per page load */ }
+    supShown = true;
+    try { localStorage.setItem(SUP_KEY, "1"); } catch (e) { /* same */ }
+    setTimeout(function () { if (!sup.open) openSupport(true); }, 600);
+  }
   $("supClose").addEventListener("click", function () { closeModal(sup); });
   modalClosing(sup);
 
@@ -1839,7 +1853,7 @@ var LANG_NAMES = {
   $("fwPick").addEventListener("change", function (e) { buildFirmware(e.target.files); e.target.value = ""; });
   dropZone($("fwDrop"), buildFirmware);
   $("fwSave").addEventListener("click", function () {
-    if (built) { saveBlob(built.blob, built.file); markDone(4); }
+    if (built) { saveBlob(built.blob, built.file); markDone(4); supportAfterDownload(); }
   });
   $("fwAgain").addEventListener("click", function () { $("fwStatus").hidden = true; shown = null; ramReady(null); $("fwPick").click(); });
 
