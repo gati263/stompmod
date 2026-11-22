@@ -686,11 +686,17 @@
 
   /* Motion: transform and opacity only, nothing that moves the layout. The hero rises in on load (CSS); the script marks cards, headings and
      steps .rv and the first time each scrolls into view it gets .in. Without script nothing is marked, so nothing is ever hidden. */
-  header > * { animation: rise var(--dur-slow) var(--ease-emphasis) both; }
-  header > :nth-child(2) { animation-delay: var(--dur-stagger); }
-  header > :nth-child(3) { animation-delay: calc(var(--dur-stagger) * 2); }
-  header > :nth-child(4) { animation-delay: calc(var(--dur-stagger) * 3); }
-  header > :nth-child(5) { animation-delay: calc(var(--dur-stagger) * 4); }
+  header > .top, header > .hero-shot { animation: rise var(--dur-slow) var(--ease-emphasis) both; }
+  header > .hero-shot { animation-delay: calc(var(--dur-stagger) * 4); }
+  /* the headline's letters rise in turn (the script splits it, keeping its text for assistive technology), then the rest of the copy */
+  .ch { display: inline-block; animation: rise var(--dur-slow) var(--ease-emphasis) both; animation-delay: calc(var(--i) * var(--dur-stagger) * 0.6); }
+  .ch.again { animation: none; }
+  .hero-text > .lede, .hero-text > .hero-cta, .hero-text > .verline, .hero-text > .warning { animation: rise var(--dur-slow) var(--ease-emphasis) both; }
+  .hero-text > .lede { animation-delay: calc(var(--dur-stagger) * 4); }
+  .hero-text > .hero-cta { animation-delay: calc(var(--dur-stagger) * 6); }
+  .hero-text > .verline { animation-delay: calc(var(--dur-stagger) * 8); }
+  .hero-text > .warning { animation-delay: calc(var(--dur-stagger) * 9); }
+  .stats b { font-variant-numeric: tabular-nums; }
   .rv { opacity: 0; transform: translateY(var(--space-4)); transition: opacity var(--dur-base) var(--ease-emphasis), transform var(--dur-base) var(--ease-emphasis); }
   .rv.in { opacity: 1; transform: none; }
   .shots img, .hero-shot img, .zoom img { transition: transform var(--dur-base) var(--ease-move); }
@@ -754,7 +760,7 @@
           <svg class="ico ico-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg>
         </button>
         <a class="btn" href="#support" data-support data-i18n="sup.btn">Support</a>
-        <button class="btn ghost" id="aboutBtn" type="button" aria-haspopup="dialog" data-i18n="about.btn">About</button>
+        <button class="btn" id="aboutBtn" type="button" aria-haspopup="dialog" data-i18n="about.btn">About</button>
       </div>
     </div>
     <div class="hero-text">
@@ -872,7 +878,7 @@
               <label><input type="radio" name="bootFit" value="fit"><span data-i18n="boot.fit">Fit (black bars)</span></label>
             </div>
             <p id="bootMsg" role="status"></p>
-            <p data-i18n="boot.note">The picture is made 320 x 240 here and stays on this computer. The dashed lines show where the loading bar crosses it and where the firmware writes its line, Made by GaTi, in grey, which stays as it is. Keep the bottom of your picture dark so that line reads. How the bar and the line look over your picture can only be judged on the HX Stomp itself.</p>
+            <p data-i18n="boot.note">The picture is made 320 x 240 here and stays on this computer. The dashed lines show where the loading bar crosses it and where the firmware writes its line, Made by GaTi. Keep the bottom of your picture dark so that line reads. How the bar and the line look over your picture can only be judged on the HX Stomp itself.</p>
           </div>
         </div>
       </div>
@@ -1193,7 +1199,7 @@
     <details class="more" id="support-ways"><summary data-i18n="sup.ways">Ways to support</summary>
       <div class="pay">
         <div class="pay-opt">
-          <h3 data-i18n="sup.gum">Gumroad, pay what you want</h3>
+          <h3 data-i18n="sup.gum">Buy me a coffee on Gumroad</h3>
           <p class="pay-note" data-i18n="sup.gumnote">Pay by card, and you choose the amount.</p>
           <a class="btn primary" href="https://gati263.gumroad.com/l/stompmod" target="_blank" rel="noopener" data-i18n="sup.gumgo">Open Gumroad</a>
         </div>
@@ -1412,7 +1418,7 @@ var LANGS = {
     "boot.reset": "Dùng hình mặc định",
     "boot.fill": "Lấp đầy (cắt phần rìa)",
     "boot.fit": "Vừa khung (viền đen)",
-    "boot.note": "Hình được chuyển thành 320 x 240 ngay tại đây và không rời khỏi máy tính của bạn. Các đường nét đứt cho thấy thanh tải cắt ngang hình ở đâu và nơi firmware viết dòng chữ Made by GaTi bằng màu xám, dòng này luôn giữ nguyên. Hãy để phần dưới của hình tối màu để dòng chữ dễ đọc. Thanh tải và dòng chữ trông thế nào trên hình của bạn chỉ xem được trên chính HX Stomp.",
+    "boot.note": "Hình được chuyển thành 320 x 240 ngay tại đây và không rời khỏi máy tính của bạn. Các đường nét đứt cho thấy thanh tải cắt ngang hình ở đâu và nơi firmware viết dòng chữ Made by GaTi. Hãy để phần dưới của hình tối màu để dòng chữ dễ đọc. Thanh tải và dòng chữ trông thế nào trên hình của bạn chỉ xem được trên chính HX Stomp.",
     "feat.pics": "<b>Hình model</b> (tùy chọn, tắt nếu bạn không tick)",
     "mp.see": "Xem trông như thế nào",
     "feat.picsS": "\n            <li>Hình của model block đang chọn trong Edit view, và hình của model dưới con trỏ trong model browser.</li>\n            <li>Các hình là của chính HX Edit, đọc từ HX Edit cài trên máy tính này: bạn chọn thư mục <b>res</b> của nó, và không có gì được tải lên. <b>Khi tick mục này, build lâu hơn khoảng một phút.</b></li>\n          ",
@@ -1550,7 +1556,7 @@ var LANGS = {
     "sup.title": "Ủng hộ StompMod",
     "sup.blurb": "StompMod miễn phí, và mình làm nó trong thời gian riêng của mình. Nếu nó giúp HX Stomp của bạn hữu ích hơn, sự ủng hộ của bạn mua thêm thời gian để làm tính năng mới.",
     "sup.ways": "Các cách ủng hộ",
-    "sup.gum": "Gumroad, trả tùy ý",
+    "sup.gum": "Mời mình ly cà phê qua Gumroad",
     "sup.gumnote": "Thanh toán bằng thẻ, và bạn tự chọn số tiền.",
     "sup.gumgo": "Mở Gumroad",
     "sup.momo": "VietQR (Việt Nam)",
@@ -2373,6 +2379,61 @@ var LANG_NAMES = {
       setTimeout(next, 350);       // browsers drop downloads that come too fast
     })();
   });
+  // ---- Load animation: the headline's letters rise in turn and the stats count up when the strip first shows. Not under reduced
+  //      motion, and not without script: the HTML already holds the text and the final numbers. -----------------------------------
+  var calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var h1 = document.querySelector("h1"), firstSplit = true;
+  function splitHeadline() {
+    if (calm) return;
+    var text = h1.textContent;
+    h1.setAttribute("aria-label", text);                  // the letters are decoration; the name stays whole
+    h1.textContent = "";
+    Array.prototype.forEach.call(text, function (c, i) {
+      var s = document.createElement("span");
+      s.className = firstSplit ? "ch" : "ch again";       // a change of language shows the new word at once
+      s.setAttribute("aria-hidden", "true");
+      s.style.setProperty("--i", i);
+      s.textContent = c === " " ? " " : c;
+      h1.appendChild(s);
+    });
+    firstSplit = false;
+  }
+  redraw.push(splitHeadline);
+  function token(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function bezier(str) {          // "cubic-bezier(a, b, c, d)" as a function of progress, solved for x by bisection
+    var v = /\(([^)]*)\)/.exec(str)[1].split(",").map(parseFloat);
+    function at(u, a, b) { return 3 * a * u * (1 - u) * (1 - u) + 3 * b * u * u * (1 - u) + u * u * u; }
+    return function (x) {
+      var lo = 0, hi = 1, u = x;
+      for (var i = 0; i < 24; i++) { u = (lo + hi) / 2; if (at(u, v[0], v[2]) < x) lo = u; else hi = u; }
+      return at(u, v[1], v[3]);
+    };
+  }
+  var strip = document.querySelector(".stats");
+  if (!calm && strip && "IntersectionObserver" in window) {
+    var counters = Array.prototype.map.call(strip.querySelectorAll("b"), function (b) {
+      var end = parseInt(b.textContent, 10), vis = document.createElement("span");
+      b.firstChild.parentNode.replaceChildren();
+      var real = document.createElement("span");          // screen readers get the final number; the counting copy is hidden from them
+      real.className = "sr"; real.textContent = end;
+      vis.setAttribute("aria-hidden", "true"); vis.textContent = "0";
+      b.appendChild(real); b.appendChild(vis);
+      return { vis: vis, end: end };
+    });
+    var once = new IntersectionObserver(function (list) {
+      if (!list[0].isIntersecting) return;
+      once.disconnect();
+      var ease = bezier(token("--ease-emphasis")), ms = parseFloat(token("--dur-slow")) + parseFloat(token("--dur-base")), t0 = null;
+      (function frame(now) {
+        if (t0 === null) t0 = now;
+        var k = Math.min(1, (now - t0) / ms), e = ease(k);
+        counters.forEach(function (c) { c.vis.textContent = Math.round(c.end * e); });
+        if (k < 1) requestAnimationFrame(frame);
+      })(performance.now());
+    }, { threshold: 0.3 });
+    once.observe(strip);
+  }
+
   setLang(pickLang());
 })();
 </script>
