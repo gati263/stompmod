@@ -1257,10 +1257,10 @@
 
 <dialog class="modal supportdlg" id="supportDlg" aria-labelledby="supTitle">
   <h2 id="supTitle">Support StompMod</h2>
-  <p id="supDl" hidden data-i18n="sup.dl">Your firmware is downloading. StompMod is free; if it saved you time, you can support it.</p>
+  <p id="supDl" hidden data-i18n="sup.dl">Your firmware is ready. StompMod is free; if it saved you time, you can support it.</p>
   <p>StompMod is free. If it saved you time, you can support it.</p>
   <div id="supBody"></div>
-  <div class="actions-bar"><button class="btn" id="supClose" type="button" autofocus>Close</button></div>
+  <div class="actions-bar"><button class="btn primary" id="supSave" type="button" hidden data-i18n="s2.save">Download firmware</button><button class="btn" id="supClose" type="button" autofocus>Close</button></div>
 </dialog>
 
 <dialog class="modal lightbox" id="lightbox" aria-label="Photos">
@@ -1478,7 +1478,7 @@ var LANG_NAMES = {
   function openSupport(afterDownload) {
     $("supBody").textContent = "";
     $("supBody").appendChild(document.querySelector("#support .pay").cloneNode(true));
-    $("supDl").hidden = !afterDownload;
+    $("supDl").hidden = $("supSave").hidden = !afterDownload;
     if (about.open) about.close();
     sup.showModal();
   }
@@ -1489,9 +1489,9 @@ var LANG_NAMES = {
       openSupport(false);
     });
   });
-  // After the file is downloaded the dialog opens once per browser (localStorage; once per page load if storage fails)
+  // When the build is ready the dialog opens once per browser (localStorage; once per page load if storage fails)
   var supShown = false, SUP_KEY = "stompmod.supportShown";
-  function supportAfterDownload() {
+  function supportAfterBuild() {
     if (!sup.showModal || supShown) return;
     try { if (localStorage.getItem(SUP_KEY)) return; } catch (e) { /* storage blocked: once per page load */ }
     supShown = true;
@@ -1821,6 +1821,7 @@ var LANG_NAMES = {
           else if (m.verify === null) fwShow("ok", ["fw.unpinnedTitle", { unit: unit }], ["fw.unpinnedText"]);
           else fwShow("ok", ["fw.oddTitle"], ["fw.oddText"]);
           markDone(2);
+          if (m.verify === "exact" || m.verify === "picture" || m.verify === null) supportAfterBuild();   // not after a build that failed verification
         } else if (m.type === "error") {
           finish();
           fwLog("\n" + m.text + "\n");
@@ -1852,9 +1853,9 @@ var LANG_NAMES = {
 
   $("fwPick").addEventListener("change", function (e) { buildFirmware(e.target.files); e.target.value = ""; });
   dropZone($("fwDrop"), buildFirmware);
-  $("fwSave").addEventListener("click", function () {
-    if (built) { saveBlob(built.blob, built.file); markDone(4); supportAfterDownload(); }
-  });
+  function download() { if (built) { saveBlob(built.blob, built.file); markDone(4); } }
+  $("fwSave").addEventListener("click", download);
+  $("supSave").addEventListener("click", function () { download(); closeModal(sup); });
   $("fwAgain").addEventListener("click", function () { $("fwStatus").hidden = true; shown = null; ramReady(null); $("fwPick").click(); });
 
   // ---- Step 3: the RAM run (ramrun.js) -------------------------------------------------------
