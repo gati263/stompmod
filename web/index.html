@@ -697,6 +697,8 @@
   .hero-text > .verline { animation-delay: calc(var(--dur-stagger) * 8); }
   .hero-text > .warning { animation-delay: calc(var(--dur-stagger) * 9); }
   .stats b { font-variant-numeric: tabular-nums; }
+  .stats b span { font: inherit; color: inherit; letter-spacing: inherit; }      /* the count-up copy keeps the number's own style, not the caption's */
+  .stats b span.sr { position: absolute; }
   .rv { opacity: 0; transform: translateY(var(--space-4)); transition: opacity var(--dur-base) var(--ease-emphasis), transform var(--dur-base) var(--ease-emphasis); }
   .rv.in { opacity: 1; transform: none; }
   .shots img, .hero-shot img, .zoom img { transition: transform var(--dur-base) var(--ease-move); }
@@ -978,7 +980,7 @@
       <li data-i18n="s3.li1"><b>Close HX Edit</b>, if it's open. Line 6 Updater can't reach the HX Stomp while HX Edit is using it.</li>
       <li data-i18n="s3.li2">Connect the HX Stomp to the computer with USB and turn it on.</li>
       <li data-i18n="s3.li3">Open <b>Line 6 Updater</b>, sign in, and select your HX Stomp.</li>
-      <li><span data-i18n="s3.li4">Choose <b>Choose File</b> (not the normal update) and pick the file you downloaded in step 2:</span> <code id="fwName">HX_Stomp_v3.80.0_HXtra.hxf</code></li>
+      <li><span data-i18n="s3.li4">Choose <b>Choose File</b> (not the normal update) and pick the file you downloaded in step 2:</span> <code id="fwName">HX_Stomp_v3.80.0_StompMod.hxf</code></li>
       <li data-i18n="s3.li5">Let it finish. <b>Don't unplug or switch off the HX Stomp</b> while it updates. It restarts on its own when done. This process can take up to 20 minutes.</li>
       <li data-i18n="s3.li6">Check it worked. If the boot screen shows <b>your picture</b>, then congratulations, the setup is complete!</li>
       <li data-i18n="s3.li7">Proceed to steps 5 and 6 only if using NAM.</li>
@@ -1228,7 +1230,7 @@
       <p data-i18n="faq.a4">NAM captures come in several sizes. The HX Stomp's DSP can run only the A2 Lite size. Look for the A2 Lite version of the capture, or a multi-size .nam that includes it.</p></details>
     <details class="faq"><summary data-i18n="faq.q5">The build says it isn't the right firmware.</summary>
       <ul data-i18n="faq.a5"><li>It must be version 3.80.0, for your unit, exactly as Line 6 made it. Older or newer versions don't work.</li>
-        <li>Don't pick a file that was already built here (it ends in <code>_HXtra.hxf</code>).</li>
+        <li>Don't pick a file that was already built here (it ends in <code>_StompMod.hxf</code>).</li>
         <li>If the file was renamed, that's fine: only its contents count.</li></ul></details>
   </section>
 
@@ -1573,7 +1575,7 @@ var LANGS = {
     "faq.q4": "Capture của tôi báo “No 3-channel A2 Lite model inside”.",
     "faq.a4": "Capture NAM có nhiều cỡ. DSP của HX Stomp chỉ chạy được cỡ A2 Lite. Hãy tìm phiên bản A2 Lite của capture đó, hoặc một file .nam nhiều cỡ có chứa nó.",
     "faq.q5": "Build báo đây không phải firmware đúng.",
-    "faq.a5": "<li>Phải là phiên bản 3.80.0, đúng cho thiết bị của bạn, nguyên bản như Line 6 làm ra. Phiên bản cũ hơn hay mới hơn đều không dùng được.</li>         <li>Đừng chọn file đã build ở đây (tên kết thúc bằng <code>_HXtra.hxf</code>).</li>         <li>Nếu file đã bị đổi tên thì không sao: chỉ nội dung mới được tính.</li>",
+    "faq.a5": "<li>Phải là phiên bản 3.80.0, đúng cho thiết bị của bạn, nguyên bản như Line 6 làm ra. Phiên bản cũ hơn hay mới hơn đều không dùng được.</li>         <li>Đừng chọn file đã build ở đây (tên kết thúc bằng <code>_StompMod.hxf</code>).</li>         <li>Nếu file đã bị đổi tên thì không sao: chỉ nội dung mới được tính.</li>",
     "foot.p1": "StompMod là một bản mod firmware không chính thức cho Line 6 HX Stomp. Nó không do Line 6 hay Yamaha Guitar Group làm ra hay hỗ trợ; Line 6, Helix, HX Stomp và HX Edit là nhãn hiệu của họ.",
     "foot.p2": "Dựa trên <a href=\"https://github.com/wisemandenny/hxtra\" target=\"_blank\" rel=\"noopener\">hxtra</a> của wisemandenny, GPL-3.0-or-later. <a href=\"../LICENSE\">Giấy phép</a> và <a href=\"../NOTICE\">thông báo của bên thứ ba</a>.",
     "foot.p3": "Liên hệ: <a href=\"mailto:contact@gatistudio.com\">contact@gatistudio.com</a>",
@@ -1820,7 +1822,7 @@ var LANG_NAMES = {
     });
   });
   // When the build is ready the dialog opens once per browser (localStorage; once per page load if storage fails)
-  var supShown = false, SUP_KEY = "stompmod.supportShown";
+  var supShown = false, SUP_KEY = "stompmod.supportShown.v2"     // v2: the earlier key was set by the after-download version, which hid this prompt from those users;
   function supportAfterBuild() {
     if (!sup.showModal || supShown) return;
     try { if (localStorage.getItem(SUP_KEY)) return; } catch (e) { /* storage blocked: once per page load */ }
@@ -2118,7 +2120,7 @@ var LANG_NAMES = {
     if (busy || !files || !files.length) return;
     var file = files[0];
     if (/\.nam$/i.test(file.name)) { fwShow("bad", ["fw.namTitle"], ["fw.namText"]); return; }
-    if (/_(NAM_A2_Lite|HXtra)\.hxf$/i.test(file.name)) { fwShow("bad", ["fw.builtTitle"], ["fw.builtText"]); return; }
+    if (/_(NAM_A2_Lite|HXtra|StompMod)\.hxf$/i.test(file.name)) { fwShow("bad", ["fw.builtTitle"], ["fw.builtText"]); return; }
     if (file.size < 2e6 || file.size > 120e6) {
       fwShow("bad", ["fw.sizeTitle"], ["fw.sizeText", { name: file.name, mb: (file.size / 1e6).toFixed(1) }]);
       return;

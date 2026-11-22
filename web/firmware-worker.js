@@ -248,7 +248,7 @@ async function build(stock, flags, splash, hxedit) {
     var report = step(6, "Checking every checksum and packing the file…",
                       ["tools/l6ia_verify.py", "build/nam_lite.l6ia"]);
     if (report.indexOf("ALL OK") < 0) throw new Error("The built image failed its checksum check.");
-    var file = unit + "_v3.80.0_HXtra.hxf";
+    var file = unit + "_v3.80.0_StompMod.hxf";
     step(6, "Checking every checksum and packing the file…",
          ["tools/hxf.py", "pack", "build/nam_lite.l6ia", "build/" + file, "--donor", "build/stock.hxf"]);
     var ram = ramPlan(p, step, file);
@@ -312,7 +312,7 @@ function verifyBuild(p, flags, splash, file) {
   var good = res[0];
   return good ? "picture" : "failed";
 }
-function unitOf(file) { return file.replace(/_v3\.80\.0_HXtra\.hxf$/, ""); }
+function unitOf(file) { return file.replace(/_v3\.80\.0_StompMod\.hxf$/, ""); }
 
 // The RAM run of the built file: what tools/hxf_ram.py run would send. A failure here leaves the
 // build as it is; the page then offers no RAM run.

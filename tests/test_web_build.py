@@ -185,3 +185,11 @@ def test_site_is_the_stompmod_folder_of_the_assets_directory():
     assert '"directory": "../../build/site"' in config
     assert build_site.PREFIX == "stompmod" and all(line.startswith(("/stompmod/", " ")) for line in build_site.HEADERS.splitlines())
     assert "cdn.jsdelivr.net" in build_site.CSP and "wasm-unsafe-eval" in build_site.CSP and "worker-src 'self' blob:" in build_site.CSP
+
+
+def test_the_built_file_is_named_stompmod_and_the_old_names_are_refused():
+    """The page's output is <unit>_v3.80.0_StompMod.hxf; unitOf() reads that name back; a file ending _StompMod or _HXtra is "already built"."""
+    assert '"_v3.80.0_StompMod.hxf"' in WORKER and r"_v3\.80\.0_StompMod\.hxf$" in WORKER and "HXtra" not in WORKER
+    page = (ROOT / "web/index.html").read_text(encoding="utf-8")
+    assert "HX_Stomp_v3.80.0_StompMod.hxf</code>" in page and "|HXtra|StompMod)" in page
+
