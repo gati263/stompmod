@@ -18,6 +18,7 @@ tools/*.hex
 *.gif
 *.webp
 !web/img/features/*.webp
+!web/img/support/*.webp
 
 .impeccable/
 .wrangler/
