@@ -1,14 +1,24 @@
-// StompMod's static site on Cloudflare Workers: gatistudio.com/stompmod, served beside the "gatistudio" Worker, which is not changed.
+// StompMod on Cloudflare Workers: gatistudio.com/stompmod, served beside the "gatistudio" Worker, which is not changed.
 // The routes below take precedence over the custom domain that Worker has, and keep the path, so tools/build_site.py puts the site in a
 // stompmod/ folder of the assets directory.
 //
+// Static files: every URL is a file in the assets (html_handling and not_found_handling are the defaults: /stompmod/ and /stompmod/web/
+// serve their index.html, a missing path is a 404). Response headers come from build/site/_headers. Only /stompmod/api/* runs the script
+// (assets.run_worker_first), so every other path is pure static assets, as before.
+//
+// The script (worker.js, logic in feedback.js) takes POST /stompmod/api/feedback from the page's Feedback dialog: it saves it in D1 and
+// mails it. To deploy, once:
+//   1. npx wrangler d1 create stompmod-feedback                  # then put the database_id it prints below
+//   2. npx wrangler d1 execute stompmod-feedback --remote --file deploy/stompmod/schema.sql -c deploy/stompmod/wrangler.jsonc
+//   3. npx wrangler secret put FEEDBACK_TO -c deploy/stompmod/wrangler.jsonc    # the address that gets the mail
+//      (optional: wrangler secret put RATE_SALT, any random text, to salt the hash of the IP in the rate limit)
+//   4. Email Routing on gatistudio.com with FEEDBACK_TO verified as a destination address (the send_email binding below can only send to it)
+// Without the secret or the binding the mail is skipped and the feedback is still saved. Then:
 //   python tools/build_site.py --cache build/m4cache.json      # builds build/site/stompmod/ and build/site/_headers
 //   npx wrangler deploy -c deploy/stompmod/wrangler.jsonc
-//
-// No Worker script: every URL is a file in the assets (html_handling and not_found_handling are the defaults: /stompmod/ and
-// /stompmod/web/ serve their index.html, a missing path is a 404). Response headers come from build/site/_headers.
 {
   "name": "stompmod",
+  "main": "worker.js",
   "compatibility_date": "2026-11-21",
   "workers_dev": false,
   "preview_urls": false,
@@ -17,6 +27,13 @@
     { "pattern": "gatistudio.com/stompmod/*", "zone_name": "gatistudio.com" }
   ],
   "assets": {
-    "directory": "../../build/site"
-  }
+    "directory": "../../build/site",
+    "run_worker_first": ["/stompmod/api/*"]
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "stompmod-feedback", "database_id": "6fdfe885-9bf7-455e-95ae-7f1d4776750f" }
+  ],
+  "send_email": [
+    { "name": "MAIL" }
+  ]
 }
