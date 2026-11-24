@@ -1,3 +1,13 @@
+# StompMod
+
+The source of [StompMod](https://gatistudio.com/stompmod), custom firmware for the Line 6 HX Stomp 3.80.0, built in the browser from the user's own copy of Line 6's firmware. It is a fork of [hxtra](https://github.com/wisemandenny/hxtra) by wisemandenny, under the same licence (GPL-3.0-or-later, see [LICENSE](LICENSE) and [NOTICE](NOTICE)). No Line 6 firmware or HX Edit files are in this repository.
+
+The page is `web/`; `tools/build_site.py` builds the site and `deploy/stompmod/` deploys it. Contact: contact@gatistudio.com.
+
+The rest of this file is hxtra's README.
+
+---
+
 <div align="center">
 
 <a href="https://wisemandenny.github.io/hxtra/web/"><img src="docs/assets/banner.svg" alt="HXtra: custom firmware for the Line 6 HX Stomp" width="100%"></a>
