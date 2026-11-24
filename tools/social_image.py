@@ -22,11 +22,11 @@ COPY = {
     'en': {'eyebrow': 'HX Stomp firmware mod',
            'lede': 'Custom firmware for the HX Stomp, built in your browser from your own copy of the firmware.',
            'chips': ['Model pictures', 'Six snapshots on Home', 'DSP usage', 'BPM', 'Tuner page', 'NAM A2 Lite', 'Real block names'],
-           'foot': 'Free, no account'},
+           'foot': 'Free'},
     'vi': {'eyebrow': 'Bản mod firmware HX Stomp',
            'lede': 'Firmware tùy biến cho HX Stomp, được build ngay trong trình duyệt từ chính file firmware bạn có.',
            'chips': ['Hình model', 'Sáu snapshot ở Home', 'Mức dùng DSP', 'BPM', 'Trang Tuner', 'NAM A2 Lite', 'Tên block thật'],
-           'foot': 'Miễn phí, không cần tài khoản'},
+           'foot': 'Miễn phí'},
 }
 URL = 'gatistudio.com/stompmod'
 CHIP_ACCENTS = [1, 2, 4, 3, 5, 6, 1]
