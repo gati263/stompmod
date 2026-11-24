@@ -8,9 +8,9 @@ PAGE = open(os.path.join(WEB, "index.html"), encoding="utf-8").read()
 
 
 def test_the_support_gumroad_link_is_written_once_and_opens_safely():
-    tag = re.search(r'<a [^>]*data-i18n="sup.gumgo"[^>]*>', PAGE).group(0)
+    tag = re.search(r'<a class="gum-tile"[^>]*>', PAGE).group(0)
     assert 'href="https://gati263.gumroad.com/l/stompmod"' in tag and 'target="_blank"' in tag and 'rel="noopener"' in tag
-    assert PAGE.count('data-i18n="sup.gumgo"') == 1
+    assert PAGE.count('class="gum-tile"') == 1 and PAGE.count("gumroad.com/l/stompmod") == 1 and 'aria-label="Buy me a coffee on Gumroad' in tag
 
 
 def test_nothing_of_gumroad_is_embedded():

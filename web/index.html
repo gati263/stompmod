@@ -664,6 +664,13 @@
   .pay-note { margin: 0; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   .pay-opt figure { margin: 0; display: grid; gap: var(--space-1); }
   .pay-opt img { display: block; width: 240px; max-width: 100%; height: auto; border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); background: var(--bg-elevated); }
+  .gum-tile { position: relative; display: grid; place-content: center; justify-items: center; gap: var(--space-2); width: 240px; max-width: 100%; aspect-ratio: 1; padding: var(--space-4); text-align: center; text-decoration: none; color: var(--text-primary); background: var(--viz-1-soft); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: inset 0 var(--focus-width) 0 var(--viz-1); }
+  .gum-tile svg { color: var(--viz-1); }
+  .gum-tile::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--shadow-popover); opacity: 0; pointer-events: none; transition: opacity var(--dur-mid) var(--ease-standard); }
+  .gum-tile { transition: transform var(--dur-base) var(--ease-standard); }
+  .gum-title { font: var(--type-panel-header-weight) var(--type-panel-header-size)/var(--type-panel-header-line) var(--font-serif); letter-spacing: var(--type-panel-header-tracking); }
+  .gum-on { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-mono); }
+  @media (hover: hover) { .gum-tile:hover { color: var(--text-primary); transform: translateY(calc(-1 * var(--space-1))); } .gum-tile:hover::after { opacity: 1; } }
   .pay-opt figcaption { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   dialog.supportdlg { width: min(var(--prose-max), calc(100% - var(--space-8))); }
   @media (min-width: 640px) { dialog.supportdlg .pay { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); } }
@@ -1220,9 +1227,11 @@
     <details class="more" id="support-ways"><summary data-i18n="sup.ways">Ways to support</summary>
       <div class="pay">
         <div class="pay-opt">
-          <h3 data-i18n="sup.gum">Buy me a coffee on Gumroad</h3>
-          <p class="pay-note" data-i18n="sup.gumnote">Pay by card, and you choose the amount.</p>
-          <a class="btn primary" href="https://gati263.gumroad.com/l/stompmod" target="_blank" rel="noopener" data-i18n="sup.gumgo">Open Gumroad</a>
+          <h3 data-i18n="sup.gum">Gumroad</h3>
+          <figure><a class="gum-tile" href="https://gati263.gumroad.com/l/stompmod" target="_blank" rel="noopener" data-i18n-aria="sup.gumaria" aria-label="Buy me a coffee on Gumroad (opens in a new tab)">
+            <svg viewBox="0 0 48 48" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h26v8a12 12 0 0 1-12 12h-2A12 12 0 0 1 9 26z"/><path d="M35 21h2.5a4.5 4.5 0 0 1 0 9H34"/><path d="M16 6v6M22 4v8M28 6v6"/><path d="M8 43h28"/></svg>
+            <span class="gum-title" data-i18n="sup.coffee">Buy me a coffee</span><span class="gum-on" data-i18n="sup.on">on Gumroad</span></a>
+            <figcaption data-i18n="sup.gumcap">Card, any country</figcaption></figure>
         </div>
         <div class="pay-opt">
           <h3 data-i18n="sup.momo">VietQR (Vietnam)</h3>
@@ -1605,9 +1614,7 @@ var LANGS = {
     "sup.title": "Ủng hộ StompMod",
     "sup.blurb": "StompMod miễn phí, và mình làm nó trong thời gian riêng của mình. Nếu nó giúp HX Stomp của bạn hữu ích hơn, sự ủng hộ của bạn mua thêm thời gian để làm tính năng mới.",
     "sup.ways": "Các cách ủng hộ",
-    "sup.gum": "Mời mình ly cà phê qua Gumroad",
-    "sup.gumnote": "Thanh toán bằng thẻ, và bạn tự chọn số tiền.",
-    "sup.gumgo": "Mở Gumroad",
+    "sup.gum": "Gumroad",
     "sup.momo": "VietQR (Việt Nam)",
     "sup.scan": "Quét bằng MoMo hoặc ứng dụng ngân hàng bất kỳ ở Việt Nam",
     "faq.title": "Câu hỏi thường gặp",
@@ -1780,7 +1787,11 @@ var LANGS = {
     "fb.err": "Tin nhắn chưa gửi được. Hãy thử lại, hoặc viết cho contact@gatistudio.com.",
     "fb.limit": "Kết nối này đã gửi quá nhiều tin. Hãy thử lại sau một giờ, hoặc viết cho contact@gatistudio.com.",
     "fb.needmsg": "Hãy viết nội dung tin nhắn trước.",
-    "fb.bademail": "Địa chỉ email này có vẻ chưa đúng. Hãy sửa hoặc để trống."
+    "fb.bademail": "Địa chỉ email này có vẻ chưa đúng. Hãy sửa hoặc để trống.",
+    "sup.coffee": "Mời mình ly cà phê",
+    "sup.on": "qua Gumroad",
+    "sup.gumcap": "Thẻ, mọi quốc gia",
+    "sup.gumaria": "Mời mình ly cà phê qua Gumroad (mở trong tab mới)"
   }
 };
 // LANGS-END
