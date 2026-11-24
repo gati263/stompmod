@@ -13,6 +13,7 @@ Before writing anything, read [conventions.md](conventions.md): the status tags,
 | [features/engine.md](features/engine.md) | a feature module: its settings, flag, inputs, and the hooks it shares (`chain_*`) or owns (`own_entry`, `own_call`); Entries 7 and 8 access | starting a new feature, or hooking a site |
 | [../resource-limits.md](../resource-limits.md) | which resources are nearly full and what changes cost | planning a feature |
 | [ideas.md](ideas.md) | open ideas from the old notes | looking for what to do next |
+| [V2_FEASIBILITY.md](V2_FEASIBILITY.md) | StompMod v2 candidates (v2 branch): the EXP pedal bar, a strobe tuner and cents number, a fixed master volume: where each is read in the firmware, the hooks, settings, risks and how to test | planning a v2 feature, or touching the pedal or volume listeners, the tuner's update or the I/O store
 | [web-app-plan.md](web-app-plan.md) | the plan for the web build page: decisions, features, boot picture, verification, hosting | working on `web/` or its release |
 
 ## Formats
