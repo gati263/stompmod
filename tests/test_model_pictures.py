@@ -150,6 +150,16 @@ def test_mono_and_stereo_share_the_plain_models_picture(tmp_path):
     assert mp.image_file(images, str(tmp_path), 'HD2_Other') is None
 
 
+def test_nam_a2_lite_has_its_own_picture():
+    """HX Edit has no picture of NAM A2 Lite, so it takes the repository's own, which fits the box like the others."""
+    path = mp.own_file('HD2_DistNAMLite')
+    assert path and os.path.isfile(path)
+    assert mp.own_file('HD2_DistNAMLiteMono') == path
+    assert mp.own_file('HD2_DistKinkyBoost') is None
+    w, h, px = mp.picture(np, path)
+    assert w <= mp.BOX_W and h <= mp.BOX_H and len(px) == 2 * w * h
+
+
 def test_catalog_finds_nested_models(tmp_path):
     (tmp_path / 'HX_ModelCatalog.json').write_text('{"categories": [{"id": 1, "image": "cat.png", "subcategories": '
                                                    '[{"models": [{"id": "HD2_A", "image": "a.png"}]}]}]}')

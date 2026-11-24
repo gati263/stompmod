@@ -17,7 +17,7 @@ import time
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 PREFIX = 'stompmod'
-COPY = ('web', 'tools', 'build.py', 'LICENSE', 'NOTICE', 'src/m4', 'src/sharc', 'assets/boot/signal_chain.png')
+COPY = ('web', 'tools', 'build.py', 'LICENSE', 'NOTICE', 'src/m4', 'src/sharc', 'assets/boot/signal_chain.png', 'assets/model_pictures')
 MAX_FILE = 25 * 1024 * 1024         # Workers static assets: 25 MiB a file
 INDEX = ('<!doctype html><meta charset="utf-8"><script>location.replace("web/" + location.hash)</script>'
          '<meta http-equiv="refresh" content="0; url=web/"><title>StompMod Setup</title><a href="web/">StompMod Setup</a>\n')

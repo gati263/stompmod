@@ -113,6 +113,7 @@ var SOURCES = [
   "src/sharc/click.asm",
   "src/sharc/frame_probe.asm",
   "assets/boot/signal_chain.png",     // the Full build's boot picture (m4cache.json's env: HX_SPLASH), when the user gives none
+  "assets/model_pictures/nam_a2_lite.png",   // model pictures: NAM A2 Lite's, which HX Edit lacks (features/model_pictures.py OWN)
 ];
 // The release's M4 code for the features (tools/m4cache.py); a page from a checkout has none, and offers no features.
 var CACHE = "m4cache.json";
@@ -152,7 +153,7 @@ async function boot() {
   var c = await fetch(root + CACHE, { cache: "no-cache" });
   if (c.ok) cache = await c.json();
   ["/repo", "/repo/tools", "/repo/tools/features", "/repo/tools/sharc", "/repo/tools/ramboot", "/repo/src", "/repo/src/m4", "/repo/src/sharc",
-   "/repo/assets", "/repo/assets/boot", "/repo/hxedit", "/repo/hxedit/res", "/repo/build"].forEach(function (d) {
+   "/repo/assets", "/repo/assets/boot", "/repo/assets/model_pictures", "/repo/hxedit", "/repo/hxedit/res", "/repo/build"].forEach(function (d) {
     try { p.FS.mkdir(d); } catch (e) { /* exists */ }
   });
   files.forEach(function (f) { p.FS.writeFile("/repo/" + f[0], f[1]); });

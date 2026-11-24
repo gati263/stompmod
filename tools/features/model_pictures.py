@@ -4,6 +4,7 @@ and the signal flow (moved down), and of the model under the cursor in the model
 
 The pictures are HX Edit's own model images, read at build time from the HX Edit installed on this computer (HX_MODEL_PICTURES=1
 for its usual place, or the path of its res folder), scaled into an 80x48 box (a tall one also into 64x80, for the browser) and added to the image store: none is in this repository.
+Models HX Edit has no picture of (NAM A2 Lite) take this project's own art from assets/model_pictures/ (OWN).
 HX Edit's catalog names each model's image by the model's internal name, which the firmware's Entry 3 string table gives every
 browser item and block record (a name index).
 tools/model_pictures_preview.py draws these layouts offline to judge them before a RAM run."""
@@ -159,6 +160,18 @@ def image_file(images, res, name):
     f = images.get(name) or images.get(re.sub(r'(Mono|Stereo)$', '', name))
     path = f and os.path.join(res, 'icons_models', f)
     return path if path and os.path.isfile(path) else None
+
+
+# Pictures of this project's own, for models HX Edit has none of (NAM A2 Lite is ours): original art in this repository, so they
+# are not part of the HX Edit fingerprint. HX Edit's picture wins if it ever has one.
+OWN = {'HD2_DistNAMLite': 'assets/model_pictures/nam_a2_lite.png'}
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def own_file(name):
+    """This project's picture of a model's internal name (its Mono or Stereo variant sharing the plain name's), or None."""
+    f = OWN.get(name) or OWN.get(re.sub(r'(Mono|Stereo)$', '', name))
+    return f and os.path.join(REPO, f)
 
 
 ADAM7 = ((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2))
@@ -320,9 +333,12 @@ def apply(p):
     by_file, table, btable, used = {}, [0] * nstr, [0] * nstr, []
     for ni, name in sorted(models.items()):
         path = image_file(images, res, name)
-        if path is None:
-            continue
-        used.append((name, path))
+        if path is not None:
+            used.append((name, path))
+        else:
+            path = own_file(name)
+            if path is None:
+                continue
         if path not in by_file:
             w, h, px = picture(np, path)
             small = p.add_image(LIKE, w, h, px)
