@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""social_image.py - the pictures of Facebook posts that introduce the web page and its Model pictures feature, 1080x1350 (4:5, the feed's portrait size), in English and Vietnamese.
+"""social_image.py - the pictures of Facebook posts that introduce the web page, its Model pictures feature and its other features, 1080x1350 (4:5, the feed's portrait size), in English and Vietnamese.
 
 usage: social_image.py [--src assets/features] [--out build/social]
 
 The photo is P1, the whole unit on the Home screen, cut from the original (assets/features, not in git) with tools/feature_images.py's box and
 only scaled down. Colours, fonts and drawing helpers are tools/gumroad_images.py's, so the post matches the Gumroad pictures; the copy is the
-page's own (hero lede and version line). JPEG, quality 90, no metadata.
+page's own (hero lede and version line). JPEG, quality 90, 4:4:4, no metadata.
 """
 import argparse
 import os
@@ -44,6 +44,31 @@ MP = [
      {'en': ('On or off in Displays', "HX Edit's own pictures, read from the HX Edit on your computer. Turn them on or off in Global Settings, Displays."),
       'vi': ('Bật hoặc tắt trong Displays', 'Hình của chính HX Edit, đọc từ HX Edit trên máy tính của bạn. Bật hoặc tắt trong Global Settings, Displays.')}),
 ]
+# the feature posts, one photo each, with the page's own copy of the feature: (file name, S shot, {lang: (title, text)})
+FEATURES = [
+    ('feature-snapshots', 'S1-home-snapshot-names',
+     {'en': ('Six snapshots, with their names on Home', 'The Home screen shows the names of all six snapshots in their colours, the playing one in a box.'),
+      'vi': ('Sáu snapshot, hiện tên ngay trên Home', 'Màn hình Home hiện tên của cả sáu snapshot bằng màu của chúng, snapshot đang chơi nằm trong một khung.')}),
+    ('feature-dsp', 'S2-edit-dsp-model-picture',
+     {'en': ('DSP usage', 'Each block in the Edit view shows its share of the DSP, and the top right shows the total out of 75.'),
+      'vi': ('Mức dùng DSP', 'Mỗi block trong Edit view hiển thị phần DSP nó dùng, và góc trên bên phải hiển thị tổng trên 75.')}),
+    ('feature-bpm', 'S6c-displays-bpm',
+     {'en': ('BPM on Home', 'The tempo at the top left of the Home screen and a beat dot beside the preset number. Choose the size, the colour and where the dot sits.'),
+      'vi': ('BPM trên Home', 'Tempo ở góc trên bên trái màn hình Home và một chấm nhịp cạnh số preset. Bạn chọn cỡ, màu và vị trí của chấm.')}),
+    ('feature-real-names', 'S3-browser-real-names-picture',
+     {'en': ('Real block names', 'The model browser and the Edit view title each block by the gear it is based on, such as Xotic EP Booster and Klon Centaur.'),
+      'vi': ('Tên block thật', 'Model browser và Edit view đặt tên mỗi block theo thiết bị gốc mà nó mô phỏng, như Xotic EP Booster và Klon Centaur.')}),
+    ('feature-nam', 'S5-nam-a2-lite',
+     {'en': ('NAM A2 Lite', 'Run Neural Amp Modeler captures as an amp block on the HX Stomp. Convert your captures on the page, then add them in HX Edit.'),
+      'vi': ('NAM A2 Lite', 'Chạy các capture Neural Amp Modeler như một block amp trên HX Stomp. Chuyển capture trên trang web, rồi thêm chúng trong HX Edit.')}),
+    ('feature-long-press', 'S7a-fs1-fs2-hold',
+     {'en': ('Long press', 'Hold FS1 to FS5 for one second to run a function of your choice, such as the tuner.'),
+      'vi': ('Nhấn giữ', 'Nhấn giữ FS1 đến FS5 trong một giây để chạy một chức năng bạn chọn, chẳng hạn tuner.')}),
+    ('feature-tuner', 'S9b-tuner-activate-lock',
+     {'en': ('Tuner page', "Activate set to Press opens the tuner with one press instead of a hold, and Lock stops the tuner's other settings from changing by accident."),
+      'vi': ('Trang tuner', 'Activate đặt là Press thì mở tuner bằng một lần bấm thay vì giữ, và Lock giúp các cài đặt khác của tuner không bị đổi nhầm.')}),
+]
+FEATURE_EYEBROW = {'en': 'StompMod feature', 'vi': 'Tính năng StompMod'}
 
 
 def post(tk, src, c):
@@ -100,12 +125,12 @@ def serif(size, text):
     return f
 
 
-def mp_post(tk, src, lang, shot, title, text):
+def shot_post(tk, src, eyebrow, foot, shot, title, text):
     img = Image.new('RGB', (W, H), tk['bg-base'])
     g.rounded(img, (40, 40, W - 40, H - 40), 16, fill=tk['viz-1-soft'], outline=tk['border-subtle'], width=1)
     d = ImageDraw.Draw(img)
     x, inner = 96, W - 2 * 96
-    g.eyebrow(img, tk, 1, MP_EYEBROW[lang], x, 92)
+    g.eyebrow(img, tk, 1, eyebrow, x, 92)
     tf = serif(76, title)
     y = 230
     for ln in g.wrap(title, tf, inner):
@@ -118,10 +143,10 @@ def mp_post(tk, src, lang, shot, title, text):
     for ln in g.wrap(text, bf, inner):
         d.text((x, y), ln, font=bf, fill=tk['text-primary'], anchor='lm')
         y += 48
-    # the photo, never scaled up: as wide as the panel or the photo, centred in the space above the footer
+    # the photo, never scaled up: at its own size (inside a 1 px frame) or scaled down to the panel, centred above the footer
     im = g.load_shot(src, shot)
     fy = H - 40 - 64
-    w = min(inner, im.width)
+    w = min(inner - 2, im.width)
     h = round(w * im.height / im.width)
     room_top, room_bottom = y + 8, fy - 64
     if h > room_bottom - room_top:
@@ -129,10 +154,10 @@ def mp_post(tk, src, lang, shot, title, text):
         w = round(h * im.width / im.height)
     top = room_top + (room_bottom - room_top - h) // 2
     left = (W - w) // 2
-    g.photo(img, tk, im, (left, top, left + w, top + h))
+    g.photo(img, tk, im, (left - 1, top - 1, left + w + 1, top + h + 1))
     d.line((x, fy - 40, x + inner, fy - 40), fill=tk['border-subtle'], width=1)
     d.text((x, fy), URL, font=g.font('mono', 36), fill=tk['text-primary'], anchor='lm')
-    d.text((x + inner, fy), MP_FOOT[lang], font=g.font('sans', 26), fill=tk['text-muted'], anchor='rm')
+    d.text((x + inner, fy), foot, font=g.font('sans', 26), fill=tk['text-muted'], anchor='rm')
     return img
 
 
@@ -144,12 +169,13 @@ def main():
     os.makedirs(a.out, exist_ok=True)
     tk = g.tokens()
     for lang, c in COPY.items():
-        dst = os.path.join(a.out, f'facebook-{lang}.jpg')
-        post(tk, a.src, c).save(dst, 'JPEG', quality=Q, optimize=True)
-        print(f'{dst}  {os.path.getsize(dst) / 1024:.0f} KB')
-        for name, shot, texts in MP:
+        pics = [('facebook', post(tk, a.src, c))]
+        pics += [(name, shot_post(tk, a.src, MP_EYEBROW[lang], MP_FOOT[lang], shot, *texts[lang])) for name, shot, texts in MP]
+        pics += [(name, shot_post(tk, a.src, FEATURE_EYEBROW[lang], c['foot'], shot, *texts[lang])) for name, shot, texts in FEATURES]
+        for name, img in pics:
             dst = os.path.join(a.out, f'{name}-{lang}.jpg')
-            mp_post(tk, a.src, lang, shot, *texts[lang]).save(dst, 'JPEG', quality=Q, optimize=True)
+            # 4:4:4, no chroma subsampling: the screens' coloured text on black smears at 4:2:0
+            img.save(dst, 'JPEG', quality=Q, optimize=True, subsampling=0)
             print(f'{dst}  {os.path.getsize(dst) / 1024:.0f} KB')
 
 
