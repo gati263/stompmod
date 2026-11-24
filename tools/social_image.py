@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """social_image.py - the pictures of Facebook posts that introduce the web page, its Model pictures feature and its other features, 1080x1350 (4:5, the feed's portrait size), in English and Vietnamese.
 
-usage: social_image.py [--src assets/features] [--out build/social]
+usage: social_image.py [--src assets/features] [--out build/social] [--lang en vi]
 
 The photo is P1, the whole unit on the Home screen, cut from the original (assets/features, not in git) with tools/feature_images.py's box and
 only scaled down. Colours, fonts and drawing helpers are tools/gumroad_images.py's, so the post matches the Gumroad pictures; the copy is the
@@ -11,13 +11,15 @@ import argparse
 import os
 import sys
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 sys.path[:0] = [os.path.dirname(os.path.abspath(__file__))]
 import feature_images as fi  # noqa: E402
 import gumroad_images as g  # noqa: E402
 
 W, H, Q = 1080, 1350, 90
+# the phone photos of the backlit screen are a little soft: a light unsharp mask before they go in
+SHARPEN = ImageFilter.UnsharpMask(radius=2, percent=120, threshold=2)
 COPY = {
     'en': {'eyebrow': 'HX Stomp firmware mod',
            'lede': 'Custom firmware for the HX Stomp, built in your browser from your own copy of the firmware.',
@@ -101,7 +103,7 @@ def post(tk, src, c):
     top = y + 12
     ph = cy0 - 36 - top
     bh = min(bh, round(bw * ph / inner))
-    shot = Image.open(os.path.join(src, 'P1-home-full-unit.jpg')).convert('RGB').crop((bx, by, bx + bw, by + bh))
+    shot = Image.open(os.path.join(src, 'P1-home-full-unit.jpg')).convert('RGB').crop((bx, by, bx + bw, by + bh)).filter(SHARPEN)
     g.photo(img, tk, shot, (x, top, x + inner, top + ph))
     for label, a, cx, r, cw in chips:
         cy = cy0 + r * (ch + gap)
@@ -144,7 +146,7 @@ def shot_post(tk, src, eyebrow, foot, shot, title, text):
         d.text((x, y), ln, font=bf, fill=tk['text-primary'], anchor='lm')
         y += 48
     # the photo, never scaled up: at its own size (inside a 1 px frame) or scaled down to the panel, centred above the footer
-    im = g.load_shot(src, shot)
+    im = g.load_shot(src, shot).filter(SHARPEN)
     fy = H - 40 - 64
     w = min(inner - 2, im.width)
     h = round(w * im.height / im.width)
@@ -165,10 +167,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--src', default=os.path.join(g.ROOT, 'assets', 'features'))
     ap.add_argument('--out', default=os.path.join(g.ROOT, 'build', 'social'))
+    ap.add_argument('--lang', nargs='+', default=['en'], choices=list(COPY), help='languages to draw (default: en)')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     tk = g.tokens()
-    for lang, c in COPY.items():
+    for lang in a.lang:
+        c = COPY[lang]
         pics = [('facebook', post(tk, a.src, c))]
         pics += [(name, shot_post(tk, a.src, MP_EYEBROW[lang], MP_FOOT[lang], shot, *texts[lang])) for name, shot, texts in MP]
         pics += [(name, shot_post(tk, a.src, FEATURE_EYEBROW[lang], c['foot'], shot, *texts[lang])) for name, shot, texts in FEATURES]
