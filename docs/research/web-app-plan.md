@@ -208,7 +208,7 @@ Required for this fork:
   the Artifact tool, take every colour, font and spacing from `tokens.json` by Grep, no hard-coded hex. Light and dark themes (the
   page has `prefers-color-scheme`, l.43). The page's own CSS (about 220 lines) is rewritten against tokens, not patched.
 - **About**: an `About` text button opening a dialog (GaTi style: elevated surface, soft border) with Developer **Gia Thinh (GaTi)**,
-  Email **contact@gatistudio.com**, links only Facebook `https://www.facebook.com/ga.ti.35/` and Gumroad `https://gati263.gumroad.com/`
+  Email **contact@gatistudio.com**, the only link Gumroad `https://gati263.gumroad.com/`
   (opened in the system browser, `rel="noopener"`). Contact email everywhere else (issue links, README, footer): the same address.
 - **Languages**: 10 languages cost 1500 lines (l.565-2071) and `test_web_i18n.py` requires each to match English. Recommend English
   and Vietnamese for v1 (the others kept in the file but dropped from the menu would still be tested; deleting them also needs
