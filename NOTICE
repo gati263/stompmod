@@ -3,8 +3,8 @@ Copyright (C) 2026 Gia Thinh (GaTi), contact@gatistudio.com
 
 StompMod is a modified version of hxtra (https://github.com/wisemandenny/hxtra),
 changed by Gia Thinh (GaTi) from November 2026 on; the changes are in the git
-history of https://github.com/gati263/hxstomp-mods, which is the complete source
-of the page at https://gatistudio.com/stompmod.
+history of https://github.com/gati263/stompmod, a fork of hxtra and the complete
+source of the page at https://gatistudio.com/stompmod.
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
