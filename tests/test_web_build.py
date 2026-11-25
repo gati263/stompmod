@@ -179,9 +179,10 @@ def test_site_publishes_every_source():
 
 def test_site_is_the_stompmod_folder_of_the_assets_directory():
     # the Worker's routes keep the path (deploy/stompmod/wrangler.jsonc), so the site sits in stompmod/ under the assets directory,
-    # and the headers' patterns are the public paths
+    # and the headers' patterns are the public paths. One route ending in * matches /stompmod with a query string too
+    # (Facebook adds ?fbclid=...): a route is matched against the whole URL, query included.
     config = (ROOT / "deploy/stompmod/wrangler.jsonc").read_text()
-    assert '"gatistudio.com/stompmod"' in config and '"gatistudio.com/stompmod/*"' in config and '"workers_dev": false' in config
+    assert config.count('"pattern"') == 1 and '"gatistudio.com/stompmod*"' in config and '"workers_dev": false' in config
     assert '"directory": "../../build/site"' in config
     assert build_site.PREFIX == "stompmod" and all(line.startswith(("/stompmod/", " ")) for line in build_site.HEADERS.splitlines())
     assert "cdn.jsdelivr.net" in build_site.CSP and "wasm-unsafe-eval" in build_site.CSP and "worker-src 'self' blob:" in build_site.CSP

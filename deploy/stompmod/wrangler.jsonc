@@ -1,5 +1,5 @@
 // StompMod on Cloudflare Workers: gatistudio.com/stompmod, served beside the "gatistudio" Worker, which is not changed.
-// The routes below take precedence over the custom domain that Worker has, and keep the path, so tools/build_site.py puts the site in a
+// The route below (ending in *, so /stompmod?fbclid=... matches too: a route is matched against the whole URL) takes precedence over the custom domain that Worker has, and keep the path, so tools/build_site.py puts the site in a
 // stompmod/ folder of the assets directory.
 //
 // Static files: every URL is a file in the assets (html_handling and not_found_handling are the defaults: /stompmod/ and /stompmod/web/
@@ -23,8 +23,7 @@
   "workers_dev": false,
   "preview_urls": false,
   "routes": [
-    { "pattern": "gatistudio.com/stompmod", "zone_name": "gatistudio.com" },
-    { "pattern": "gatistudio.com/stompmod/*", "zone_name": "gatistudio.com" }
+    { "pattern": "gatistudio.com/stompmod*", "zone_name": "gatistudio.com" }
   ],
   "assets": {
     "directory": "../../build/site",
