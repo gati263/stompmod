@@ -2,7 +2,7 @@
 
 Custom firmware for the Line 6 HX Stomp 3.80.0, built in your browser from your own copy of Line 6's firmware.
 
-**Build it at [gatistudio.com/stompmod](https://gatistudio.com/stompmod).** Version 1.0.0, free.
+**Build it at [gatistudio.com/stompmod](https://gatistudio.com/stompmod).** Version 1.1.0, free.
 
 StompMod is a fork of [hxtra](https://github.com/wisemandenny/hxtra) by wisemandenny, under the same licence (GPL-3.0-or-later, see [LICENSE](LICENSE) and [NOTICE](NOTICE)). It keeps hxtra's features and adds the ones listed under [What StompMod adds](#what-stompmod-adds). No Line 6 firmware or HX Edit files are in this repository.
 
@@ -72,6 +72,15 @@ The tempo display's settings (BPM Size, BPM Color, BPM Dot) live in Global Setti
 hxtra sets a boot picture only from the command line. On the StompMod page you pick any picture, choose Fill or Fit, and see a preview at 320 x 240 that marks where the loading bar and the boot line fall. Without one, the boot screen shows StompMod's signal chain picture with the line "Made by GaTi". `HX_SPLASH_LINE=hide` hides the boot line in a command-line build.
 
 <p><img src="assets/boot/signal_chain.png" width="320" alt="StompMod's default boot picture: a signal chain of blocks crossed by the loading bar"></p>
+
+### Snapshot editor for Windows
+
+StompMod Snapshots, a small Windows app, names and colours all six snapshots of the preset playing, snapshots 4 to 6 included,
+which HX Edit does not show. Close HX Edit, open the app, press Send to HX Stomp, then save the preset on the unit. It needs
+StompMod 1.1.0 or newer. Download it from the [releases](https://github.com/gati263/stompmod/releases/latest); it is not code
+signed yet, so Windows SmartScreen may warn, and its source is [apps/snapshots/](apps/snapshots/).
+
+<p><img src="web/img/features/snap-app.webp" width="520" alt="The StompMod Snapshots app with six rows: Lead, Verse and Chorus, then Chorus 2, Verse 2 and Outro, each with its colour"></p>
 
 ### The page
 
