@@ -501,31 +501,32 @@ def test_a_build_with_tap_led_color_hands_bpm_its_shown_colour(monkeypatch):
     assert seen['src/m4/bpm.s'][1] == {'tap.inc': '.equ TAP_NOW, 0x0\n'}
 
 
-@pytest.mark.parametrize('value, xs', [(0, range(69, 99)), (1, range(221, 251)), (2, [*range(69, 99), *range(221, 251)]),
+@pytest.mark.parametrize('value, xs', [(0, range(79, 99)), (1, range(221, 241)), (2, [*range(79, 99), *range(221, 241)]),
                                        (3, [])])
 def test_before_shows_the_dots_bpm_dot_pos_says(m4, value, xs):
     before(m4, dot=value)
     shown = [r[0] for r in m4.called(SET_RECT_VISIBLE) if r[1] == 1]
-    assert len(m4.called(SET_RECT_VISIBLE)) == 22 and len(shown) == len(xs) // 30 * 9
-    cols = set()
-    for (_, x, y, _), (_, cw, ch, _) in zip(m4.called(SET_RECT_POS), m4.called(SET_RECT_SIZE)):
-        cols |= set(range(x, x + cw))
-        assert 237 - 15 <= y <= 237 and y - ch >= 237 - 30, 'within the 30 px dot below the top edge'
-    assert cols == set(xs)
-
-
-@pytest.mark.parametrize('value', [4, None, 5])
-def test_before_puts_the_tempo_dot_after_the_tempo(m4, value):
-    """Tempo (the default, and out of range): a 12 px dot 4 px after the tempo, as setText measured it (2 + 30 + 4 = 36)."""
-    m4.m.u32(m4.at('bpm_widget') + 0x10, 30)
-    before(m4, dot=value)
-    shown = [r[0] for r in m4.called(SET_RECT_VISIBLE) if r[1] == 1]
-    assert len(shown) == 4
+    assert len(m4.called(SET_RECT_VISIBLE)) == 17 and len(shown) == len(xs) // 20 * 6
     cols, rows = set(), set()
     for (_, x, y, _), (_, cw, ch, _) in zip(m4.called(SET_RECT_POS), m4.called(SET_RECT_SIZE)):
         cols |= set(range(x, x + cw))
         rows |= set(range(y - ch, y))
-    assert cols == set(range(36, 48)) and rows == set(range(223, 235)), 'level with the S tempo, top y 238'
+    assert cols == set(xs)
+    assert rows == (set(range(217, 237)) if xs else set()), 'a 20 px dot from the top edge, above the six names\' preset name (top 214)'
+
+
+@pytest.mark.parametrize('value', [4, None, 5])
+def test_before_puts_the_tempo_dot_after_the_tempo(m4, value):
+    """Tempo (the default, and out of range): a 16 px dot 4 px after the tempo, as setText measured it (2 + 30 + 4 = 36)."""
+    m4.m.u32(m4.at('bpm_widget') + 0x10, 30)
+    before(m4, dot=value)
+    shown = [r[0] for r in m4.called(SET_RECT_VISIBLE) if r[1] == 1]
+    assert len(shown) == 5
+    cols, rows = set(), set()
+    for (_, x, y, _), (_, cw, ch, _) in zip(m4.called(SET_RECT_POS), m4.called(SET_RECT_SIZE)):
+        cols |= set(range(x, x + cw))
+        rows |= set(range(y - ch, y))
+    assert cols == set(range(36, 52)) and rows == set(range(221, 237)), 'as tall as the S tempo\'s capitals, its centre as before'
     before(m4, dot=value, font=4)
     xs = {x for _, x, _, _ in m4.called(SET_RECT_POS)}
     assert min(xs) == 2, 'with the tempo off, at its left'
@@ -541,7 +542,7 @@ def test_font_off_hides_the_tempo_and_keeps_the_dot(m4):
     before(m4, font=4, dot=0)
     assert not m4.called(SET_FONT) and [r[1] for r in m4.called(SET_TEXT_VISIBLE)] == [0]
     assert struct.unpack('<I', m4.data(16, 4))[0] == 468, 'the period at 128 BPM, for the dot without a TAP footswitch'
-    assert len([r for r in m4.called(SET_RECT_VISIBLE) if r[1] == 1]) == 9
+    assert len([r for r in m4.called(SET_RECT_VISIBLE) if r[1] == 1]) == 6
 
 
 @pytest.mark.parametrize('font, dot, shown', [(1, 0, True), (4, 0, True), (1, 3, True), (4, 3, False)])

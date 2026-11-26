@@ -1,4 +1,4 @@
-@ bpm.s - the tempo as text at the top left of the Home screen, in the font and colour its Font Size and Color settings say, and a 30 px dot
+@ bpm.s - the tempo as text at the top left of the Home screen, in the font and colour its Font Size and Color settings say, and a 20 px dot
 @ lit in that colour while the TAP footswitch's ring is, red on a tap, left or right of the preset number (or both) as Dot Position says.
 @ Font Size Off hides the tempo and Dot Position Off the dot; with both off nothing is drawn and the Home view is not repainted for it.
 @ The tempo is the Global Setting the stock code uses, Global BPM or Preset BPM as Tempo Select says, as a whole BPM, with " X" while
@@ -7,7 +7,7 @@
 .thumb
 .include "hxtra.inc"
 .include "tap.inc"                  @ TAP_NOW: Tap LED Color's shown colour, or 0 in a build without it
-.equ BPM_DOTS, 22                   @ rectangles: 9 a big dot (Left, Right), 4 the small one after the tempo (Tempo)
+.equ BPM_DOTS, 17                   @ rectangles: 6 a 20 px dot (Left, Right), 5 the 16 px one after the tempo (Tempo)
 .equ BPM_DOT_TOP, 237               @ the dots' top (y counts up from the bottom)
 .equ FS_FUNCTIONS, 0x28128a74       @ each footswitch's function, two bytes apart: 1 is TAP
 .equ BPM_TEMPO, 9                   @ Color Tempo: the TAP footswitch's colour
@@ -454,29 +454,24 @@ bpm_colours:                        @ Color: White, Gray, Red, Orange, Yellow, G
 bpm_fonts:                          @ Font Size: XL, L, M, S (35 Bold, 41 Lite, 28 Bold, 21 Reg), as font numbers, and Off
     .byte 4, 5, 2, 1, 0
 .balign 4
-bpm_dotshape:                       @ x, y below the dots' top, w, h, Dot Position bit, 0: nested rectangles whose union is a 30 px circle
-    .byte 80, 0, 8, 30, 1, 0        @ left: the right one mirrored about the preset number's middle, x = 160
-    .byte 77, 1, 14, 28, 1, 0
-    .byte 76, 2, 16, 26, 1, 0
-    .byte 74, 3, 20, 24, 1, 0
-    .byte 73, 4, 22, 22, 1, 0
-    .byte 72, 5, 24, 20, 1, 0
-    .byte 71, 7, 26, 16, 1, 0
-    .byte 70, 8, 28, 14, 1, 0
-    .byte 69, 11, 30, 8, 1, 0
-    .byte 232, 0, 8, 30, 2, 0       @ right, from x = 221 [verified on unit]
-    .byte 229, 1, 14, 28, 2, 0
-    .byte 228, 2, 16, 26, 2, 0
-    .byte 226, 3, 20, 24, 2, 0
-    .byte 225, 4, 22, 22, 2, 0
-    .byte 224, 5, 24, 20, 2, 0
-    .byte 223, 7, 26, 16, 2, 0
-    .byte 222, 8, 28, 14, 2, 0
-    .byte 221, 11, 30, 8, 2, 0
-    .byte 4, 2, 4, 12, 4, 0         @ Tempo: a 12 px dot from the tempo's end, level with S's capitals (rows 1..16 under y 238)
-    .byte 2, 3, 8, 10, 4, 0
-    .byte 1, 4, 10, 8, 4, 0
-    .byte 0, 6, 12, 4, 4, 0
+bpm_dotshape:                       @ x, y below the dots' top, w, h, Dot Position bit, 0: nested rectangles whose union is a circle
+    .byte 86, 0, 6, 20, 1, 0        @ left: the right one mirrored about the preset number's middle, x = 160
+    .byte 84, 1, 10, 18, 1, 0
+    .byte 82, 2, 14, 16, 1, 0
+    .byte 81, 3, 16, 14, 1, 0
+    .byte 80, 5, 18, 10, 1, 0
+    .byte 79, 7, 20, 6, 1, 0
+    .byte 228, 0, 6, 20, 2, 0       @ right, from x = 221 (a 30 px dot there [verified on unit]); 20 px ends above the preset name
+    .byte 226, 1, 10, 18, 2, 0      @ the six snapshot names raise (top y 214)
+    .byte 224, 2, 14, 16, 2, 0
+    .byte 223, 3, 16, 14, 2, 0
+    .byte 222, 5, 18, 10, 2, 0
+    .byte 221, 7, 20, 6, 2, 0
+    .byte 5, 0, 6, 16, 4, 0         @ Tempo: a 16 px dot from the tempo's end, as tall as S's capitals (rows 1..16 under y 238)
+    .byte 3, 1, 10, 14, 4, 0
+    .byte 2, 2, 12, 12, 4, 0
+    .byte 1, 3, 14, 10, 4, 0
+    .byte 0, 5, 16, 6, 4, 0
 bpm_dotmask:                        @ Dot Position: Left, Right, Both, Off, Tempo, as bpm_dotshape's bits
     .byte 1, 2, 3, 0, 4
 .balign 4
