@@ -14,6 +14,7 @@ Before writing anything, read [conventions.md](conventions.md): the status tags,
 | [../resource-limits.md](../resource-limits.md) | which resources are nearly full and what changes cost | planning a feature |
 | [ideas.md](ideas.md) | open ideas from the old notes | looking for what to do next |
 | [web-app-plan.md](web-app-plan.md) | the plan for the web build page: decisions, features, boot picture, verification, hosting | working on `web/` or its release |
+| [snapshot-editor-plan.md](snapshot-editor-plan.md) | the plan for editing all six snapshots' names and colours from a desktop app: the USB command, the app, the tasks | working on the snapshot editor |
 
 ## Formats
 

@@ -1,5 +1,6 @@
 numpy
 pytest
 pyusb
+libusb-package; sys_platform == "win32"
 unicorn==2.1.4
 msgpack

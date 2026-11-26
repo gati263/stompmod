@@ -110,6 +110,20 @@ def parse_in_transfer(buf):
 
 # --------------------------------------------------------------------------- USB back ends
 
+def _libusb_from_package():
+    """Windows has no system libusb: when pyusb finds none, put libusb_package's DLL where it looks (PATH).
+    The HX Stomp's interface 0 is bound to WinUSB there, which libusb opens as it is."""
+    import os
+    import usb.backend.libusb1
+    if usb.backend.libusb1.get_backend() is not None:
+        return
+    try:
+        import libusb_package
+    except ImportError:
+        sys.exit('error: no libusb found (on Windows: pip install libusb-package)')
+    os.environ['PATH'] = os.path.dirname(libusb_package.get_library_path()) + os.pathsep + os.environ.get('PATH', '')
+
+
 class UsbLink:
     def __init__(self, pid, timeout_ms, verbose):
         try:
@@ -117,6 +131,7 @@ class UsbLink:
             import usb.util
         except ImportError:
             sys.exit('error: pyusb is not installed (pip install pyusb; libusb must be present)')
+        _libusb_from_package()
         self.usb = usb
         self.verbose = verbose
         self.timeout_ms = timeout_ms
