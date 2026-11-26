@@ -2,7 +2,8 @@
 
 Status: 2026-11-26, task 1 done (the USB tools find libusb on Windows by themselves); task 2 found the colour and named keys
 ([m4/snapshots.md](m4/snapshots.md)), with Red, Yellow and Turquoise checked against HX Edit and the rest of the colour list
-by its order. Status tags as in [conventions.md](conventions.md).
+by its order; task 3 found HX Edit's rename (`0x59`) and colour (`0x62`) commands and their setters
+([m4/snapshots.md](m4/snapshots.md)): names are 10 characters, colours 0..11. Status tags as in [conventions.md](conventions.md).
 
 ## The problem
 
@@ -43,8 +44,9 @@ A new editor-service command (proposed number `0x50`, the lowest free after the 
   preset has none yet.
 - **Write** (the request carries a parameter map `{0x65: {0: index 0..5, 1: colour, 2: name bin, up to 11 bytes}}`, with a
   check that rejects anything else): the live bank's record goes through the stock setters HX Edit's own rename and colour
-  commands use, so the unsaved-edit mark and the Home labels follow as they do for HX Edit; the waiting bank's record is written
-  in `snaps_shadow` directly and the unsaved-edit mark set. Writing to bank B of a preset without one first makes it, as a flip
+  commands use (`0x28de3888`, `0x28de2f54`) and the calls after them (`0x28d9615c`, `0x28d961dc`, `0x28d9625c`), so the
+  unsaved-edit mark and the Home labels follow as they do for HX Edit; the waiting bank's record is written in `snaps_shadow`
+  directly (named flag `+0x24c`, name `+0x255`, colour `+0x254`) and the same three calls made. Writing to bank B of a preset without one first makes it, as a flip
   does, without changing the sound playing.
 - Nothing is saved: the user saves on the unit (or the app sends HX Edit's save command, task 6). A save in either bank already
   keeps both (stage 2 of more snapshots).
@@ -56,7 +58,7 @@ A new editor-service command (proposed number `0x50`, the lowest free after the 
 - Uses `tools/hx_ctl.py`'s `HxCtl` (the stream and framing) and adds two calls, `snapshots()` and `set_snapshot(i, name, colour)`.
   On Windows it loads `libusb_package`'s DLL itself (a pyusb backend from `libusb_package.get_library_path()`), so no `PATH`
   setup is needed; the same change goes into `hx_dfu_reboot.UsbLink` so every USB tool runs on Windows.
-- One window: the preset's name, six rows (number, name field limited to the unit's 11 characters, colour picker in the unit's
+- One window: the preset's name, six rows (number, name field limited to the 10 characters the stock rename keeps, colour picker in the unit's
   palette), Refresh, and a note that HX Edit must be closed. It refreshes after a preset change on the unit (the notify stream,
   service 4, or polling Get current preset `0x17`).
 - Packaged as one Windows `.exe` with PyInstaller (the DLL inside); macOS later if wanted.
