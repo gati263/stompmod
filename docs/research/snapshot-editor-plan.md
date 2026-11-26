@@ -4,7 +4,8 @@ Status: 2026-11-26, task 1 done (the USB tools find libusb on Windows by themsel
 ([m4/snapshots.md](m4/snapshots.md)), with Red, Yellow and Turquoise checked against HX Edit and the rest of the colour list
 by its order; task 3 found HX Edit's rename (`0x59`) and colour (`0x62`) commands and their setters
 ([m4/snapshots.md](m4/snapshots.md)): names are 10 characters, colours 0..11; task 4 built the command, `0x50`, tested in the emulator
-([features/more-snapshots.md](features/more-snapshots.md)): it takes HX Edit's own snapshot parameters, index 6 reads all six.
+([features/more-snapshots.md](features/more-snapshots.md)): it takes HX Edit's own snapshot parameters, index 6 reads all six;
+task 5 ran it on the unit from RAM: reads and writes in both banks work, a save and a reload not yet checked.
 Status tags as in [conventions.md](conventions.md).
 
 ## The problem
@@ -40,8 +41,8 @@ any of them.
 
 Command `0x50` (the lowest free after the mirror's `0x52`), registered by `more_snapshots` itself, so every build with six
 snapshots has it and the page's build needs no new option. It is registered with HX Edit's own snapshot check (`0x28e190e5`), so
-its request is the map HX Edit's rename and colour send: `{0x5c: index, 0x42: colour 0..11, 0x6d: name}`; the app sends all
-three keys every time.
+its request is the map HX Edit's rename and colour send: `{0x5c: index, 0x6d: name, 0x42: colour 0..11}`; the app sends all
+three keys every time, the name before the colour (the check's read of the name clears the colour's byte [verified on unit]).
 
 - **Read** (index 6): reply `bin8` of 6 entries, snapshot 1..6 in order, each `{u8 exists, u8 colour, u8 named, u8 name[11]}`
   (14 bytes), then `u8 live bank`, `u8 current index`, `u8 has bank B`. Bank B entries read zero when the preset has none yet.

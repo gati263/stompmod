@@ -79,7 +79,7 @@
 .equ STEP, 3                        @ in WRAP instead: the select on its way is a next or previous inside the bank
 .equ PREVIEW, 8                     @ in snaps_data: the labels show the other bank, the sound unchanged, until a footswitch picks
 .equ MODE, 9                        @ in snaps_data, while cameras are painted: bit 0 bank B's numbers, bit 1 none lit (a preview)
-.equ REGISTER, 0x28e165f1           @ (command, {handler, check, 0}): the editor's command table
+.equ REGISTER, 0x28e165f1           @ (command, {check, handler, 0}): the editor's command table
 .equ SNAP_CHECK, 0x28e190e5         @ the check of HX Edit's snapshot commands (0x58, 0x59, 0x62): the request's index at +0x10
                                     @ (0..7), colour at +0x25 (0..11), name at +0x14 (from the keys 0x5c, 0x42, 0x6d)
 .equ RENAME, 0x28de3889             @ (manager, index, name): named, the name's first 10 bytes, an event (HX Edit's 0x59)
@@ -1160,14 +1160,14 @@ snaps_copy:                         @ (to, from): a record
     bx r3
 
 snaps_usb_register:                 @ after the editor registers its commands at boot: CMD too, with HX Edit's snapshot check
-    push {r4, lr}
+    push {r4, lr}                   @ the entry is {check, handler, 0}, as the stock stubs store it (strd check, handler)
     sub sp, #16
     adr.w r0, snaps_usb
     orr r0, r0, #1
     ldr r1, =SNAP_CHECK
     movs r2, #0
-    str r0, [sp, #4]
-    str r1, [sp, #8]
+    str r1, [sp, #4]
+    str r0, [sp, #8]
     str r2, [sp, #12]
     movs r0, #CMD
     add r1, sp, #4

@@ -1179,7 +1179,9 @@ def test_usb_register_adds_the_command_with_hx_edits_snapshot_check(mgr, usb):
     mgr.call('snaps_usb_register')
     (cmd, desc, _, _), = mgr.m.calls(REGISTER)
     assert cmd == ms.usb_commands.by_feature()['more_snapshots'] == 0x50
-    assert struct.unpack('<3I', mgr.m.read(desc, 12)) == (mgr.at + mgr.sym['snaps_usb'] | 1, SNAP_CHECK | 1, 0)
+    assert struct.unpack('<3I', mgr.m.read(desc, 12)) == (SNAP_CHECK | 1, mgr.at + mgr.sym['snaps_usb'] | 1, 0), \
+        '{check, handler, 0}, as the stock stubs store it [verified on unit: the other way the handler ran as the check, before ' \
+        'the parameters were read]'
 
 
 def test_usb_read_without_bank_b_has_1_to_3_only(mgr, usb):
