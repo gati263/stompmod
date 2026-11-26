@@ -11,11 +11,13 @@ import features
 import patch_amp as pa
 import patch_menu as pm
 import setting_ids
+import usb_commands
 from features import more_snapshots as ms
 from firmware import branch_target, built
 
 MODS = features.load()
 IDS = setting_ids.by_name()
+INC = {'usb.inc': usb_commands.inc('more_snapshots')}
 
 MGR, CODE = 0x2812c630, 0x28e60000
 SELECT, RECORD_INIT = 0x28de2f90, 0x28de14b4
@@ -58,7 +60,7 @@ class Manager:
     """The module in unicorn, with the manager's records, the lock, and select doing what stock does to them."""
 
     def __init__(self, m4emu, at=CODE):
-        code, self.sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS)
+        code, self.sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS, inc=INC)
         self.at = at
         self.m = m4emu.M4(code, at)
         self.stack_top = m4emu.STACK_TOP
@@ -780,7 +782,7 @@ def test_feature_flag():
 
 @pytest.mark.firmware
 def test_build_sends_the_snapshot_footswitch_to_the_module_and_wraps_load_and_save(m4emu):
-    code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS)
+    code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS, inc=INC)
     read, on = built({'HX_MORE_SNAPSHOTS': '1'})
     assert 'more_snapshots' in on
     module = branch_target(ms.FS_SELECT_CALLS[0], read(ms.FS_SELECT_CALLS[0], 4)) - sym['snaps_select']
@@ -808,7 +810,7 @@ NEXT_FN, PREV_FN = 7, 8                     # footswitch functions SnpshtUp and 
 def test_the_built_dispatch_crosses_the_banks_for_a_virtual_footswitch(m4emu, k):
     """The built firmware's next and previous cases, entered at the dispatch's switch with its frame, as long press runs an FS6..FS10
     Function (and as a release of FS4 or FS5 reaches them): next on 3 goes to 4 and on 6 to 1, previous on 1 to 6."""
-    code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS)
+    code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS, inc=INC)
     read, on = built({'HX_MORE_SNAPSHOTS': '1', 'HX_LONG_PRESS': '1'})
     assert {'more_snapshots', 'long_press'} <= set(on)
     module = branch_target(ms.FS_SELECT_CALLS[0], read(ms.FS_SELECT_CALLS[0], 4)) - sym['snaps_select']
@@ -840,7 +842,7 @@ CC_HANDLER, CC_HANDLER_END = 0x28d9b120, 0x28d9b700
 def test_the_built_cc_handler_selects_all_six_snapshots_by_cc_69(m4emu):
     """The built firmware's CC handler (cc, value), from its entry: CC 69's 0..5 land on snapshots 1..6 from either bank, 6 and 7
     still do nothing, and next and previous still run through all six."""
-    code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS)
+    code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS, inc=INC)
     read, on = built({'HX_MORE_SNAPSHOTS': '1'})
     assert 'more_snapshots' in on and read(ms.CC_RANGE, 2) == ms.CC_RANGE_SIX
     module = branch_target(ms.FS_SELECT_CALLS[0], read(ms.FS_SELECT_CALLS[0], 4)) - sym['snaps_select']
@@ -861,7 +863,7 @@ def test_the_built_cc_handler_selects_all_six_snapshots_by_cc_69(m4emu):
 
 @pytest.mark.firmware
 def test_build_draws_the_numbers_after_the_top_and_home_paints(m4emu):
-    code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS)
+    code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS, inc=INC)
     read, _ = built({'HX_MORE_SNAPSHOTS': '1'})
     module = branch_target(ms.FS_SELECT_CALLS[0], read(ms.FS_SELECT_CALLS[0], 4)) - sym['snaps_select']
     for lit, fn, handler in ((ms.TOP_PAINT_LIT, ms.TOP_PAINT, 'snaps_paint'), (ms.HOME_PAINT_LIT, ms.HOME_PAINT, 'snaps_home_paint')):
@@ -1104,3 +1106,137 @@ def test_home_names_in_scroll_mode_on_snapshots(mgr):
     mgr.settings[0x12] = 1
     texts, _ = home_names(mgr)
     assert len(texts) == 6, 'the six names, as in Snapshot mode'
+
+
+# The USB command (snaps_usb), its request as HX Edit's snapshot check leaves it: seq +0xc, index +0x10, name +0x14, colour +0x25
+RENAME, RECOLOUR, CHANGED = 0x28de3888, 0x28de2f54, (0x28d9615c, 0x28d961dc, 0x28d9625c)
+REGISTER, SNAP_CHECK, REPLY, REPLY_ERROR, OK_RESULT = 0x28e165f0, 0x28e190e4, 0x28e15b30, 0x28e15c54, 0x2801a042
+EDITOR, REQUEST, SEQ = 0x28700400, 0x28700500, 0x1234
+
+
+class Usb:
+    """The command against the fake manager, with the stock setters doing what they do to a manager's records."""
+
+    def __init__(self, mgr):
+        self.mgr, self.m = mgr, mgr.m
+        self.replies, self.changed, self.setters = [], [], []
+        self.m.stub(RENAME, self._rename)
+        self.m.stub(RECOLOUR, self._recolour)
+        for fn in CHANGED:
+            self.m.stub(fn, lambda m, fn=fn: self.changed.append(fn))
+        self.m.stub(REPLY, self._reply)
+        self.m.stub(REPLY_ERROR, lambda m: self.replies.append(('error', m.reg('r0'), m.reg('r1'), m.reg('r2') - (1 << 32))))
+        self.m.stub(REGISTER, lambda m: None)
+        self.shadow = mgr.at + mgr.sym['snaps_shadow']
+
+    def _rename(self, m):
+        base, i, name = m.reg('r0'), m.reg('r1'), m.read(m.reg('r2'), 16)
+        self.setters.append(('rename', base, i))
+        m.u8(base + REC * i + RECS + NAMED, 1)
+        text = name.split(b'\0')[0][:10]
+        m.write(base + REC * i + RECS + NAME, text.ljust(10, b'\0'))       # strncpy of 10: the 11th byte as it was
+
+    def _recolour(self, m):
+        base, i = m.reg('r0'), m.reg('r1')
+        self.setters.append(('colour', base, i))
+        m.u8(base + REC * i + RECS + STATE, m.reg('r2'))
+
+    def _reply(self, m):
+        n = m.stack_args(1)[0]
+        result = m.reg('r3') if m.reg('r3') == OK_RESULT else m.read(m.reg('r3'), n)
+        self.replies.append(('ok', m.reg('r0'), m.reg('r1'), m.reg('r2'), result, n))
+
+    def request(self, index, name=b'', colour=0):
+        self.m.write(REQUEST, bytes(0x30))
+        self.m.write(REQUEST + 0xc, struct.pack('<H', SEQ))
+        self.m.u32(REQUEST + 0x10, index)
+        self.m.write(REQUEST + 0x14, name.ljust(16, b'\0'))
+        self.m.u8(REQUEST + 0x25, colour)
+        self.replies.clear()
+        self.mgr.events.clear()
+        self.mgr.call('snaps_usb', EDITOR, REQUEST)
+        return self.replies
+
+    def read(self):
+        (kind, stream, seq, status, result, n), = self.request(6)
+        assert (kind, stream, seq, status) == ('ok', EDITOR, SEQ, 0) and result[:2] == bytes([0xc4, n - 2]) and n == 2 + 6 * 14 + 3
+        body = result[2:]
+        snaps = [(e[0], e[1], e[2], e[3:].rstrip(b'\0')) for e in (body[14 * i:14 * i + 14] for i in range(6))]
+        return snaps, tuple(body[84:87])
+
+    def set(self, index, name, colour):
+        (kind, stream, seq, status, result, n), = self.request(index, name, colour)
+        assert (kind, stream, seq, status, result, n) == ('ok', EDITOR, SEQ, 0, OK_RESULT, 1), 'the reply HX Edit\'s rename sends'
+        assert self.changed[-3:] == list(CHANGED) and ('redraw', 0, 1) in self.mgr.events
+
+
+@pytest.fixture
+def usb(mgr):
+    return Usb(mgr)
+
+
+def test_usb_register_adds_the_command_with_hx_edits_snapshot_check(mgr, usb):
+    mgr.call('snaps_usb_register')
+    (cmd, desc, _, _), = mgr.m.calls(REGISTER)
+    assert cmd == ms.usb_commands.by_feature()['more_snapshots'] == 0x50
+    assert struct.unpack('<3I', mgr.m.read(desc, 12)) == (mgr.at + mgr.sym['snaps_usb'] | 1, SNAP_CHECK | 1, 0)
+
+
+def test_usb_read_without_bank_b_has_1_to_3_only(mgr, usb):
+    snaps, tail = usb.read()
+    assert snaps[:3] == [(1, 0xa0 + i, 0xa0 + i, f'A{i + 1}'.encode()) for i in range(3)]
+    assert snaps[3:] == [(0, 0, 0, b'')] * 3 and tail == (0, 0, 0)
+
+
+def test_usb_read_in_bank_b_takes_bank_a_from_the_shadow(mgr, usb):
+    mgr.press(0)                                         # snapshot 4
+    snaps, tail = usb.read()
+    assert [s[3] for s in snaps] == [b'A1', b'A2', b'A3', b'SNAPSHOT 4', b'SNAPSHOT 5', b'SNAPSHOT 6']
+    assert all(s[0] == 1 for s in snaps) and tail == (1, 0, 1)
+
+
+def test_usb_sets_a_live_snapshot_through_the_stock_setters(mgr, usb):
+    usb.set(1, b'Verse', 5)
+    assert usb.setters == [('rename', MGR, 1), ('colour', MGR, 1)]
+    rec = mgr.rec(1)
+    assert rec[NAME:NAME + 10] == b'Verse'.ljust(10, b'\0') and rec[STATE] == 5 and rec[NAMED] == 1
+    assert usb.read()[0][1][:3] == (1, 5, 1)
+
+
+def test_usb_sets_bank_b_without_one_by_making_it_first(mgr, usb):
+    usb.set(4, b'Solo', 2)                               # snapshot 5, of a preset with no bank B yet
+    assert mgr.inits == [b'SNAPSHOT 4', b'SNAPSHOT 5', b'SNAPSHOT 6'], 'bank B made as a flip makes it'
+    assert usb.setters == [('rename', usb.shadow - RECS, 1), ('colour', usb.shadow - RECS, 1)]
+    assert [mgr.rec(i) for i in range(3)] == [bank_a(i) for i in range(3)] and mgr.selects == [], 'bank A and the sound untouched'
+    snaps, tail = usb.read()
+    assert snaps[4] == (1, 2, 1, b'Solo') and tail == (0, 0, 1)
+    mgr.press(0)
+    assert mgr.name(1) == b'Solo' and mgr.rec(1)[STATE] == 2, 'bank B, live, has it'
+
+
+def test_usb_sets_bank_a_while_bank_b_is_live(mgr, usb):
+    mgr.press(0)
+    usb.set(2, b'Lead', 7)
+    assert usb.setters == [('rename', usb.shadow - RECS, 2), ('colour', usb.shadow - RECS, 2)]
+    assert [s[3] for s in usb.read()[0]][2:4] == [b'Lead', b'SNAPSHOT 4']
+    mgr.fs(0)                                            # the lit one: a preview of bank A
+    mgr.fs(2)                                            # its snapshot 3
+    assert mgr.name(2) == b'Lead' and mgr.rec(2)[STATE] == 7
+
+
+@pytest.mark.parametrize('index', (7, 8, 0x100))
+def test_usb_refuses_an_index_past_the_read(mgr, usb, index):
+    assert usb.request(index) == [('error', EDITOR, SEQ, -3)]
+    assert usb.setters == [] and [mgr.rec(i) for i in range(3)] == [bank_a(i) for i in range(3)]
+
+
+@pytest.mark.firmware
+def test_build_registers_the_usb_command_after_the_editors():
+    from firmware import menu_entry0, reader, stock_e0
+    e0 = stock_e0()
+    new, _ = menu_entry0(e0, None, {'HX_MORE_SNAPSHOTS': '1'})
+    read, stock = reader(new), reader(e0)
+    assert branch_target(ms.REGISTER_ALL_CALL, stock(ms.REGISTER_ALL_CALL, 4)) == ms.REGISTER_ALL
+    assert read(ms.REGISTER_ALL_CALL, 4) != stock(ms.REGISTER_ALL_CALL, 4)
+    for va, code, _ in ms.USB_CALLED:
+        assert read(va, len(bytes.fromhex(code))) == bytes.fromhex(code)

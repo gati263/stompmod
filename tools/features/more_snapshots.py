@@ -2,8 +2,10 @@
 next footswitch press picks that bank's snapshot (src/m4/more_snapshots.s); in
 4-6 the snapshot icon at the top right and the footswitch labels show 4, 5 or 6. Once a preset has a bank B, the next and previous snapshot
 footswitches and MIDI CC 69 run through all six: next on 3 goes to 4, next on 6 to 1, previous on 1 to 6, previous on 4 to 3.
-MIDI CC 69's values 0..2 select snapshots 1..3 and 3..5 snapshots 4..6, from either bank."""
+MIDI CC 69's values 0..2 select snapshots 1..3 and 3..5 snapshots 4..6, from either bank. HX Edit's editor service gets one more
+command, which reads all six snapshots' names and colours and sets any of them, for a computer to edit snapshots 4-6 too."""
 
+import usb_commands
 from features import Setting
 
 FLAG = 'HX_MORE_SNAPSHOTS'
@@ -36,10 +38,26 @@ FILE_CALLS = ((0x28df20f2, 0x28deacf4, 'snaps_file_serialize'), (0x28df210a, 0x2
 TOP_PAINT_LIT, TOP_PAINT = 0x28d96d90, 0x28dca359              # the top view's paint (preset number, name, snapshot icon), as registered
 HOME_PAINT_LIT, HOME_PAINT = 0x28d96e28, 0x28dc8d39            # the Home view's paint (footswitch labels), as registered
 ICON_DRAW_CALL, IMG_DRAW = 0x28dca406, 0x28e24a00              # the top view paint's draw of its snapshot icon
+REGISTER_ALL_CALL, REGISTER_ALL = 0x28d96adc, 0x28e1661c       # the boot's call of the editor's command registrations
+# The firmware functions the USB command calls, by their first bytes (docs/research/m4/snapshots.md)
+USB_CALLED = (
+    (0x28e165f0, '7b28 0dd8', 'the editor command table setter'),               # cmp r0, #0x7b; bhi
+    (0x28e190e4, '2de9 f04f 8bb0', "HX Edit's snapshot commands' check"),       # push.w {r4-r11,lr}; sub sp, #0x2c
+    (0x28de3888, '00b5 4ff4 1873', "HX Edit's snapshot rename's setter"),        # push {lr}; mov.w r3, #0x260
+    (0x28de2f54, '00b5 0b46 4ff4', "HX Edit's snapshot colour's setter"),        # push {lr}; mov r3, r1; mov.w r1, #0x260
+    (0x28d9615c, '10b5 8ef0 97fc', 'the first call after the rename'),
+    (0x28d961dc, '10b5 8ef0 57fc', 'the second call after the rename'),
+    (0x28d9625c, '144b 154a 93f8', 'the third call after the rename'),
+    (0x28e15b30, '2de9 f04f b0f8', 'the editor reply'),
+    (0x28e15c54, '2de9 f041 8cb0', 'the editor error reply'),
+)
 
 
 def apply(p):
-    m = p.module('src/m4/more_snapshots.s')
+    for va, stock, what in USB_CALLED:
+        p.expect(va, bytes.fromhex(stock), what)
+    m = p.module('src/m4/more_snapshots.s', inc={'usb.inc': usb_commands.inc('more_snapshots')})
+    p.chain_bl(REGISTER_ALL_CALL, REGISTER_ALL, after=m['snaps_usb_register'])
     for site in FS_SELECT_CALLS:
         p.own_call(site, SELECT, f"a footswitch's call of select at {site:#x}", m['snaps_select'])
     p.own_call(NEXT_CUR, CUR_GET, "footswitch next's read of the current snapshot", m['snaps_next_cur'])

@@ -1,10 +1,12 @@
 @ more_snapshots.s - snapshots 4 to 6: pressing the lit snapshot footswitch again shows the other bank (snapshots 1-3 or 4-6) on
 @ the footswitch labels, the sound unchanged (a preview); the next footswitch press picks that bank's snapshot. The snapshot
 @ manager holds three 0x260-byte records; the other bank waits in snaps_shadow, and the pick swaps the two and recalls the
-@ footswitch's snapshot through the stock select. tools/features/more_snapshots.py places the hooks.
+@ footswitch's snapshot through the stock select. tools/features/more_snapshots.py places the hooks. HX Edit's editor service gets
+@ one more command, CMD (snaps_usb): the six snapshots' names and colours, read and set from a computer.
 .syntax unified
 .thumb
 .include "hxtra.inc"
+.include "usb.inc"                  @ CMD: this feature's line in tools/usb_commands.py
 .equ SELECT, 0x28de2f91             @ (manager, index): recalls a snapshot
 .equ RECORD_INIT, 0x28de14b5        @ (manager, record, name): a record's defaults; takes the manager's lock itself
 .equ LOCK, 0x28e24c01
@@ -77,6 +79,24 @@
 .equ STEP, 3                        @ in WRAP instead: the select on its way is a next or previous inside the bank
 .equ PREVIEW, 8                     @ in snaps_data: the labels show the other bank, the sound unchanged, until a footswitch picks
 .equ MODE, 9                        @ in snaps_data, while cameras are painted: bit 0 bank B's numbers, bit 1 none lit (a preview)
+.equ REGISTER, 0x28e165f1           @ (command, {handler, check, 0}): the editor's command table
+.equ SNAP_CHECK, 0x28e190e5         @ the check of HX Edit's snapshot commands (0x58, 0x59, 0x62): the request's index at +0x10
+                                    @ (0..7), colour at +0x25 (0..11), name at +0x14 (from the keys 0x5c, 0x42, 0x6d)
+.equ RENAME, 0x28de3889             @ (manager, index, name): named, the name's first 10 bytes, an event (HX Edit's 0x59)
+.equ RECOLOUR, 0x28de2f55           @ (manager, index, colour): the colour, an event (HX Edit's 0x62)
+.equ CHANGED_A, 0x28d9615d          @ (): what HX Edit's rename calls after its setter
+.equ CHANGED_B, 0x28d961dd
+.equ CHANGED_C, 0x28d9625d
+.equ REPLY, 0x28e15b31              @ (stream, seq, status, result bytes, their length on the stack): an editor reply
+.equ REPLY_ERROR, 0x28e15c55        @ (stream, seq, error)
+.equ OK_RESULT, 0x2801a042          @ the one-byte result HX Edit's rename replies with
+.equ READ_ALL, 6                    @ the request's index for a read of all six
+.equ ENTRY, 14                      @ a snapshot in the read's reply: exists, colour, named, the name's 11 bytes
+.equ READ_LEN, 2 + 6 * ENTRY + 3    @ bin8 head, six entries, then the live bank, the current snapshot, whether bank B exists
+.equ REQ_SEQ, 0xc
+.equ REQ_INDEX, 0x10
+.equ REQ_NAME, 0x14
+.equ REQ_COLOUR, 0x25
 
 .macro UNPREVIEW                    @ (r2 snaps_data; r3 spoiled) a select other than a footswitch pick ends a preview
     ldrb r3, [r2, #PREVIEW]
@@ -1139,6 +1159,151 @@ snaps_copy:                         @ (to, from): a record
     ldr r3, =MEMCPY
     bx r3
 
+snaps_usb_register:                 @ after the editor registers its commands at boot: CMD too, with HX Edit's snapshot check
+    push {r4, lr}
+    sub sp, #16
+    adr.w r0, snaps_usb
+    orr r0, r0, #1
+    ldr r1, =SNAP_CHECK
+    movs r2, #0
+    str r0, [sp, #4]
+    str r1, [sp, #8]
+    str r2, [sp, #12]
+    movs r0, #CMD
+    add r1, sp, #4
+    ldr r3, =REGISTER
+    blx r3
+    add sp, #16
+    pop {r4, pc}
+
+snaps_usb:                          @ r0 the editor's stream, r1 the request: index 0..5 sets snapshot index+1's name and colour, in
+    push {r4-r8, lr}                @ either bank, as HX Edit's rename and colour do; READ_ALL replies with all six
+    sub sp, #8
+    mov r7, r0
+    mov r8, r1
+    ldr.w r5, [r1, #REQ_INDEX]
+    cmp r5, #READ_ALL
+    beq snaps_usb_read
+    bhi snaps_usb_refuse
+    ldr r4, =MANAGER
+    adr.w r6, snaps_data
+    movs r0, #0                     @ its bank
+    cmp r5, #3
+    itt hs
+    movhs r0, #1
+    subhs r5, #3                    @ its index in the bank
+    ldrb r1, [r6]
+    cmp r0, r1
+    beq snaps_usb_set               @ the live bank: the manager's records
+    cbz r0, snaps_usb_waiting       @ bank A waits in snaps_shadow while bank B is live
+    bl snaps_bank_b                 @ bank B waiting: made first if this preset has none, as a flip makes it (r4, r6)
+snaps_usb_waiting:
+    adr.w r4, snaps_shadow
+    subs r4, #RECS                  @ the setters find a record from a manager
+snaps_usb_set:
+    mov r0, r4
+    mov r1, r5
+    add.w r2, r8, #REQ_NAME
+    ldr r3, =RENAME
+    blx r3
+    mov r0, r4
+    mov r1, r5
+    ldrb.w r2, [r8, #REQ_COLOUR]
+    ldr r3, =RECOLOUR
+    blx r3
+    ldr r3, =CHANGED_A
+    blx r3
+    ldr r3, =CHANGED_B
+    blx r3
+    ldr r3, =CHANGED_C
+    blx r3
+    movs r0, #0
+    movs r1, #1
+    ldr r3, =REDRAW                 @ the six names again, the waiting bank's too
+    blx r3
+    ldr r3, =OK_RESULT
+    movs r2, #1
+snaps_usb_reply:                    @ r3 the result's bytes, r2 how many
+    str r2, [sp]
+    mov r0, r7
+    ldrh.w r1, [r8, #REQ_SEQ]
+    movs r2, #0
+    ldr r12, =REPLY
+    blx r12
+    add sp, #8
+    pop {r4-r8, pc}
+snaps_usb_refuse:
+    mov r0, r7
+    ldrh.w r1, [r8, #REQ_SEQ]
+    mvn r2, #2                      @ as the check refuses a bad parameter
+    ldr r3, =REPLY_ERROR
+    blx r3
+    add sp, #8
+    pop {r4-r8, pc}
+snaps_usb_read:                     @ bin8: each snapshot {exists, colour, named, name[11]}, then the live bank, the current
+    adr.w r4, snaps_usb_out         @ snapshot, whether this preset has a bank B
+    movs r0, #0xc4
+    strb r0, [r4]
+    movs r0, #READ_LEN - 2
+    strb r0, [r4, #1]
+    adds r4, #2
+    adr.w r6, snaps_data
+    movs r5, #0                     @ i: snapshot i + 1
+snaps_usb_each:
+    cmp r5, #3
+    ite hs
+    movhs r1, #1                    @ its bank
+    movlo r1, #0
+    sub.w r2, r5, r1, lsl #1
+    sub.w r2, r2, r1                @ its index in the bank
+    ldrb r0, [r6]
+    cmp r0, r1
+    bne snaps_usb_other
+    ldr r3, =MANAGER + RECS         @ the live bank: the manager's records
+    b snaps_usb_record
+snaps_usb_other:
+    cbnz r0, snaps_usb_shadow       @ bank B live: bank A waits in snaps_shadow
+    ldrb r0, [r6, #1]
+    cbz r0, snaps_usb_none          @ no bank B yet
+snaps_usb_shadow:
+    adr.w r3, snaps_shadow
+snaps_usb_record:
+    mov.w r0, #REC
+    mla r1, r0, r2, r3
+    movs r0, #1
+    strb r0, [r4]
+    ldrb.w r0, [r1, #STATE]
+    strb r0, [r4, #1]
+    ldrb.w r0, [r1, #NAMED]
+    strb r0, [r4, #2]
+    adds r0, r4, #3
+    addw r1, r1, #NAME
+    movs r2, #11
+    ldr r3, =MEMCPY
+    blx r3
+    b snaps_usb_next
+snaps_usb_none:
+    mov r0, r4
+    movs r1, #0
+    movs r2, #ENTRY
+    ldr r3, =MEMSET
+    blx r3
+snaps_usb_next:
+    adds r4, #ENTRY
+    adds r5, #1
+    cmp r5, #6
+    bne snaps_usb_each
+    ldrb r0, [r6]
+    strb r0, [r4]
+    ldr r0, =MANAGER
+    ldrb.w r0, [r0, #CUR]
+    strb r0, [r4, #1]
+    ldrb r0, [r6, #1]
+    strb r0, [r4, #2]
+    adr.w r3, snaps_usb_out
+    movs r2, #READ_LEN
+    b snaps_usb_reply
+
 HXTRA_SETTING_GET
 .ltorg
 .balign 4
@@ -1164,6 +1329,9 @@ snaps_file_head:                    @ key 0x64, bin16 of FILE_LEN (big-endian), 
 snaps_data:                         @ 0 bank B live, 1 snaps_shadow holds bank B, 2 flipped to bank A for a save, 3 cameras to redraw,
     .word 0, 0, 0                   @ 4 bank B written to a file, 5 WRAP, 6 bank B read from a file, 7 the map's new count,
                                     @ 8 PREVIEW, 9 MODE
+snaps_usb_out:                      @ the read's reply
+    .space READ_LEN
+.balign 4
 snaps_temp:
     .space REC
 snaps_shadow:                       @ the bank not live: three records as the manager's

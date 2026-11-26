@@ -3,7 +3,9 @@
 Status: 2026-11-26, task 1 done (the USB tools find libusb on Windows by themselves); task 2 found the colour and named keys
 ([m4/snapshots.md](m4/snapshots.md)), with Red, Yellow and Turquoise checked against HX Edit and the rest of the colour list
 by its order; task 3 found HX Edit's rename (`0x59`) and colour (`0x62`) commands and their setters
-([m4/snapshots.md](m4/snapshots.md)): names are 10 characters, colours 0..11. Status tags as in [conventions.md](conventions.md).
+([m4/snapshots.md](m4/snapshots.md)): names are 10 characters, colours 0..11; task 4 built the command, `0x50`, tested in the emulator
+([features/more-snapshots.md](features/more-snapshots.md)): it takes HX Edit's own snapshot parameters, index 6 reads all six.
+Status tags as in [conventions.md](conventions.md).
 
 ## The problem
 
@@ -36,18 +38,17 @@ any of them.
 
 ### Firmware: one command, two operations
 
-A new editor-service command (proposed number `0x50`, the lowest free after the mirror's `0x52`), registered by
-`more_snapshots` itself, so every build with six snapshots has it and the page's build needs no new option.
+Command `0x50` (the lowest free after the mirror's `0x52`), registered by `more_snapshots` itself, so every build with six
+snapshots has it and the page's build needs no new option. It is registered with HX Edit's own snapshot check (`0x28e190e5`), so
+its request is the map HX Edit's rename and colour send: `{0x5c: index, 0x42: colour 0..11, 0x6d: name}`; the app sends all
+three keys every time.
 
-- **Read** (request seq bit 15 clear): reply `bin` of 6 entries, snapshot 1..6 in order, each `{u8 exists, u8 colour, u8 named,
-  u8 name[11]}` (14 bytes), then `u8 live bank`, `u8 current index`, `u8 has bank B`. Bank B entries read `exists = 0` when the
-  preset has none yet.
-- **Write** (the request carries a parameter map `{0x65: {0: index 0..5, 1: colour, 2: name bin, up to 11 bytes}}`, with a
-  check that rejects anything else): the live bank's record goes through the stock setters HX Edit's own rename and colour
-  commands use (`0x28de3888`, `0x28de2f54`) and the calls after them (`0x28d9615c`, `0x28d961dc`, `0x28d9625c`), so the
-  unsaved-edit mark and the Home labels follow as they do for HX Edit; the waiting bank's record is written in `snaps_shadow`
-  directly (named flag `+0x24c`, name `+0x255`, colour `+0x254`) and the same three calls made. Writing to bank B of a preset without one first makes it, as a flip
-  does, without changing the sound playing.
+- **Read** (index 6): reply `bin8` of 6 entries, snapshot 1..6 in order, each `{u8 exists, u8 colour, u8 named, u8 name[11]}`
+  (14 bytes), then `u8 live bank`, `u8 current index`, `u8 has bank B`. Bank B entries read zero when the preset has none yet.
+- **Write** (index 0..5): the name and the colour together, through the stock setters HX Edit's own rename and colour commands
+  use (`0x28de3888`, `0x28de2f54`) and the calls after them (`0x28d9615c`, `0x28d961dc`, `0x28d9625c`), then a redraw: on the
+  manager for the live bank, on `snaps_shadow` for the waiting one. Writing to bank B of a preset without one first makes it, as
+  a flip does, without changing the sound playing. Index 7 gets the error reply.
 - Nothing is saved: the user saves on the unit (or the app sends HX Edit's save command, task 6). A save in either bank already
   keeps both (stage 2 of more snapshots).
 
