@@ -651,8 +651,8 @@
   .stats b { font: var(--type-title-weight) var(--type-title-size)/var(--type-title-line) var(--font-serif); letter-spacing: var(--type-title-tracking); }
   .stats span { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   .verline { margin: 0; color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-mono); }
-  .safe, .support { display: grid; gap: var(--space-3); padding: var(--space-6); background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); scroll-margin-top: var(--space-16); }
-  .safe > h2, .support > h2 { margin: 0; font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
+  .safe, .support, .news { display: grid; gap: var(--space-3); padding: var(--space-6); background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); scroll-margin-top: var(--space-16); }
+  .safe > h2, .support > h2, .news > h2 { margin: 0; font: var(--type-heading-weight) var(--type-heading-size)/var(--type-heading-line) var(--font-serif); letter-spacing: var(--type-heading-tracking); }
   .support > p { margin: 0; }
   .safe-cols { display: grid; gap: var(--space-4); }
   .safe-cols h3 { margin: 0 0 var(--space-2); }
@@ -674,7 +674,7 @@
   .pay-opt figcaption { color: var(--text-muted); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-line) var(--font-sans); }
   dialog.supportdlg { width: min(var(--prose-max), calc(100% - var(--space-8))); }
   @media (min-width: 640px) { dialog.supportdlg .pay { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); } }
-  @media (max-width: 520px) { .safe, .support { padding: var(--space-4); } }
+  @media (max-width: 520px) { .safe, .support, .news { padding: var(--space-4); } }
   .mp { display: grid; gap: var(--space-3); padding: var(--space-6); background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); }
   .mp > h3 { margin: 0; }
   .mp > p { margin: 0; }
@@ -832,6 +832,14 @@
 
 
   <main class="main">
+  <section class="news" id="whats-new" aria-labelledby="hnew">
+    <h2 id="hnew" data-i18n="new.title">What's new in 1.1.0</h2>
+    <ul class="plain">
+      <li data-i18n="new.1"><b>Snapshot editor for Windows.</b> Name and colour all six snapshots, 4 to 6 included, from a small app. <a href="#snapshot-editor">See how</a>.</li>
+      <li data-i18n="new.2"><b>BPM dot.</b> The dot after the tempo is a little bigger, as tall as the tempo; Left, Right and Both are smaller, clear of the preset name.</li>
+    </ul>
+    <p class="note" data-i18n="new.how">To get them, build StompMod again on this page and install it.</p>
+  </section>
   <section class="safe" id="is-it-safe" aria-labelledby="hsafe">
     <h2 id="hsafe" data-i18n="safe.title">Is it safe?</h2>
     <div class="safe-cols">
@@ -1468,6 +1476,10 @@ var LANGS = {
     "nav.se": "Chỉnh snapshot",
     "nav.rec": "Khôi phục",
     "nav.faq": "Câu hỏi thường gặp",
+    "new.title": "Có gì mới trong 1.1.0",
+    "new.1": "<b>App chỉnh snapshot cho Windows.</b> Đặt tên và màu cho cả sáu snapshot, kể cả 4 đến 6, bằng một app nhỏ. <a href=\"#snapshot-editor\">Xem cách dùng</a>.",
+    "new.2": "<b>Chấm BPM.</b> Chấm sau số tempo to hơn một chút, cao bằng số tempo; Left, Right và Both nhỏ lại, không còn đè lên tên preset.",
+    "new.how": "Để có các thay đổi này, hãy build lại StompMod trên trang này và cài đặt.",
     "safe.title": "Có an toàn không?",
     "safe.protect": "Điều bảo vệ bạn",
     "safe.accept": "Điều bạn chấp nhận",
@@ -2010,7 +2022,7 @@ var LANG_NAMES = {
     var seen = new IntersectionObserver(function (list) {
       list.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); seen.unobserve(en.target); } });
     }, { threshold: 0.05, rootMargin: "0px 0px -6% 0px" });
-    Array.prototype.forEach.call(document.querySelectorAll(".features > h2, .features > p, .card, .mp, .safe, .support, section.step"), function (el) {
+    Array.prototype.forEach.call(document.querySelectorAll(".features > h2, .features > p, .card, .mp, .news, .safe, .support, section.step"), function (el) {
       el.classList.add("rv"); seen.observe(el);
     });
   }
