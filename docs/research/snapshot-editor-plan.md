@@ -5,7 +5,9 @@ Status: 2026-11-26, task 1 done (the USB tools find libusb on Windows by themsel
 by its order; task 3 found HX Edit's rename (`0x59`) and colour (`0x62`) commands and their setters
 ([m4/snapshots.md](m4/snapshots.md)): names are 10 characters, colours 0..11; task 4 built the command, `0x50`, tested in the emulator
 ([features/more-snapshots.md](features/more-snapshots.md)): it takes HX Edit's own snapshot parameters, index 6 reads all six;
-task 5 ran it on the unit from RAM: reads and writes in both banks work, a save and a reload not yet checked.
+task 5 ran it on the unit from RAM: reads and writes in both banks work, a save and a reload not yet checked; task 7, the app,
+is `apps/snapshots/` (host side `tools/hx_snapshots.py`), run against the unit from source and as a one-file `.exe`
+(`build/app/`): it read preset 010, sent snapshot 6's name and colour, and the Home screen showed them with the unsaved mark.
 Status tags as in [conventions.md](conventions.md).
 
 ## The problem

@@ -1,0 +1,90 @@
+/* GaTi UI QSS template, from the GaTi UI design system's platforms.md (PySide6 / PyQt6). Do not edit by hand. */
+QMainWindow, QDialog, QWidget#gatiRoot { background: {{bg-base}}; }
+QWidget { color: {{text-primary}}; font-family: "Be Vietnam Pro", "Segoe UI"; font-size: 14px;
+          selection-background-color: {{text-primary}}; selection-color: {{bg-base}}; }
+QLabel { background: transparent; }
+
+QFrame[gatiRole="panel"] { background: {{bg-panel}}; border: 1px solid {{border-subtle}}; border-radius: 8px; }
+QFrame[gatiRole="elevated"] { background: {{bg-elevated}}; border: 1px solid {{border-subtle}}; border-radius: 8px; }
+
+QLabel[gatiRole="title"]  { font-family: "Newsreader", "Georgia"; font-size: 26px; font-weight: 600; }
+QLabel[gatiRole="header"] { font-family: "Newsreader", "Georgia"; font-size: 18px; font-weight: 600; }
+QLabel[gatiRole="caption"] { color: {{text-muted}}; font-size: 12px; }
+QLabel[gatiRole="readout"] { font-family: "JetBrains Mono", "Consolas"; font-size: 12px; font-weight: 500; }
+
+QPushButton { min-height: 30px; padding: 0 12px; border-radius: 4px; font-weight: 500;
+              background: transparent; border: 1px solid {{border-strong}}; color: {{text-primary}}; }
+QPushButton:hover { background: {{bg-panel}}; }
+QPushButton:pressed { background: {{bg-pressed}}; }
+QPushButton:disabled { color: {{text-disabled}}; border-color: {{border-subtle}}; }
+
+QPushButton[gatiRole="primary"] { background: {{action-primary}}; color: {{on-action-primary}}; border: 1px solid {{action-primary}}; }
+QPushButton[gatiRole="primary"]:hover { background: {{action-primary-hover}}; border-color: {{action-primary-hover}}; }
+QPushButton[gatiRole="primary"]:pressed { background: {{action-primary-pressed}}; border-color: {{action-primary-pressed}}; }
+QPushButton[gatiRole="primary"]:!active { background: {{action-inactive}}; border-color: {{action-inactive}}; }
+
+QPushButton[gatiRole="danger"] { background: {{action-danger}}; color: {{on-action-danger}}; border: 1px solid {{action-danger}}; }
+QPushButton[gatiRole="danger"]:hover { background: {{action-danger-hover}}; border-color: {{action-danger-hover}}; }
+QPushButton[gatiRole="danger"]:pressed { background: {{action-danger-pressed}}; border-color: {{action-danger-pressed}}; }
+QPushButton[gatiRole="primary"]:disabled, QPushButton[gatiRole="danger"]:disabled { background: {{bg-selected}}; border-color: {{bg-selected}}; color: {{text-disabled}}; }
+
+/* keyboard focus last, so it wins over hover/pressed */
+QPushButton[gatiFocus="true"], QPushButton[gatiRole][gatiFocus="true"]:hover, QPushButton[gatiRole][gatiFocus="true"]:pressed,
+QPushButton[gatiRole][gatiFocus="true"] { border: 2px solid {{focus-ring}}; min-height: 28px; padding: 0 11px; }
+
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+    min-height: 30px; padding: 0 12px; background: {{bg-elevated}};
+    border: 1px solid {{border-strong}}; border-radius: 4px; color: {{text-primary}};
+    selection-background-color: {{text-primary}}; selection-color: {{bg-base}}; }
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus { border: 2px solid {{focus-ring}}; min-height: 28px; padding: 0 11px; }
+QLineEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled { color: {{text-disabled}}; border-color: {{border-subtle}}; background: {{bg-panel}}; }
+QComboBox::drop-down { width: 24px; border: 0; }
+QComboBox QAbstractItemView, QMenu { background: {{bg-elevated}}; border: 1px solid {{border-subtle}}; border-radius: 8px; padding: 4px; outline: 0; }
+QComboBox QAbstractItemView::item, QMenu::item { min-height: 32px; padding: 0 8px; border-radius: 4px; }
+QComboBox QAbstractItemView::item:selected, QMenu::item:selected { background: {{bg-panel}}; color: {{text-primary}}; }
+QMenu::item:disabled { color: {{text-disabled}}; }
+QMenu::separator { height: 1px; margin: 4px 0; background: {{border-subtle}}; }
+QMenuBar { background: {{bg-base}}; }
+QMenuBar::item { padding: 4px 8px; border-radius: 4px; background: transparent; }
+QMenuBar::item:selected { background: {{bg-panel}}; }
+
+/* Checked = ink, never Sage. QSS cannot draw the tick: add image rules for your own check.svg / dot.svg resources. */
+QCheckBox, QRadioButton { spacing: 8px; }
+QCheckBox::indicator, QRadioButton::indicator { width: 14px; height: 14px; background: {{bg-elevated}}; border: 1px solid {{border-strong}}; }
+QCheckBox::indicator { border-radius: 4px; }
+QRadioButton::indicator { border-radius: 8px; }
+QCheckBox::indicator:checked, QCheckBox::indicator:indeterminate, QRadioButton::indicator:checked { background: {{text-primary}}; border-color: {{text-primary}}; }
+QCheckBox::indicator:disabled, QRadioButton::indicator:disabled { background: {{bg-panel}}; border-color: {{border-subtle}}; }
+QCheckBox:disabled, QRadioButton:disabled { color: {{text-disabled}}; }
+
+/* Tabs: selected = ink text + 2px ink underline */
+QTabWidget::pane { border: 0; border-top: 1px solid {{border-subtle}}; }
+QTabBar::tab { min-height: 40px; padding: 0 8px; margin-right: 8px; background: transparent; color: {{text-muted}}; border: 0; border-bottom: 2px solid transparent; font-weight: 500; }
+QTabBar::tab:hover { color: {{text-primary}}; }
+QTabBar::tab:selected { color: {{text-primary}}; border-bottom-color: {{text-primary}}; }
+QTabBar::tab:disabled { color: {{text-disabled}}; }
+QTabBar::tab:!active { color: {{text-inactive}}; }
+
+/* Lists and tables: selection is neutral plus a second channel drawn by the delegate */
+QListView, QTreeView, QTableView { background: {{bg-base}}; alternate-background-color: {{bg-base}}; border: 1px solid {{border-subtle}}; border-radius: 8px; gridline-color: {{border-subtle}}; outline: 0; }
+QListView::item, QTreeView::item, QTableView::item { min-height: 32px; padding: 0 12px; }
+QListView::item:hover, QTreeView::item:hover, QTableView::item:hover { background: {{bg-panel}}; }
+QListView::item:selected, QTreeView::item:selected, QTableView::item:selected { background: {{bg-selected}}; color: {{text-primary}}; }
+QHeaderView::section { min-height: 32px; padding: 0 12px; background: {{bg-panel}}; color: {{text-primary}}; font-weight: 500; border: 0; border-bottom: 1px solid {{border-strong}}; }
+
+QProgressBar { min-height: 4px; max-height: 4px; border: 0; border-radius: 2px; background: {{meter-track}}; color: transparent; }
+QProgressBar::chunk { border-radius: 2px; background: {{control-fill}}; }
+QSlider::groove:horizontal { height: 4px; border-radius: 2px; background: {{meter-track}}; }
+QSlider::sub-page:horizontal { border-radius: 2px; background: {{control-fill}}; }
+QSlider::handle:horizontal { width: 14px; height: 14px; margin: -6px 0; border-radius: 8px; background: {{bg-elevated}}; border: 1px solid {{border-strong}}; }
+QSlider::handle:horizontal:pressed { border: 2px solid {{param}}; margin: -7px 0; }
+
+QPlainTextEdit[gatiRole="log"] { background: {{bg-panel}}; border: 1px solid {{border-subtle}}; border-radius: 8px;
+    font-family: "JetBrains Mono", "Consolas"; font-size: 13px; padding: 8px; }
+
+QToolTip { background: {{bg-elevated}}; color: {{text-primary}}; border: 1px solid {{border-subtle}}; border-radius: 8px; padding: 4px 8px; }
+QScrollBar:vertical { width: 10px; background: transparent; }
+QScrollBar:horizontal { height: 10px; background: transparent; }
+QScrollBar::handle:vertical { background: {{border-strong}}; border-radius: 5px; min-height: 24px; }
+QScrollBar::handle:horizontal { background: {{border-strong}}; border-radius: 5px; min-width: 24px; }
+QScrollBar::add-line, QScrollBar::sub-line { height: 0; width: 0; }
