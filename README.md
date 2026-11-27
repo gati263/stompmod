@@ -73,17 +73,12 @@ hxtra sets a boot picture only from the command line. On the StompMod page you p
 
 <p><img src="assets/boot/signal_chain.png" width="320" alt="StompMod's default boot picture: a signal chain of blocks crossed by the loading bar"></p>
 
-### Snapshot editor for Windows
+### Snapshot editor on the page
 
-StompMod Snapshots, a small Windows app, names and colours all six snapshots of the preset playing, snapshots 4 to 6 included,
-which HX Edit does not show. Close HX Edit, open the app, press Send to HX Stomp, then save the preset on the unit. It needs
-StompMod 1.1.0 or newer. Download it from the [releases](https://github.com/gati263/stompmod/releases/latest); it is not code
-signed yet, so Windows SmartScreen may warn, and its source is [apps/snapshots/](apps/snapshots/).
-
-<p><img src="web/img/features/snap-app.webp" width="520" alt="The StompMod Snapshots app with six rows: Lead, Verse and Chorus, then Chorus 2, Verse 2 and Outro, each with its colour"></p>
-
-The [page](https://gatistudio.com/stompmod) has the same editor, with nothing to download, in Chrome or Edge on a computer
-([web/hxsnap.js](web/hxsnap.js), over WebUSB).
+The [page](https://gatistudio.com/stompmod/web/#snapshot-web) names and colours all six snapshots of the preset playing,
+snapshots 4 to 6 included, which HX Edit does not show. It runs in Chrome or Edge on a computer and talks to the HX Stomp over
+WebUSB ([web/hxsnap.js](web/hxsnap.js)). Close HX Edit, press Connect HX Stomp, edit, press Send to HX Stomp, then save the
+preset on the unit. It needs StompMod 1.1.0 or newer.
 
 ### The page
 

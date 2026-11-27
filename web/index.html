@@ -833,7 +833,7 @@
       <li><a href="#play-nam" id="nav6"><span class="n">6</span><span class="t" data-i18n="nav.5">Play NAM</span></a></li>
       <li class="extra"><a href="#what-it-adds" id="navFeatures"><span class="n">+</span><span class="t" data-i18n="nav.feat">What it adds</span></a></li>
       <li class="extra"><a href="#model-pictures" id="navPictures"><span class="n">+</span><span class="t" data-i18n="nav.mp">Model pictures</span></a></li>
-      <li class="extra"><a href="#snapshot-editor" id="navSnapEditor"><span class="n">+</span><span class="t" data-i18n="nav.se">Snapshot editor</span></a></li>
+      <li class="extra"><a href="#snapshot-web" id="navSnapEditor"><span class="n">+</span><span class="t" data-i18n="nav.se">Snapshot editor</span></a></li>
       <li class="extra"><a href="#recovery" id="navRecovery"><span class="n">!</span><span class="t" data-i18n="nav.rec">Recovery</span></a></li>
       <li class="extra"><a href="#questions" id="navQuestions"><span class="n">?</span><span class="t" data-i18n="nav.faq">Questions</span></a></li>
     </ol>
@@ -844,9 +844,7 @@
   <section class="news" id="whats-new" aria-labelledby="hnew">
     <h2 id="hnew" data-i18n="new.title">What's new in 1.1.0</h2>
     <ul class="plain">
-      <li data-i18n="new.web"><b>Edit snapshots on this page.</b> Name and colour all six from Chrome or Edge, with nothing to download. <a href="#snapshot-web">Try it</a>.</li>
-      <li data-i18n="new.app2"><b>Snapshot editor 2.0.</b> The window stays responsive while it talks to the HX Stomp, Enter in a name field sends, and the app has its own icon. <a href="#snapshot-editor">Download it</a>; the firmware does not change.</li>
-      <li data-i18n="new.1"><b>Snapshot editor for Windows.</b> Name and colour all six snapshots, 4 to 6 included, from a small app. <a href="#snapshot-editor">See how</a>.</li>
+      <li data-i18n="new.web"><b>Edit snapshots on this page.</b> Name and colour all six from Chrome or Edge. <a href="#snapshot-web">Try it</a>.</li>
       <li data-i18n="new.2"><b>BPM dot.</b> The dot after the tempo is a little bigger, as tall as the tempo; Left, Right and Both are smaller, clear of the preset name.</li>
     </ul>
     <p class="note" data-i18n="new.how">To get them, build StompMod again on this page and install it.</p>
@@ -1103,7 +1101,7 @@
   <section class="features" id="what-it-adds" aria-labelledby="hfa">
     <h2 id="hfa" data-i18n="feat.h">What it adds</h2>
     <p data-i18n="feat.intro">Everything below is in the firmware you build in step 2, with the Model pictures box as the one exception. Photos are of an HX Stomp running it.</p>
-    <p data-i18n="feat.credit">Most of these come from <a href="https://github.com/wisemandenny/hxtra" target="_blank" rel="noopener">hxtra</a> by wisemandenny. StompMod adds the model pictures, the snapshot names on Home, the switches for the DSP display, the BPM settings and beat dot, picking the boot picture on this page, and a <a href="#snapshot-editor">Windows app</a> for the six snapshots' names and colours. <a href="https://github.com/gati263/stompmod#what-stompmod-adds" target="_blank" rel="noopener">What StompMod adds</a> lists each one.</p>
+    <p data-i18n="feat.credit">Most of these come from <a href="https://github.com/wisemandenny/hxtra" target="_blank" rel="noopener">hxtra</a> by wisemandenny. StompMod adds the model pictures, the snapshot names on Home, the switches for the DSP display, the BPM settings and beat dot, picking the boot picture on this page, and a <a href="#snapshot-web">snapshot editor</a> for the six snapshots' names and colours. <a href="https://github.com/gati263/stompmod#what-stompmod-adds" target="_blank" rel="noopener">What StompMod adds</a> lists each one.</p>
     <section class="mp" id="model-pictures" aria-labelledby="hmp">
       <h3 id="hmp" data-i18n="gmp">Model pictures</h3>
       <p data-i18n="mp.p1">A picture of the selected model in the Edit view and of the model under the cursor in the model browser. They are HX Edit's own pictures, read from the HX Edit on this computer, and nothing is uploaded.</p>
@@ -1119,22 +1117,10 @@
       <div class="hero-cta"><a class="btn primary" href="#options" data-i18n="mp.go">Go to the Model pictures box</a></div>
     </section>
 
-    <section class="mp" id="snapshot-editor" aria-labelledby="hse">
-      <h3 id="hse" data-i18n="gse">Snapshot editor for Windows</h3>
-      <p data-i18n="se.p1">A small app that names and colours all six snapshots of the preset playing, snapshots 4 to 6 included, which HX Edit does not show. It talks to the HX Stomp over USB, and each change shows on the unit at once.</p>
-      <div class="mp-shots">
-        <figure><img src="img/features/snap-app.webp" width="1240" height="998" loading="lazy" data-i18n-alt="se.alt1" alt="The StompMod Snapshots app with six rows: Lead, Verse and Chorus, then Chorus 2, Verse 2 and Outro, each with its colour"><figcaption data-i18n="se.cap1">StompMod Snapshots</figcaption></figure>
-        <figure><img src="img/features/s1.webp" width="640" height="486" loading="lazy" data-i18n-alt="se.alt2" alt="The HX Stomp's Home screen with the same six snapshot names in their colours"><figcaption data-i18n="se.cap2">The same names on the HX Stomp</figcaption></figure>
-      </div>
-      <p class="where" data-i18n="se.where"><b>How:</b> close HX Edit, which holds the USB connection, and open the app: it finds the HX Stomp by itself. Press Send to HX Stomp, then save the preset on the unit to keep the names and colours. It needs StompMod 1.1.0 or newer, built on this page.</p>
-      <p class="tip" data-i18n="se.update"><b>Update the firmware first.</b> The app only works with the latest StompMod firmware. <a href="#get-ready">Build it again on this page</a> and install it: a firmware built before 1.1.0 does not have what the app needs.</p>
-      <p data-i18n="se.sign"><b>Not signed yet.</b> The app has no code signature, so Windows SmartScreen may warn when you open it: choose More info, then Run anyway. Its complete source is in the repository, so you can check what it does, or build it yourself.</p>
-      <div class="hero-cta"><a class="btn primary" href="https://github.com/gati263/stompmod/releases/latest" target="_blank" rel="noopener" data-i18n="se.go">Download for Windows</a> <a class="btn" href="https://github.com/gati263/stompmod/tree/main/apps/snapshots" target="_blank" rel="noopener" data-i18n="se.src">View the source</a> <a class="btn" href="#snapshot-web" data-i18n="se.web">Edit in this browser</a></div>
-    </section>
-
     <section class="mp" id="snapshot-web" aria-labelledby="hsw">
       <h3 id="hsw" data-i18n="sw.title">Edit snapshots here</h3>
-      <p data-i18n="sw.p1">The same editor in this page, with nothing to download. It needs Chrome or Edge on a computer, the HX Stomp on USB with StompMod 1.1.0 or newer, and HX Edit and the Windows app closed.</p>
+      <p data-i18n="sw.p1">Name and colour all six snapshots of the preset playing, snapshots 4 to 6 included, which HX Edit does not show. It needs Chrome or Edge on a computer, the HX Stomp on USB with StompMod 1.1.0 or newer, and HX Edit closed.</p>
+      <p class="tip" data-i18n="se.update"><b>Update the firmware first.</b> The editor only works with the latest StompMod firmware. <a href="#get-ready">Build it again on this page</a> and install it: a firmware built before 1.1.0 does not have what it needs.</p>
       <div class="row-actions">
         <button class="btn primary" id="swConnect" type="button" data-i18n="sw.connect">Connect HX Stomp</button>
         <button class="btn" id="swDisconnect" type="button" hidden data-i18n="sw.disconnect">Disconnect</button>
@@ -1400,7 +1386,7 @@ var EN = {
   "sw.colour": "Snapshot {n} colour",
   "sw.group1": "Snapshots 1 to 3",
   "sw.group2": "Snapshots 4 to 6, which HX Edit does not show",
-  "sw.err.busy": "Another app is using the HX Stomp. Close HX Edit and the Windows app, then connect again.",
+  "sw.err.busy": "Another app is using the HX Stomp. Close HX Edit, then connect again.",
   "sw.err.line6": "The HX Stomp stopped answering. Check the USB cable and connect again.",
   "sw.err.firmware": "This firmware has no snapshot command. Build StompMod 1.1.0 or newer on this page and install it.",
   "sw.err.cancel": "No device chosen.",
@@ -1524,8 +1510,6 @@ var LANGS = {
     "nav.rec": "Khôi phục",
     "nav.faq": "Câu hỏi thường gặp",
     "new.title": "Có gì mới trong 1.1.0",
-    "new.app2": "<b>App chỉnh snapshot 2.0.</b> Cửa sổ không bị đứng khi đang nói chuyện với HX Stomp, bấm Enter trong ô tên là gửi, và app có biểu tượng riêng. <a href=\"#snapshot-editor\">Tải về</a>; firmware không đổi.",
-    "new.1": "<b>App chỉnh snapshot cho Windows.</b> Đặt tên và màu cho cả sáu snapshot, kể cả 4 đến 6, bằng một app nhỏ. <a href=\"#snapshot-editor\">Xem cách dùng</a>.",
     "new.2": "<b>Chấm BPM.</b> Chấm sau số tempo to hơn một chút, cao bằng số tempo; Left, Right và Both nhỏ lại, không còn đè lên tên preset.",
     "new.how": "Để có các thay đổi này, hãy build lại StompMod trên trang này và cài đặt.",
     "safe.title": "Có an toàn không?",
@@ -1620,7 +1604,7 @@ var LANGS = {
     "s5.n5": "HX Edit hiển thị nó là <b>Xenomorph Fuzz</b>, với tên núm của Xenomorph: Gain là Input, Tone là Treble, Level là Output, Clipping là Polarity, OscLevel là Bass, OscTone là Mid, MinFreq là Model, MaxFreq là Mid Freq, WaveShape là Q và Sensitivity là High Cut. Nó giữ nguyên các block NAM và cài đặt của chúng khi bạn di chuyển block.",
     "feat.h": "StompMod thêm gì",
     "feat.intro": "Mọi thứ dưới đây đều có trong firmware bạn build ở bước 2, ngoại trừ ô Hình model. Ảnh chụp từ một chiếc HX Stomp đang chạy nó.",
-    "feat.credit": "Phần lớn tính năng đến từ <a href=\"https://github.com/wisemandenny/hxtra\" target=\"_blank\" rel=\"noopener\">hxtra</a> của wisemandenny. StompMod thêm hình model, tên snapshot trên Home, các công tắc cho phần hiển thị DSP, cài đặt BPM và chấm nhịp, chọn ảnh khởi động ngay trên trang này, và một <a href=\"#snapshot-editor\">app Windows</a> để đặt tên và màu cho sáu snapshot. <a href=\"https://github.com/gati263/stompmod#what-stompmod-adds\" target=\"_blank\" rel=\"noopener\">What StompMod adds</a> liệt kê từng thứ.",
+    "feat.credit": "Phần lớn tính năng đến từ <a href=\"https://github.com/wisemandenny/hxtra\" target=\"_blank\" rel=\"noopener\">hxtra</a> của wisemandenny. StompMod thêm hình model, tên snapshot trên Home, các công tắc cho phần hiển thị DSP, cài đặt BPM và chấm nhịp, chọn ảnh khởi động ngay trên trang này, và một <a href=\"#snapshot-web\">trình chỉnh snapshot</a> để đặt tên và màu cho sáu snapshot. <a href=\"https://github.com/gati263/stompmod#what-stompmod-adds\" target=\"_blank\" rel=\"noopener\">What StompMod adds</a> liệt kê từng thứ.",
     "gmp": "Hình model",
     "mp.p1": "Hình của model đang chọn trong Edit view và của model dưới con trỏ trong model browser. Đó là hình của chính HX Edit, đọc từ HX Edit trên máy tính này, và không có gì được tải lên.",
     "mp.cap1": "Edit view",
@@ -1630,15 +1614,7 @@ var LANGS = {
     "mp.cap3": "Các cài đặt",
     "mp.opt": "<b>Tùy chọn.</b> Cần cài HX Edit trên máy tính này: hãy tick ô Hình model trước khi build, và khi đó build lâu hơn khoảng một phút.",
     "mp.go": "Đến ô Hình model",
-    "gse": "App chỉnh snapshot cho Windows",
-    "se.p1": "Một app nhỏ để đặt tên và màu cho cả sáu snapshot của preset đang chạy, kể cả snapshot 4 đến 6 mà HX Edit không hiện. App nói chuyện với HX Stomp qua USB, và mỗi thay đổi hiện trên máy ngay.",
-    "se.cap1": "StompMod Snapshots",
-    "se.cap2": "Cùng các tên đó trên HX Stomp",
-    "se.where": "<b>Cách dùng:</b> đóng HX Edit, vì HX Edit giữ kết nối USB, rồi mở app: app tự tìm HX Stomp. Bấm Send to HX Stomp, rồi lưu preset trên máy để giữ tên và màu. Cần StompMod 1.1.0 trở lên, build trên trang này.",
-    "se.update": "<b>Cập nhật firmware trước.</b> App chỉ chạy với firmware StompMod mới nhất. <a href=\"#get-ready\">Hãy build lại trên trang này</a> và cài đặt: firmware build trước 1.1.0 chưa có phần mà app cần.",
-    "se.sign": "<b>Chưa ký số.</b> App chưa có chữ ký số, nên Windows SmartScreen có thể cảnh báo khi mở: chọn More info, rồi Run anyway. Toàn bộ mã nguồn có trong repository, nên bạn có thể kiểm tra app làm gì, hoặc tự build.",
-    "se.go": "Tải cho Windows",
-    "se.src": "Xem mã nguồn",
+    "se.update": "<b>Cập nhật firmware trước.</b> Trình chỉnh chỉ chạy với firmware StompMod mới nhất. <a href=\"#get-ready\">Hãy build lại trên trang này</a> và cài đặt: firmware build trước 1.1.0 chưa có phần cần dùng.",
     "gdisp": "Màn hình",
     "c.snap.t": "Sáu snapshot, hiện tên ngay trên Home",
     "c.snap.p": "Màn hình Home hiện tên của cả sáu snapshot bằng màu của chúng, snapshot đang chơi nằm trong một khung.",
@@ -1837,8 +1813,6 @@ var LANGS = {
     "mp.alt1": "Edit view với hình amp SLO-100 phía trên các núm của block: Drive, Bass và Mid",
     "mp.alt2": "Danh sách Distortion trong model browser, với hình pedal Timmy overdrive bên cạnh",
     "mp.alt3": "Global Settings, Displays, với các cài đặt Model Pictures, Browser Icons và Snapshot Names",
-    "se.alt1": "App StompMod Snapshots với sáu dòng: Lead, Verse và Chorus, rồi Chorus 2, Verse 2 và Outro, mỗi dòng có màu của nó",
-    "se.alt2": "Màn hình Home của HX Stomp với cùng sáu tên snapshot trong màu của chúng",
     "c.snap.alt1": "Màn hình Home với sáu tên snapshot có màu: Lead, Verse và Chorus ở trên Chorus 2, Verse 2 và Outro",
     "c.snap.alt2": "Màn hình Home ở chế độ Snapshot sau khi bấm lại footswitch đang sáng, xem trước snapshot 4, 5 và 6 bằng số",
     "c.snap.alt3": "Màn hình Home ở snapshot 4 đến 6, hiện tên của chúng: Clean, Crunch và Lead",
@@ -1881,14 +1855,13 @@ var LANGS = {
     "sup.gumcap": "Thẻ, mọi quốc gia",
     "sup.gumaria": "Mời mình ly cà phê qua Gumroad (mở trong tab mới)",
     "sw.title": "Chỉnh snapshot ngay tại đây",
-    "sw.p1": "Cùng trình chỉnh đó ngay trên trang, không cần tải gì. Cần Chrome hoặc Edge trên máy tính, HX Stomp cắm USB chạy StompMod 1.1.0 trở lên, và đóng HX Edit cùng app Windows.",
+    "sw.p1": "Đặt tên và màu cho cả sáu snapshot của preset đang chạy, kể cả snapshot 4 đến 6 mà HX Edit không hiện. Cần Chrome hoặc Edge trên máy tính, HX Stomp cắm USB chạy StompMod 1.1.0 trở lên, và đóng HX Edit.",
     "sw.connect": "Kết nối HX Stomp",
     "sw.disconnect": "Ngắt kết nối",
     "sw.send": "Gửi tới HX Stomp",
     "sw.revert": "Hoàn tác",
     "sw.note": "Thay đổi hiện trên HX Stomp ngay. Lưu preset trên máy để giữ lại.",
-    "se.web": "Chỉnh trên trình duyệt",
-    "new.web": "<b>Chỉnh snapshot ngay trên trang này.</b> Đặt tên và màu cho cả sáu từ Chrome hoặc Edge, không cần tải gì. <a href=\"#snapshot-web\">Dùng thử</a>.",
+    "new.web": "<b>Chỉnh snapshot ngay trên trang này.</b> Đặt tên và màu cho cả sáu từ Chrome hoặc Edge. <a href=\"#snapshot-web\">Dùng thử</a>.",
     "sw.noUsb": "Trình duyệt này không có WebUSB: hãy dùng Chrome hoặc Edge trên máy tính.",
     "sw.connecting": "Đang kết nối...",
     "sw.sent": "Đã gửi. Lưu preset trên HX Stomp để giữ tên và màu.",
@@ -1900,7 +1873,7 @@ var LANGS = {
     "sw.colour": "Màu snapshot {n}",
     "sw.group1": "Snapshot 1 đến 3",
     "sw.group2": "Snapshot 4 đến 6, HX Edit không hiện",
-    "sw.err.busy": "Một app khác đang dùng HX Stomp. Đóng HX Edit và app Windows, rồi kết nối lại.",
+    "sw.err.busy": "Một app khác đang dùng HX Stomp. Đóng HX Edit, rồi kết nối lại.",
     "sw.err.line6": "HX Stomp ngừng trả lời. Kiểm tra cáp USB và kết nối lại.",
     "sw.err.firmware": "Firmware này chưa có lệnh snapshot. Build StompMod 1.1.0 trở lên trên trang này và cài đặt.",
     "sw.err.cancel": "Chưa chọn thiết bị."
