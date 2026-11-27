@@ -1,10 +1,11 @@
-# StompMod Snapshots
+# StompMod Snapshots (v2)
 
 A small Windows app that names and colours all six snapshots of the preset playing on an HX Stomp running StompMod, snapshots 4 to 6
 included, which HX Edit does not show.
 
 - Close HX Edit first: it holds the HX Stomp's USB connection. The app connects by itself once it is free.
-- Each change shows on the HX Stomp when you press **Send to HX Stomp**. Save the preset on the unit to keep it.
+- Background USB polling keeps the window responsive while connecting or sending.
+- Each change shows on the HX Stomp when you press **Send to HX Stomp** (or **Enter** inside a snapshot name field). Save the preset on the unit to keep it.
 - Names are up to 10 plain characters, as the unit keeps them; colours are the unit's twelve.
 - Needs a StompMod build with six snapshots (`HX_MORE_SNAPSHOTS`) that has the snapshot command (`0x50`).
 
@@ -16,6 +17,12 @@ python apps/snapshots/stompmod_snapshots.py
 ```
 
 `tools/hx_snapshots.py` does the same from the command line (`read`, `set 5 Solo Red`).
+
+## Tests
+
+```
+pytest tests/test_hx_snapshots.py tests/test_stompmod_snapshots_ui.py
+```
 
 ## Build the Windows app
 
