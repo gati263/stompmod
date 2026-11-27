@@ -680,11 +680,21 @@
   .mp > p { margin: 0; }
   .sw-form, .sw-rows { display: grid; gap: var(--space-2); }
   .sw-form[hidden] { display: none; }
-  .sw-row { display: grid; grid-template-columns: auto minmax(0, 1fr) var(--control-sm) minmax(0, 1.25fr); gap: var(--space-2); align-items: center; }
+  .sw-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.5fr); gap: var(--space-2); align-items: center; }
   .sw-row b { font: var(--type-readout-lg-weight) var(--type-readout-lg-size)/var(--type-readout-lg-line) var(--font-mono); }
   .sw-row input, .sw-row select { box-sizing: border-box; width: 100%; height: var(--control-md); padding: 0 var(--space-2); background: var(--bg-elevated); color: var(--text-primary); border: var(--hairline) solid var(--border-strong); border-radius: var(--radius-sm); font: var(--type-body-weight) var(--type-body-size)/var(--type-body-line) var(--font-sans); }
   .sw-row input:disabled, .sw-row select:disabled { color: var(--text-disabled); border-color: var(--border-subtle); }
-  .sw-dot { width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-pill); border: var(--hairline) solid var(--border-strong); }
+  .sw-dot { flex: none; width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-pill); border: var(--hairline) solid var(--border-strong); }
+  /* the colour list with its dots, in the browsers that can draw one (Chrome and Edge); others list the names */
+  @supports (appearance: base-select) {
+    .sw-row select, .sw-row select::picker(select) { appearance: base-select; }
+    .sw-row select { display: flex; align-items: center; gap: var(--space-2); min-height: 0; }
+    .sw-row selectedcontent { display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; white-space: nowrap; }
+    .sw-row select::picker(select) { padding: var(--space-1) 0; background: var(--bg-elevated); border: var(--hairline) solid var(--border-strong); border-radius: var(--radius-sm); box-shadow: var(--shadow-popover); }
+    .sw-row option { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-md); padding: 0 var(--space-3); color: var(--text-primary); }
+    .sw-row option:hover, .sw-row option:focus, .sw-row option:checked { background: var(--bg-selected); }
+    .sw-row option::checkmark { display: none; }
+  }
   .sw-row small { grid-column: 2 / -1; }
   .sw-group { margin: var(--space-2) 0 0; }
   .mp-shots { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: 0; }
@@ -2426,11 +2436,17 @@ var LANG_NAMES = {
     var row = { number: n, saved: null, playing: false, exists: true };
     var line = el("div", "sw-row");
     row.input = el("input"); row.input.type = "text"; row.input.maxLength = HXSNAP.NAME_MAX; row.input.autocomplete = "off"; row.input.spellcheck = false;
-    row.dot = el("span", "sw-dot");
     row.select = el("select");
-    HXSNAP.COLOURS.forEach(function (name, i) { var o = el("option", "", name); o.value = i; row.select.appendChild(o); });
+    var face = el("button"); face.type = "button"; face.appendChild(el("selectedcontent"));     // shows the picked option, dot and name
+    row.select.appendChild(face);
+    HXSNAP.COLOURS.forEach(function (name, i) {
+      var o = el("option"), dot = el("span", "sw-dot");
+      o.value = i; dot.style.background = SW_DOTS[i] || "transparent";
+      o.appendChild(dot); o.appendChild(document.createTextNode(name));
+      row.select.appendChild(o);
+    });
     row.mark = el("small", "note");
-    [el("b", "", String(n)), row.input, row.dot, row.select, row.mark].forEach(function (x) { line.appendChild(x); });
+    [el("b", "", String(n)), row.input, row.select, row.mark].forEach(function (x) { line.appendChild(x); });
     row.input.addEventListener("input", function () {
       var clean = row.input.value.replace(/[^\x20-\x7e]/g, "");
       if (clean !== row.input.value) row.input.value = clean;
@@ -2461,7 +2477,6 @@ var LANG_NAMES = {
       row.input.placeholder = t(row.exists ? "sw.snap" : "sw.made", { n: row.number });
       row.input.setAttribute("aria-label", t("sw.name", { n: row.number }));
       row.select.setAttribute("aria-label", t("sw.colour", { n: row.number }));
-      row.dot.style.background = SW_DOTS[Number(row.select.value)] || "transparent";
       row.mark.textContent = row.playing ? t("sw.playing") : "";
       row.mark.hidden = !row.playing;
     });
