@@ -9,6 +9,7 @@ import msgpack
 import pytest
 
 import hx_snapshots as hs
+from firmware import reader, stock_e0
 
 ROOT = Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
@@ -53,3 +54,14 @@ def test_the_colours_are_the_python_tools():
     js = (ROOT / "web/hxsnap.js").read_text()
     block = js.split("var COLOURS = ")[1].split("];")[0] + "]"
     assert tuple(json.loads(block)) == hs.COLOURS
+
+
+@pytest.mark.firmware
+def test_the_page_dots_are_the_colours_the_unit_draws(m4emu):
+    """SW_DOTS against the stock lookup the Home screen names the snapshots with (colour bytes 1..10, lit)."""
+    lo, hi = 0x28dd8000, 0x28dd8800
+    m = m4emu.M4(reader(stock_e0())(lo, hi - lo), lo)
+    page = (ROOT / "web/index.html").read_text(encoding="utf-8")
+    dots = json.loads("[" + page.split("var SW_DOTS = [")[1].split("];")[0] + "]")
+    assert len(dots) == len(hs.COLOURS) and dots[0] == dots[-1] == ""
+    assert dots[1:-1] == ["#%06X" % (m.call(0x28dd8110, 0x28720000, i, 1) & 0xffffff) for i in range(1, 11)]

@@ -680,11 +680,11 @@
   .mp > p { margin: 0; }
   .sw-form, .sw-rows { display: grid; gap: var(--space-2); }
   .sw-form[hidden] { display: none; }
-  .sw-row { display: grid; grid-template-columns: auto minmax(0, 1fr) var(--dot-md) minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+  .sw-row { display: grid; grid-template-columns: auto minmax(0, 1fr) var(--control-sm) minmax(0, 1.25fr); gap: var(--space-2); align-items: center; }
   .sw-row b { font: var(--type-readout-lg-weight) var(--type-readout-lg-size)/var(--type-readout-lg-line) var(--font-mono); }
   .sw-row input, .sw-row select { box-sizing: border-box; width: 100%; height: var(--control-md); padding: 0 var(--space-2); background: var(--bg-elevated); color: var(--text-primary); border: var(--hairline) solid var(--border-strong); border-radius: var(--radius-sm); font: var(--type-body-weight) var(--type-body-size)/var(--type-body-line) var(--font-sans); }
   .sw-row input:disabled, .sw-row select:disabled { color: var(--text-disabled); border-color: var(--border-subtle); }
-  .sw-dot { width: var(--dot-md); height: var(--dot-md); border-radius: var(--radius-pill); border: var(--hairline) solid var(--border-strong); }
+  .sw-dot { width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-pill); border: var(--hairline) solid var(--border-strong); }
   .sw-row small { grid-column: 2 / -1; }
   .sw-group { margin: var(--space-2) 0 0; }
   .mp-shots { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: 0; }
@@ -2415,9 +2415,9 @@ var LANG_NAMES = {
   $("fwAgain").addEventListener("click", function () { $("fwStatus").hidden = true; shown = null; ramReady(null); $("fwPick").click(); });
 
   // ---- Snapshot editor (hxsnap.js) ------------------------------------------------------------
-  // The unit's snapshot colours by number, as dots: approximations of its LED colours, not GaTi UI colours (as in the
-  // Windows app). Auto and Off have none.
-  var SW_DOTS = ["", "#F2F2F2", "#E0261C", "#E8590C", "#F59F1A", "#F2D21B", "#2DB34A", "#18B5C9", "#1E6FE0", "#8A3FD1", "#E0479E", ""];
+  // The unit's snapshot colours by number, as dots: what its screen draws (the stock lookup 0x28dd8110, lit), not GaTi UI
+  // colours; tests/test_hxsnap.py checks them against the firmware. Auto and Off have none.
+  var SW_DOTS = ["", "#B1B1B1", "#FF0000", "#FF5A18", "#F5911E", "#EAD82F", "#43FF40", "#3CCEB5", "#0097E4", "#B049DB", "#F12F91", ""];
   var sw = { session: null, state: null, preset: null, sending: false, busy: false, msg: "", rows: [], timers: [] };
   var swUsb = !!(navigator.usb && navigator.usb.requestDevice);
 
