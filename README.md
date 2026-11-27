@@ -82,6 +82,9 @@ signed yet, so Windows SmartScreen may warn, and its source is [apps/snapshots/]
 
 <p><img src="web/img/features/snap-app.webp" width="520" alt="The StompMod Snapshots app with six rows: Lead, Verse and Chorus, then Chorus 2, Verse 2 and Outro, each with its colour"></p>
 
+The [page](https://gatistudio.com/stompmod) has the same editor, with nothing to download, in Chrome or Edge on a computer
+([web/hxsnap.js](web/hxsnap.js), over WebUSB).
+
 ### The page
 
 - Model pictures and your own boot picture, both built in the browser.

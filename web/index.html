@@ -678,6 +678,15 @@
   .mp { display: grid; gap: var(--space-3); padding: var(--space-6); background: var(--bg-panel); border: var(--hairline) solid var(--border-subtle); border-radius: var(--radius-md); }
   .mp > h3 { margin: 0; }
   .mp > p { margin: 0; }
+  .sw-form, .sw-rows { display: grid; gap: var(--space-2); }
+  .sw-form[hidden] { display: none; }
+  .sw-row { display: grid; grid-template-columns: auto minmax(0, 1fr) var(--dot-md) minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+  .sw-row b { font: var(--type-readout-lg-weight) var(--type-readout-lg-size)/var(--type-readout-lg-line) var(--font-mono); }
+  .sw-row input, .sw-row select { box-sizing: border-box; width: 100%; height: var(--control-md); padding: 0 var(--space-2); background: var(--bg-elevated); color: var(--text-primary); border: var(--hairline) solid var(--border-strong); border-radius: var(--radius-sm); font: var(--type-body-weight) var(--type-body-size)/var(--type-body-line) var(--font-sans); }
+  .sw-row input:disabled, .sw-row select:disabled { color: var(--text-disabled); border-color: var(--border-subtle); }
+  .sw-dot { width: var(--dot-md); height: var(--dot-md); border-radius: var(--radius-pill); border: var(--hairline) solid var(--border-strong); }
+  .sw-row small { grid-column: 2 / -1; }
+  .sw-group { margin: var(--space-2) 0 0; }
   .mp-shots { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: 0; }
   .mp-shots figure { margin: 0; display: grid; gap: var(--space-1); }
   .mp-shots img { display: block; width: 100%; height: auto; border-radius: var(--radius-md); border: var(--hairline) solid var(--border-subtle); }
@@ -835,6 +844,7 @@
   <section class="news" id="whats-new" aria-labelledby="hnew">
     <h2 id="hnew" data-i18n="new.title">What's new in 1.1.0</h2>
     <ul class="plain">
+      <li data-i18n="new.web"><b>Edit snapshots on this page.</b> Name and colour all six from Chrome or Edge, with nothing to download. <a href="#snapshot-web">Try it</a>.</li>
       <li data-i18n="new.app2"><b>Snapshot editor 2.0.</b> The window stays responsive while it talks to the HX Stomp, Enter in a name field sends, and the app has its own icon. <a href="#snapshot-editor">Download it</a>; the firmware does not change.</li>
       <li data-i18n="new.1"><b>Snapshot editor for Windows.</b> Name and colour all six snapshots, 4 to 6 included, from a small app. <a href="#snapshot-editor">See how</a>.</li>
       <li data-i18n="new.2"><b>BPM dot.</b> The dot after the tempo is a little bigger, as tall as the tempo; Left, Right and Both are smaller, clear of the preset name.</li>
@@ -1119,7 +1129,26 @@
       <p class="where" data-i18n="se.where"><b>How:</b> close HX Edit, which holds the USB connection, and open the app: it finds the HX Stomp by itself. Press Send to HX Stomp, then save the preset on the unit to keep the names and colours. It needs StompMod 1.1.0 or newer, built on this page.</p>
       <p class="tip" data-i18n="se.update"><b>Update the firmware first.</b> The app only works with the latest StompMod firmware. <a href="#get-ready">Build it again on this page</a> and install it: a firmware built before 1.1.0 does not have what the app needs.</p>
       <p data-i18n="se.sign"><b>Not signed yet.</b> The app has no code signature, so Windows SmartScreen may warn when you open it: choose More info, then Run anyway. Its complete source is in the repository, so you can check what it does, or build it yourself.</p>
-      <div class="hero-cta"><a class="btn primary" href="https://github.com/gati263/stompmod/releases/latest" target="_blank" rel="noopener" data-i18n="se.go">Download for Windows</a> <a class="btn" href="https://github.com/gati263/stompmod/tree/main/apps/snapshots" target="_blank" rel="noopener" data-i18n="se.src">View the source</a></div>
+      <div class="hero-cta"><a class="btn primary" href="https://github.com/gati263/stompmod/releases/latest" target="_blank" rel="noopener" data-i18n="se.go">Download for Windows</a> <a class="btn" href="https://github.com/gati263/stompmod/tree/main/apps/snapshots" target="_blank" rel="noopener" data-i18n="se.src">View the source</a> <a class="btn" href="#snapshot-web" data-i18n="se.web">Edit in this browser</a></div>
+    </section>
+
+    <section class="mp" id="snapshot-web" aria-labelledby="hsw">
+      <h3 id="hsw" data-i18n="sw.title">Edit snapshots here</h3>
+      <p data-i18n="sw.p1">The same editor in this page, with nothing to download. It needs Chrome or Edge on a computer, the HX Stomp on USB with StompMod 1.1.0 or newer, and HX Edit and the Windows app closed.</p>
+      <div class="row-actions">
+        <button class="btn primary" id="swConnect" type="button" data-i18n="sw.connect">Connect HX Stomp</button>
+        <button class="btn" id="swDisconnect" type="button" hidden data-i18n="sw.disconnect">Disconnect</button>
+        <span class="note" id="swPreset"></span>
+      </div>
+      <p class="note" id="swMsg" role="status"></p>
+      <form class="sw-form" id="swForm" hidden>
+        <div class="sw-rows" id="swRows"></div>
+        <div class="row-actions">
+          <button class="btn primary" id="swSend" type="submit" disabled data-i18n="sw.send">Send to HX Stomp</button>
+          <button class="btn" id="swRevert" type="button" disabled data-i18n="sw.revert">Revert</button>
+        </div>
+        <p class="note" data-i18n="sw.note">Changes show on the HX Stomp at once. Save the preset on the unit to keep them.</p>
+      </form>
     </section>
 
     <div class="fgroup">
@@ -1354,11 +1383,27 @@
 
 <script src="nam2ir-core.js"></script>
 <script src="ramrun.js"></script>
+<script src="hxsnap.js"></script>
 <script>
 // Translations: English is the page itself (each data-i18n element's HTML) plus EN below, the
 // strings the script writes. Every other language gives the same keys, with the same tags and
 // {placeholders}; tests/test_web_i18n.py checks that. A key a language lacks falls back to English.
 var EN = {
+  "sw.noUsb": "This browser has no WebUSB: use Chrome or Edge on a computer.",
+  "sw.connecting": "Connecting...",
+  "sw.sent": "Sent. Save the preset on the HX Stomp to keep the names and colours.",
+  "sw.changed": "The preset changed on the HX Stomp; the edits you had not sent are gone.",
+  "sw.playing": "Playing",
+  "sw.made": "Made on the first edit",
+  "sw.snap": "Snapshot {n}",
+  "sw.name": "Snapshot {n} name",
+  "sw.colour": "Snapshot {n} colour",
+  "sw.group1": "Snapshots 1 to 3",
+  "sw.group2": "Snapshots 4 to 6, which HX Edit does not show",
+  "sw.err.busy": "Another app is using the HX Stomp. Close HX Edit and the Windows app, then connect again.",
+  "sw.err.line6": "The HX Stomp stopped answering. Check the USB cable and connect again.",
+  "sw.err.firmware": "This firmware has no snapshot command. Build StompMod 1.1.0 or newer on this page and install it.",
+  "sw.err.cancel": "No device chosen.",
   "lang": "Language",
   "doc.title": "StompMod Setup",
   "lb.of": "{n} of {m}",
@@ -1591,7 +1636,7 @@ var LANGS = {
     "se.cap2": "Cùng các tên đó trên HX Stomp",
     "se.where": "<b>Cách dùng:</b> đóng HX Edit, vì HX Edit giữ kết nối USB, rồi mở app: app tự tìm HX Stomp. Bấm Send to HX Stomp, rồi lưu preset trên máy để giữ tên và màu. Cần StompMod 1.1.0 trở lên, build trên trang này.",
     "se.update": "<b>Cập nhật firmware trước.</b> App chỉ chạy với firmware StompMod mới nhất. <a href=\"#get-ready\">Hãy build lại trên trang này</a> và cài đặt: firmware build trước 1.1.0 chưa có phần mà app cần.",
-    "se.sign":"<b>Chưa ký số.</b> App chưa có chữ ký số, nên Windows SmartScreen có thể cảnh báo khi mở: chọn More info, rồi Run anyway. Toàn bộ mã nguồn có trong repository, nên bạn có thể kiểm tra app làm gì, hoặc tự build.",
+    "se.sign": "<b>Chưa ký số.</b> App chưa có chữ ký số, nên Windows SmartScreen có thể cảnh báo khi mở: chọn More info, rồi Run anyway. Toàn bộ mã nguồn có trong repository, nên bạn có thể kiểm tra app làm gì, hoặc tự build.",
     "se.go": "Tải cho Windows",
     "se.src": "Xem mã nguồn",
     "gdisp": "Màn hình",
@@ -1834,7 +1879,31 @@ var LANGS = {
     "sup.coffee": "Mời mình ly cà phê",
     "sup.on": "qua Gumroad",
     "sup.gumcap": "Thẻ, mọi quốc gia",
-    "sup.gumaria": "Mời mình ly cà phê qua Gumroad (mở trong tab mới)"
+    "sup.gumaria": "Mời mình ly cà phê qua Gumroad (mở trong tab mới)",
+    "sw.title": "Chỉnh snapshot ngay tại đây",
+    "sw.p1": "Cùng trình chỉnh đó ngay trên trang, không cần tải gì. Cần Chrome hoặc Edge trên máy tính, HX Stomp cắm USB chạy StompMod 1.1.0 trở lên, và đóng HX Edit cùng app Windows.",
+    "sw.connect": "Kết nối HX Stomp",
+    "sw.disconnect": "Ngắt kết nối",
+    "sw.send": "Gửi tới HX Stomp",
+    "sw.revert": "Hoàn tác",
+    "sw.note": "Thay đổi hiện trên HX Stomp ngay. Lưu preset trên máy để giữ lại.",
+    "se.web": "Chỉnh trên trình duyệt",
+    "new.web": "<b>Chỉnh snapshot ngay trên trang này.</b> Đặt tên và màu cho cả sáu từ Chrome hoặc Edge, không cần tải gì. <a href=\"#snapshot-web\">Dùng thử</a>.",
+    "sw.noUsb": "Trình duyệt này không có WebUSB: hãy dùng Chrome hoặc Edge trên máy tính.",
+    "sw.connecting": "Đang kết nối...",
+    "sw.sent": "Đã gửi. Lưu preset trên HX Stomp để giữ tên và màu.",
+    "sw.changed": "Preset trên HX Stomp đã đổi; các sửa đổi chưa gửi đã mất.",
+    "sw.playing": "Đang chơi",
+    "sw.made": "Được tạo ở lần sửa đầu tiên",
+    "sw.snap": "Snapshot {n}",
+    "sw.name": "Tên snapshot {n}",
+    "sw.colour": "Màu snapshot {n}",
+    "sw.group1": "Snapshot 1 đến 3",
+    "sw.group2": "Snapshot 4 đến 6, HX Edit không hiện",
+    "sw.err.busy": "Một app khác đang dùng HX Stomp. Đóng HX Edit và app Windows, rồi kết nối lại.",
+    "sw.err.line6": "HX Stomp ngừng trả lời. Kiểm tra cáp USB và kết nối lại.",
+    "sw.err.firmware": "Firmware này chưa có lệnh snapshot. Build StompMod 1.1.0 trở lên trên trang này và cài đặt.",
+    "sw.err.cancel": "Chưa chọn thiết bị."
   }
 };
 // LANGS-END
@@ -2371,6 +2440,159 @@ var LANG_NAMES = {
   $("fwSave").addEventListener("click", download);
   $("supSave").addEventListener("click", function () { download(); closeModal(sup); });
   $("fwAgain").addEventListener("click", function () { $("fwStatus").hidden = true; shown = null; ramReady(null); $("fwPick").click(); });
+
+  // ---- Snapshot editor (hxsnap.js) ------------------------------------------------------------
+  // The unit's snapshot colours by number, as dots: approximations of its LED colours, not GaTi UI colours (as in the
+  // Windows app). Auto and Off have none.
+  var SW_DOTS = ["", "#F2F2F2", "#E0261C", "#E8590C", "#F59F1A", "#F2D21B", "#2DB34A", "#18B5C9", "#1E6FE0", "#8A3FD1", "#E0479E", ""];
+  var sw = { session: null, state: null, preset: null, sending: false, busy: false, msg: "", rows: [], timers: [] };
+  var swUsb = !!(navigator.usb && navigator.usb.requestDevice);
+
+  [1, 2, 3, 4, 5, 6].forEach(function (n) {
+    if (n === 1 || n === 4) $("swRows").appendChild(el("p", "note sw-group"));
+    var row = { number: n, saved: null, playing: false, exists: true };
+    var line = el("div", "sw-row");
+    row.input = el("input"); row.input.type = "text"; row.input.maxLength = HXSNAP.NAME_MAX; row.input.autocomplete = "off"; row.input.spellcheck = false;
+    row.dot = el("span", "sw-dot");
+    row.select = el("select");
+    HXSNAP.COLOURS.forEach(function (name, i) { var o = el("option", "", name); o.value = i; row.select.appendChild(o); });
+    row.mark = el("small", "note");
+    [el("b", "", String(n)), row.input, row.dot, row.select, row.mark].forEach(function (x) { line.appendChild(x); });
+    row.input.addEventListener("input", function () {
+      var clean = row.input.value.replace(/[^\x20-\x7e]/g, "");
+      if (clean !== row.input.value) row.input.value = clean;
+      sw.msg = ""; swDraw();
+    });
+    row.select.addEventListener("change", function () { sw.msg = ""; swDraw(); });
+    $("swRows").appendChild(line);
+    sw.rows.push(row);
+  });
+
+  function swEdited(row) {
+    var name = row.input.value, colour = Number(row.select.value);
+    if (!row.saved) return !!sw.state && (name !== "" || colour !== 0);
+    return name !== row.saved[0] || colour !== row.saved[1];
+  }
+  function swPending() { return sw.rows.some(swEdited); }
+  function swDraw() {
+    var on = !!sw.session;
+    $("swConnect").hidden = on;
+    $("swConnect").disabled = sw.busy || !swUsb;
+    $("swDisconnect").hidden = !on;
+    $("swForm").hidden = !on || !sw.state;
+    $("swPreset").textContent = on && sw.preset ? ("00" + sw.preset.preset).slice(-3) + "  " + sw.preset.name : "";
+    $("swMsg").textContent = !swUsb ? t("sw.noUsb") : sw.msg ? t(sw.msg) : "";
+    Array.prototype.forEach.call(document.querySelectorAll(".sw-group"), function (g, i) { g.textContent = t("sw.group" + (i + 1)); });
+    sw.rows.forEach(function (row) {
+      row.input.disabled = row.select.disabled = sw.sending;
+      row.input.placeholder = t(row.exists ? "sw.snap" : "sw.made", { n: row.number });
+      row.input.setAttribute("aria-label", t("sw.name", { n: row.number }));
+      row.select.setAttribute("aria-label", t("sw.colour", { n: row.number }));
+      row.dot.style.background = SW_DOTS[Number(row.select.value)] || "transparent";
+      row.mark.textContent = row.playing ? t("sw.playing") : "";
+      row.mark.hidden = !row.playing;
+    });
+    $("swSend").disabled = $("swRevert").disabled = sw.sending || !swPending();
+  }
+  redraw.push(swDraw);
+
+  function swShow(state) {                   // the unit's six into the fields
+    sw.state = state;
+    sw.rows.forEach(function (row, i) {
+      var s = state.snapshots[i];
+      row.exists = s.exists;
+      row.saved = s.exists ? [s.name, s.colour] : null;
+      row.input.value = s.exists ? s.name : "";
+      row.select.value = s.exists && s.colour < HXSNAP.COLOURS.length ? s.colour : 0;
+      row.playing = i === state.current;
+    });
+    swDraw();
+  }
+  function swStop(msg) {
+    var s = sw.session;
+    sw.timers.forEach(clearInterval);
+    sw.timers = [];
+    sw.session = sw.state = sw.preset = null;
+    sw.sending = false;
+    sw.msg = msg || "";
+    swDraw();
+    return s ? s.close() : Promise.resolve();
+  }
+  function swFail(e) {
+    var code = e && e.code;
+    if (window.console) console.warn(e);
+    return swStop("sw.err." + (code === "busy" || code === "firmware" || code === "cancel" ? code : "line6"));
+  }
+  async function swPoll(force) {
+    var s = sw.session;
+    if (!s || sw.busy || sw.sending) return;
+    sw.busy = true;
+    try {
+      var cur = await s.current();
+      var moved = !sw.preset || cur.setlist !== sw.preset.setlist || cur.preset !== sw.preset.preset;
+      if (moved || force || !swPending()) {
+        var state = await s.read();
+        if (sw.session !== s) return;
+        if (moved && sw.preset && swPending()) sw.msg = "sw.changed";
+        sw.preset = cur;
+        if (moved || force || !swPending()) swShow(state);
+      } else sw.preset = cur;
+      swDraw();
+    } catch (e) {
+      if (sw.session === s) await swFail(e);
+    } finally {
+      sw.busy = false;
+    }
+  }
+  $("swConnect").addEventListener("click", async function () {
+    if (sw.busy || sw.session || !swUsb) return;
+    sw.busy = true; sw.msg = "sw.connecting"; swDraw();
+    try {
+      var known = (await navigator.usb.getDevices()).filter(function (d) {
+        return RAMRUN.LINE6.some(function (f) { return d.vendorId === f.vendorId && d.productId === f.productId; });
+      });
+      var dev = known[0];
+      if (!dev) {
+        try { dev = await navigator.usb.requestDevice({ filters: RAMRUN.LINE6 }); }
+        catch (e) { var c = new Error("no device chosen"); c.code = "cancel"; throw c; }
+      }
+      sw.session = await HXSNAP.open(dev);
+      sw.msg = "";
+      sw.busy = false;
+      await swPoll(true);
+      if (sw.session) sw.timers = [
+        setInterval(function () { swPoll(false); }, 1500),
+        setInterval(function () { var s = sw.session; if (s) s.idle().catch(function (e) { if (sw.session === s) swFail(e); }); }, 300)
+      ];
+    } catch (e) {
+      await swFail(e);
+    } finally {
+      sw.busy = false;
+      swDraw();
+    }
+  });
+  $("swDisconnect").addEventListener("click", function () { swStop(""); });
+  $("swRevert").addEventListener("click", function () { sw.msg = ""; if (sw.state) swShow(sw.state); swPoll(true); });
+  $("swForm").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    var s = sw.session;
+    if (!s || sw.sending || !swPending()) return;
+    var changes = sw.rows.filter(swEdited);
+    sw.sending = true; sw.msg = ""; swDraw();
+    try {
+      for (var i = 0; i < changes.length; i++) {
+        await s.write(changes[i].number, changes[i].input.value, Number(changes[i].select.value));
+      }
+      var state = await s.read();
+      if (sw.session !== s) return;
+      sw.sending = false; sw.msg = "sw.sent";
+      swShow(state);
+    } catch (e) {
+      if (sw.session === s) await swFail(e);
+    }
+  });
+  window.addEventListener("pagehide", function () { swStop(""); });
+  swDraw();
 
   // ---- Step 3: the RAM run (ramrun.js) -------------------------------------------------------
   var ram = null;             // the build's RAM run: { regions, checks } | { error }

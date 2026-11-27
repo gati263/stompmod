@@ -100,7 +100,8 @@
     return out;
   }
 
-  function Stream(dev, epOut, epIn, mtu, sleep, log) {
+  function Stream(dev, epOut, epIn, mtu, sleep, log, local, remote) {   // the update service's addresses unless given
+    this.local = local || LOCAL; this.remote = remote || REMOTE;
     this.dev = dev; this.epOut = epOut; this.epIn = epIn; this.mtu = mtu; this.sleep = sleep; this.log = log;
     this.txSeq = 1; this.rxSeq = null; this.consumed = 0; this.sent = 0; this.peerWindow = 0;
     this.rx = new Uint8Array(0); this.queue = []; this.waiter = null; this.closed = false; this.lastTx = Date.now();
@@ -134,7 +135,7 @@
     var sh = words([(flags << 24) | (this.txSeq << 8), RX_BUF + this.consumed]), body, type;
     if (flags & F_SYN) { body = concat([words([(this.mtu & 0xFFFF) << 16]), sh, data]); type = 2; }
     else { body = concat([sh, data]); type = 1; }
-    var msg = pad4(concat([words([(type << 28) | (2 << 26) | body.length, LOCAL | ((REMOTE & 0x3FF) << 16)]), body]));
+    var msg = pad4(concat([words([(type << 28) | (2 << 26) | body.length, this.local | ((this.remote & 0x3FF) << 16)]), body]));
     this.txSeq = (this.txSeq + 1) & 0xFF;
     this.sent += data.length;
     this.lastTx = Date.now();
@@ -144,7 +145,7 @@
     });
   };
   Stream.prototype.handle = function (m) {
-    if (m.flags === null || (m.src & 0xFF) !== (REMOTE & 0xFF) || m.dst !== LOCAL) return;
+    if (m.flags === null || (m.src & 0xFF) !== (this.remote & 0xFF) || m.dst !== this.local) return;
     if (m.flags & F_SYN) {
       if (this.rxSeq !== null) throw fail("line6", "unexpected SYN from the Stomp");
       this.rxSeq = m.seq; this.peerWindow = m.window;
@@ -416,7 +417,7 @@
     o.log("started: the firmware runs from RAM; turn the Stomp off and on to go back\n");
   }
 
-  var api = { run: run, crc32: crc32, parseIn: parseIn, RB: RB, CODES: CODES, LINE6: LINE6, DFU: DFU, LOADER: LOADER };
+  var api = { Stream: Stream, concat: concat, run: run, crc32: crc32, parseIn: parseIn, RB: RB, CODES: CODES, LINE6: LINE6, DFU: DFU, LOADER: LOADER };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.RAMRUN = api;
 })(typeof self !== "undefined" ? self : this);
