@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""patch_comp.py - the gain-reduction meter's knobs (Mtr Pos, Mtr Dir, Mtr Thk) on compressor blocks, HX Stomp or XL 3.80.0.
+"""patch_comp.py - the gain-reduction meter's knobs (Mtr Pos, Mtr Dir, Mtr Size) on compressor blocks, HX Stomp or XL 3.80.0.
 
 Each model in COMP_MODELS gets three more parameters after its own, in the three places that must agree:
   Entry 3: the parameter records, their state records and the strings they name (the string section grows in place).
@@ -7,8 +7,8 @@ Each model in COMP_MODELS gets three more parameters after its own, in the three
            handing it to the compressor core as pid 100, 101, 102, which the DSP wrapper's control function keeps;
            and for each core an init record, pid 103, saying whether its output overwrites its first input or its second.
   Entry 0: the model's row in the UI Model Info Table counts the new parameters.
-  Entry 2: the DSP wrapper src/sharc/frame_probe.asm in Block 3, above NAM's two slots (build.py's GR_SLOTS), and each core of
-           WRAPS entering it.
+  Entry 2: the DSP wrapper src/sharc/frame_probe.asm in Block 3 where tools/block3.py places it, and each core of WRAPS
+           entering it.
 Run it after every step that adds models (add-model, add-fx-model, patch_click.py): those rebuild Entry 3's and Entry 4's tails
 from the models they added and would drop what this writes there.
 """
@@ -17,9 +17,9 @@ import os
 import struct
 import zlib
 
+import block3
 import patch_amp as pa
 import nam_multi
-import patch_click
 
 ASM = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'sharc', 'frame_probe.asm')
 
@@ -35,7 +35,7 @@ COMP_MODELS = (   # (model, its compressor core's primitive: one of WRAPS)
 GR_KNOBS = (   # (name, displayName, displayNameShort, value labels, default): integer lists, as Ratio
     ('GRPosition', 'Mtr Position', 'Mtr Pos', ('Middle', 'Top', 'Left', 'Bottom', 'Right'), 0),
     ('GRDirection', 'Mtr Direction', 'Mtr Dir', ('Normal', 'Reverse'), 0),
-    ('GRThickness', 'Mtr Thickness', 'Mtr Thk', tuple(str(k) for k in range(21)), 0),    # 0 is off: the meter is opt-in
+    ('GRThickness', 'Mtr Size', 'Mtr Size', ('Off', 'S', 'M', 'L', 'XL'), 0),    # gr_meter.s draws 5 px a step; Off: the meter is opt-in
 )
 INT_INPUT_OP = 0x0b
 GR_PID = 100                    # src/sharc/frame_probe.asm's GR_PID: past every core's own pids (the LA Studio Comp's go to 14)
@@ -56,11 +56,28 @@ def e3_strings(e3):
     return str_off, recs, data, index
 
 
+def move_offsets(out, h, mv):
+    """Every Entry 3 offset past a moved region, through mv: the model table's, its parameters' and the h[8] table's."""
+    for i in range(h[7]):
+        d = h[6] + 56 * i
+        w = list(struct.unpack_from('<14I', out, d))
+        for j in (1, 10, 11, 12):
+            w[j] = mv(w[j])
+        struct.pack_into('<14I', out, d, *w)
+        for p in range(w[7]):
+            po = w[11] + 32 * p + 4
+            struct.pack_into('<I', out, po, mv(struct.unpack_from('<I', out, po)[0]))
+    for k in range(h[9]):
+        lo = h[8] + 32 * k + 24
+        struct.pack_into('<I', out, lo, mv(struct.unpack_from('<I', out, lo)[0]))
+
+
 def e3_add_strings(e3, wanted):
     """Entry 3 with the strings of `wanted` it lacks appended to its section, and {string: index} for them all.
     Indices never change. A stock section (at 0x200) is copied past the end. Once add-model has copied the section and
     the model table to the tail (0xcae00), their stock copies at 0x200..h[8] are dead: the section goes back to 0x200 and
-    the model table and everything after it move back over the old tail section, their offsets with them. That keeps
+    the model table and everything after it move back over the old tail section, their offsets with them; a later call
+    (tools/patch_gate.py's, then this tool's) grows it there in place. That keeps
     Entry 3 small: one 11 KB larger than the default build's makes the unit drop every amp and preamp [verified on unit]."""
     e3 = bytearray(e3)
     h = list(struct.unpack_from('<10I', e3, 0))
@@ -77,32 +94,27 @@ def e3_add_strings(e3, wanted):
         return bytes(e3), index
     n = nstr + len(added) // 12
     section = struct.pack('<2I', n, 8 + 12 * n + len(data)) + recs + added + data
-    if str_off < STOCK_E3_END:
+    if str_off == STR_HOME and h[6] >= STOCK_E3_END and STR_HOME + len(section) <= h[8]:    # back home by an earlier call
+        out = e3[:STR_HOME] + section + bytes(h[8] - STR_HOME - len(section)) + e3[h[8]:]
+    elif str_off < STOCK_E3_END:
         out = e3 + bytes(pa._align(len(e3), 0x200) - len(e3))
         h[3] = len(out)
         out += section
+    elif h[6] < str_off:
+        # Copied past the end by an earlier call with no add-model (NAM off, no Metronome): a second copy would make Entry 3 too big
+        old_end, new_end = pa._align(str_off + h[5], 4), pa._align(str_off + len(section), 4)
+        delta = new_end - old_end
+        out = e3[:str_off] + section + bytes(new_end - str_off - len(section)) + e3[old_end:]
+        move_offsets(out, h, lambda v: v + delta if v >= old_end else v)
     else:
         old_mtab = h[6]
-        assert old_mtab > str_off, 'the model table is not after the string section'
         assert STR_HOME + len(section) <= h[8] < STOCK_E3_END, 'the section does not fit in the stock tables\' place'
         new_mtab = str_off
         delta = new_mtab - old_mtab
         out = e3[:STR_HOME] + section + bytes(h[8] - STR_HOME - len(section)) + e3[h[8]:str_off] + e3[old_mtab:]
-        mv = lambda v: v + delta if v >= old_mtab else v
         h[3] = STR_HOME
         h[6] = new_mtab
-        for i in range(h[7]):
-            d = new_mtab + 56 * i
-            w = list(struct.unpack_from('<14I', out, d))
-            for j in (1, 10, 11, 12):
-                w[j] = mv(w[j])
-            struct.pack_into('<14I', out, d, *w)
-            for p in range(w[7]):
-                po = w[11] + 32 * p + 4
-                struct.pack_into('<I', out, po, mv(struct.unpack_from('<I', out, po)[0]))
-        for k in range(h[9]):
-            lo = h[8] + 32 * k + 24
-            struct.pack_into('<I', out, lo, mv(struct.unpack_from('<I', out, lo)[0]))
+        move_offsets(out, h, lambda v: v + delta if v >= old_mtab else v)
     out += bytes(pa._align(len(out), 4) - len(out))
     h[2], h[5] = len(out), len(section)
     h[4] = zlib.crc32(out[h[3]:h[3] + len(section)]) & 0xffffffff
@@ -330,20 +342,15 @@ def nw(pm):
     return nam_multi.NW3 + (pm - nam_multi.NW3) * 3 // 2
 
 
-def dsp_place():
-    """(DM base, PM base) of frame_probe.asm: its data right above NAM's slots, then its code, clear of the
-    Metronome's kernel under NAM's cold code (there in every build, so GR builds share one layout)."""
-    lay = patch_click.nam_layout(gr=True)
+def dsp_size():
+    """(data words, instructions) of frame_probe.asm."""
     secs, _ = pa.sasm.assemble(dsp_asm(nam_multi.B3, nam_multi.NW3), 'frame_probe.asm')
-    n_dm, n_pm = (sum(len(s.words) for s in secs if s.kind == k) for k in ('dm', 'pm'))
-    dm = lay.b3_to
-    pm = nam_multi.NW3 - (-(dm + n_dm - nam_multi.NW3) * 2 // 3)
-    pm += pm & 1
-    click = patch_click.pm_base(patch_click.kernel_size(), lay)
-    if nw(pm + n_pm + (n_pm & 1)) > nw(click):
-        raise SystemExit(f'the GR DSP code ({n_dm} words, {n_pm} instructions from {dm:#x}) does not fit under the '
-                         f'Metronome\'s kernel ({click:#x})')
-    return dm, pm
+    return tuple(sum(len(s.words) for s in secs if s.kind == k) for k in ('dm', 'pm'))
+
+
+def dsp_place():
+    """(DM base, PM base) of frame_probe.asm (tools/block3.py)."""
+    return block3.place('HX_GR')
 
 
 def patch_dsp(l6ia_bytes, log=print):

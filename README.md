@@ -88,7 +88,7 @@ preset on the unit. It needs StompMod 1.1.0 or newer.
 
 ## From hxtra
 
-Everything hxtra's firmware adds is in StompMod too: six snapshots, the BPM display and tap colours, the DSP meter, real block names, long press and virtual footswitches, the Tap command, the breathing line, the metronome, the gain reduction meter, the tuner page and NAM A2 Lite. [docs/features.md](docs/features.md) describes each one, and [hxtra's README](https://github.com/wisemandenny/hxtra#readme) introduces them with videos.
+Everything hxtra's firmware adds is in StompMod too: six snapshots, the BPM display and tap colours, the DSP meter, real block names, long press and virtual footswitches, the Tap command, the breathing line, the metronome, the gain reduction meter, the tuner page and NAM A2 Lite, and from hxtra 1.2.1 Preset LED Color, USB Monitor (path A to USB 3/4 for monitoring through a DAW) and USB Input. [docs/features.md](docs/features.md) describes each one, and [hxtra's README](https://github.com/wisemandenny/hxtra#readme) introduces them with videos.
 
 <table>
 <tr>

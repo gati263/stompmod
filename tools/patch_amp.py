@@ -288,24 +288,20 @@ def inject_sharc_ldr_blocks(e2_raw_bytes, new_blocks_words):
     return struct.pack('<%dI' % len(patched_w), *patched_w)
 
 
-# 24 registered primitives in Entry 2 (0x200000..0x20060f) that are unreferenced by any stock model/composite:
+# Registered primitives in Entry 2 (0x200000..0x20060f) that no stock model, composite or root graph uses, as kit_patch_amp's.
+# 0x2aa8, 0x2aaa and 0x2aab are the phones', Send's and Main's writers [verified on unit], 0x261a and 0x238f root-graph members.
 UNUSED_SHARC_PRIMS = (
     (0x9c75, 0x200590),
-    (0x2aa8, 0x200018),
-    (0x2aaa, 0x200020),
-    (0x2aab, 0x200030),
     (0x0128, 0x200050),
     (0x012e, 0x200058),
     (0x0100, 0x2000a0),
     (0x0838, 0x2000b0),
     (0x2392, 0x200120),
-    (0x238f, 0x2001a8),
     (0x000e, 0x2001b0),
     (0x0205, 0x2001b8),
     (0x045e, 0x2001d0),
     (0x0207, 0x2002a8),
     (0x2ab6, 0x2002c8),
-    (0x261a, 0x2002e0),
     (0x021f, 0x200318),
     (0x012c, 0x200348),
     (0x012d, 0x2003d0),
@@ -443,7 +439,7 @@ def cmd_patch(args):
     else:
         chosen = next(((pid, paddr) for pid, paddr in UNUSED_SHARC_PRIMS if paddr not in hooked_addrs), None)
         if chosen is None:
-            raise SystemExit('All 24 unused SHARC primitive slots in Entry 2 are already hooked')
+            raise SystemExit(f'All {len(UNUSED_SHARC_PRIMS)} unused SHARC primitive slots in Entry 2 are already hooked')
         prim_id, prim_addr = chosen
         record = [prim_id, 0x611e90, 0x0, 0x611ef4, 0x611ddd]
         import effects

@@ -37,14 +37,9 @@
 .equ REDRAW, 0x28db8509             @ (full, partial): the UI repaints; the layout code ends with (0, 1)
 .equ FILL, 0x100017e9               @ (fb, x, y, w, h, colour, anchor)
 .equ TEXT, 0x28db7aa5               @ (fb, text, length, x, y, font, colour, anchor, mode): mode 1 draws only the glyphs' pixels
-.equ SERIALIZE, 0x28deacf5          @ (stream, toc): the preset into its file, a msgpack map after the TOC
-.equ TOC_WRITE, 0x28deabdd          @ (stream, toc): the TOC; the second call leaves the file at the map's count byte
-.equ SECTION_READ, 0x28def9a9       @ (file, section, 0, buffer, max): a section of a preset file, by its TOC
-.equ PRESET, 0x28d92a99             @ () -> the current preset
-.equ PRESET_FLAG, 0x28e026f1        @ (preset, 1) -> whether the map has key 12; the map has 9 keys more
 .equ CONTROLLERS, 0x741             @ snapshot controllers: 7-byte entries at a record's +0x28, keyed by their first byte
 .equ SWITCHES, 0x742                @ footswitch entries: 9 bytes at +0x1e8, keyed by their first byte
-.equ FILE_KEY, 0x64                 @ bank B's key in the preset's map; stock uses 0..12
+.equ FILE_KEY, 0x64                 @ bank B's key in the preset file (src/m4/preset_keys.s); stock uses 0..12
 .equ FILE_LEN, 8 + 3 * REC          @ its bin16: "HX6B", version, 3 spare, the three records
 .equ DARK, 0x101010                 @ the digit on a lit camera's white circle; black would be the renderer's transparent
 .equ WRAP, 5                        @ in snaps_data: the select on its way is a next or previous past the bank's end
@@ -434,23 +429,19 @@ snaps_match_next:
 snaps_matched:
     bx lr
 
-snaps_file_serialize:               @ in place of the preset file's serializer call (stream, toc): bank B after the map, as key 0x64
-    push {r4-r7, lr}
-    sub sp, #12
+.thumb_func
+.global snaps_key_write
+snaps_key_write:                    @ preset_keys.s's writer (stream): bank B after the map, as key 0x64; -> the keys written
+    push {r4, r5, r6, lr}
     mov r4, r0
-    ldr r3, =SERIALIZE
-    blx r3
-    mov r6, r0
-    adr.w r7, snaps_data
-    movs r0, #0
-    strb r0, [r7, #4]
     ldr r5, =MANAGER + RECS         @ bank B live: the manager's records
-    ldrb r0, [r7]
-    cbnz r0, snaps_file_write
-    ldrb r0, [r7, #1]
-    cbz r0, snaps_file_done         @ no bank B for this preset: a stock file
+    adr.w r6, snaps_data
+    ldrb r0, [r6]
+    cbnz r0, snaps_key_put
+    ldrb r0, [r6, #1]
+    cbz r0, snaps_key_written       @ no bank B for this preset: a stock file
     adr.w r5, snaps_shadow
-snaps_file_write:
+snaps_key_put:
     adr.w r1, snaps_file_head
     movs r2, #12
     bl snaps_file_put
@@ -458,146 +449,52 @@ snaps_file_write:
     movw r2, #3 * REC
     bl snaps_file_put
     movs r0, #1
-    strb r0, [r7, #4]
-snaps_file_done:
-    mov r0, r6
-    add sp, #12
-    pop {r4-r7, pc}
+snaps_key_written:
+    pop {r4, r5, r6, pc}
 
 snaps_file_put:                     @ (r4 the stream, r1 bytes, r2 length): the stream's write(context, bytes, length)
     ldr r0, [r4]
     ldr r3, [r4, #4]
     bx r3
 
-snaps_file_toc:                     @ in place of the TOC's second write (stream, toc): then the map's count, one more for key 0x64
+.thumb_func
+.global snaps_key_found
+snaps_key_found:                    @ preset_keys.s's finder (key, data, length): key 0x64, "HX6B", version 1, into snaps_staged
+    adr.w r3, snaps_data
+    cmp r0, #FILE_KEY
+    beq snaps_key_ours
+    cmn r0, #1                      @ START: a file is being read
+    itt eq
+    moveq r0, #0
+    strbeq r0, [r3, #6]
+    bx lr
+snaps_key_ours:
+    movw r0, #FILE_LEN
+    cmp r2, r0
+    it ne
+    bxne lr
     push {r4, r5, r6, lr}
-    mov r4, r0
-    ldr r3, =TOC_WRITE
-    blx r3
-    mov r6, r0
-    adr.w r5, snaps_data
-    ldrb r0, [r5, #4]
-    cbz r0, snaps_file_counted
-    movs r0, #0
-    strb r0, [r5, #4]
-    ldr r3, =PRESET
-    blx r3
-    movs r1, #1
-    ldr r3, =PRESET_FLAG
-    blx r3
-    adds r0, #9                     @ as the serializer counts its keys (0x28dead0e)
-    orr r0, r0, #0x80
-    adds r0, #1
-    strb r0, [r5, #7]
-    add.w r1, r5, #7
-    movs r2, #1
-    bl snaps_file_put
-snaps_file_counted:
-    mov r0, r6
-    pop {r4, r5, r6, pc}
-
-snaps_file_section:                 @ in place of the load's read of section 10 (file, 10, 0, buffer, max on the stack)
-    push {r3-r5, lr}
-    sub sp, #8
-    ldr r12, [sp, #24]
-    str.w r12, [sp]
-    mov r4, r3
-    ldr r12, =SECTION_READ
-    blx r12
-    mov r5, r0
-    adr.w r0, snaps_data
-    movs r1, #0
-    strb r1, [r0, #6]
-    cmp r5, #0
-    ble snaps_file_read
-    mov r0, r4
-    mov r1, r5
-    bl snaps_file_find
-snaps_file_read:
-    mov r0, r5
-    add sp, #8
-    pop {r3-r5, pc}
-
-snaps_file_find:                    @ (section 10, its length): key 12's names if there, then key 0x64, into snaps_staged
-    push {r4, r5, lr}
-    add r1, r0
-    ldrb r2, [r0]
-    cmp r2, #12
-    bne snaps_file_key
-    ldrb r2, [r0, #1]               @ key 12: an array of strings
-    cmp r2, #0xdc
-    bne snaps_file_fixarray
-    ldrb r3, [r0, #2]
-    ldrb r4, [r0, #3]
-    orr.w r3, r4, r3, lsl #8
-    adds r0, #4
-    b snaps_file_names
-snaps_file_fixarray:
-    and r3, r2, #0xf0
-    cmp r3, #0x90
-    bne snaps_file_none
-    and r3, r2, #0x0f
-    adds r0, #2
-snaps_file_names:
-    cbz r3, snaps_file_key
-    cmp r0, r1
-    bhs snaps_file_none
-    ldrb r2, [r0]
-    and r4, r2, #0xe0
-    cmp r4, #0xa0
-    bne snaps_file_str8
-    and r2, r2, #0x1f
-    adds r0, #1
-    add r0, r2
-    b snaps_file_name_done
-snaps_file_str8:
-    cmp r2, #0xd9
-    bne snaps_file_str16
-    ldrb r2, [r0, #1]
-    adds r0, #2
-    add r0, r2
-    b snaps_file_name_done
-snaps_file_str16:
-    cmp r2, #0xda
-    bne snaps_file_nil
-    ldrb r2, [r0, #1]
-    ldrb r4, [r0, #2]
-    orr.w r2, r4, r2, lsl #8
-    adds r0, #3
-    add r0, r2
-    b snaps_file_name_done
-snaps_file_nil:
-    cmp r2, #0xc0
-    bne snaps_file_none
-    adds r0, #1
-snaps_file_name_done:
-    subs r3, #1
-    b snaps_file_names
-snaps_file_key:                     @ key 0x64, bin16 of FILE_LEN, "HX6B", version 1
-    addw r2, r0, #4 + FILE_LEN
-    cmp r2, r1
-    bhi snaps_file_none
-    adr.w r4, snaps_file_head
+    mov r6, r3
+    adr.w r4, snaps_file_head + 4
     movs r3, #0
-snaps_file_head_byte:
-    ldrb r2, [r0, r3]
+snaps_key_head_byte:
+    ldrb r2, [r1, r3]
     ldrb r5, [r4, r3]
     cmp r2, r5
-    bne snaps_file_none
+    bne snaps_key_none
     adds r3, #1
-    cmp r3, #9
-    bne snaps_file_head_byte
-    add.w r1, r0, #12
+    cmp r3, #5
+    bne snaps_key_head_byte
+    adds r1, #8
     adr.w r0, snaps_shadow
     add.w r0, r0, #3 * REC
     movw r2, #3 * REC
     ldr r3, =MEMCPY
     blx r3
-    adr.w r0, snaps_data
     movs r1, #1
-    strb r1, [r0, #6]
-snaps_file_none:
-    pop {r4, r5, pc}
+    strb r1, [r6, #6]
+snaps_key_none:
+    pop {r4, r5, r6, pc}
 
 snaps_paint:                        @ after the top view's paint (framebuffer, view): the six names, or bank B's number over the
     push {r4, lr}                   @ snapshot icon's
@@ -1327,8 +1224,7 @@ snaps_names:                        @ bank B's default names, 16 bytes apart
 snaps_file_head:                    @ key 0x64, bin16 of FILE_LEN (big-endian), "HX6B", version 1, 3 spare
     .byte FILE_KEY, 0xc5, FILE_LEN >> 8, FILE_LEN & 0xff, 'H', 'X', '6', 'B', 1, 0, 0, 0
 snaps_data:                         @ 0 bank B live, 1 snaps_shadow holds bank B, 2 flipped to bank A for a save, 3 cameras to redraw,
-    .word 0, 0, 0                   @ 4 bank B written to a file, 5 WRAP, 6 bank B read from a file, 7 the map's new count,
-                                    @ 8 PREVIEW, 9 MODE
+    .word 0, 0, 0                   @ 4 spare, 5 WRAP, 6 bank B read from a file, 7 spare, 8 PREVIEW, 9 MODE
 snaps_usb_out:                      @ the read's reply
     .space READ_LEN
 .balign 4

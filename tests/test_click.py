@@ -1,6 +1,5 @@
 """The Metronome block: its kernel (src/sharc/click.asm) in ssim, and the model and kernel
 tools/patch_click.py adds to the stock firmware."""
-import ast
 import math
 import os
 import random
@@ -9,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import block3
 import kit_patch_amp as kit
 import nam_multi
 import patch_click
@@ -25,7 +25,7 @@ def assemble(base=0xE5000):
 
 
 N_CODE = len(assemble()[0][0].words)
-BASE = patch_click.pm_base(N_CODE)
+BASE = block3.place('HX_CLICK', {})[1]
 
 
 class Click:
@@ -82,29 +82,11 @@ def test_kernel_is_code_alone():
     assert [s.kind for s in assemble()[0]] == ['pm']
 
 
-def build_py_flags():
-    tree = ast.parse((ROOT / 'build.py').read_text())
-    kernel = next(ast.literal_eval(n.value) for n in tree.body
-                  if isinstance(n, ast.Assign) and getattr(n.targets[0], 'id', None) == 'KERNEL')
-    return kernel['HX_Stomp'][1:]
-
-
-def test_nam_layout_is_that_of_the_kernel_build_py_builds():
-    with nam_multi.flags(build_py_flags()):
-        _, built = nam_multi.build(3)
-    lay = patch_click.nam_layout()
-    assert (lay.n_code, lay.n_cold, lay.cold_pm, lay.b3_to) == (built.n_code, built.n_cold, built.cold_pm, built.b3_to)
-    assert not nam_multi.MIDQ
-
-
-def test_nam_layout_follows_build_py_flags():
-    assert patch_click.nam_layout().cold_pm != nam_multi.layout([]).cold_pm
-
-
-def test_kernel_sits_between_nam_slots_and_cold_code():
-    lay = patch_click.nam_layout()
+def test_kernel_sits_at_the_top_of_the_room_nam_leaves():
+    lay = block3.layout(3)
     assert nam_multi.NW3 + (BASE - nam_multi.NW3) * 3 // 2 >= lay.b3_to
     assert BASE + N_CODE + (N_CODE & 1) == lay.cold_pm
+    assert patch_click.dsp_size() == (0, N_CODE)
 
 
 @pytest.mark.parametrize('time', [0.1, 0.125, 0.1234])

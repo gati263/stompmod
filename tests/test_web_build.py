@@ -56,6 +56,7 @@ def js_value(name):
 def test_build_steps_as_build_py():
     for name in ("KERNEL", "STEPS"):
         assert js_value(name) == {"HX_Stomp": py_dict("build.py", name)["HX_Stomp"]}, name
+    assert int(re.search(r"var E3_MAX = (\w+);", WORKER).group(1), 0) == py_dict("build.py", "E3_MAX")
 
 
 def test_built_md5_as_firmware_test():
@@ -100,6 +101,7 @@ def test_worker_takes_the_options_and_files_of_the_page():
     assert "splash: ArrayBuffer | null" in WORKER and "hxedit:" in WORKER
     assert "cache && cache.env" in WORKER and '"/repo/build/splash.png"' in WORKER and '"/repo/hxedit/res"' in WORKER
     assert "HX_GR" not in WORKER and "HX_CLICK" not in WORKER      # the Full build has neither: no extra DSP steps
+    assert '[["HX_USB_MONITOR", "tools/patch_usbmon.py"]]' in WORKER  # its one DSP feature, as build.py runs it
 
 
 def test_worker_verifies_with_the_recipe_the_cache_pins():

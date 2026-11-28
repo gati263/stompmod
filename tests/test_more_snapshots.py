@@ -19,7 +19,7 @@ MODS = features.load()
 IDS = setting_ids.by_name()
 INC = {'usb.inc': usb_commands.inc('more_snapshots')}
 
-MGR, CODE = 0x2812c630, 0x28e60000
+MGR, CODE, ENGINE = 0x2812c630, 0x28e60000, 0x28e70000
 SELECT, RECORD_INIT = 0x28de2f90, 0x28de14b4
 LOCK, UNLOCK, MEMCPY, MEMSET = 0x28e24c00, 0x28e24bb0, 0x28e24c78, 0x28e24b78
 STREAM, HEADER = 0x28700000, 0x28700100     # a serializer's arguments: it finds the manager itself
@@ -63,6 +63,9 @@ class Manager:
         code, self.sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS, inc=INC)
         self.at = at
         self.m = m4emu.M4(code, at)
+        keys = {ms.FILE_KEY: ('more_snapshots', at + self.sym['snaps_key_write'], at + self.sym['snaps_key_found'])}
+        engine, self.esym = m4emu.assemble('src/m4/preset_keys.s', MODS, IDS, inc={'preset_keys.inc': pm.preset_keys_inc(keys)})
+        self.m.load(ENGINE, engine)
         self.stack_top = m4emu.STACK_TOP
         self.depth, self.selects, self.inits, self.held = 0, [], [], []
         self.m.stub(LOCK, self._lock)
@@ -202,6 +205,10 @@ class Manager:
     def call(self, sym, *args):
         return self.m.call(self.at + self.sym[sym], *args)
 
+    def engine(self, sym, *args):
+        """src/m4/preset_keys.s's handler sym, the preset file's write and read, with this module's key on it."""
+        return self.m.call(ENGINE + self.esym[sym], *args)
+
     def step(self, way, source='fs'):
         """Next (+1) or previous (-1) as stock does it: the footswitch functions read the current snapshot, wrap it in 0..2 and call
         select; CC 69 reads it straight, and calls the manager getter only where it wraps."""
@@ -233,7 +240,7 @@ class Manager:
     def read_section(self):
         """The load's read of section 10: (file, 10, 0, buffer) and the buffer's size on the stack."""
         self.m.u32(self.stack_top, 0x5000)
-        return self.call('snaps_file_section', 0x28720000, 10, 0, SECTION)
+        return self.engine('pk_section', 0x28720000, 10, 0, SECTION)
 
     def paint(self, view='top'):
         """The top view's (or Home view's) paint, then the module after it, with the cameras as stock sets them for the current
@@ -521,7 +528,7 @@ def test_a_flip_matches_the_incoming_banks_entries_to_the_outgoing_ones(mgr):
 
 def appended(mgr):
     mgr.written.clear()
-    assert mgr.call('snaps_file_serialize', STREAM, HEADER) == 5, "the serializer's result"
+    assert mgr.engine('pk_serialize', STREAM, HEADER) == 5, "the serializer's result"
     return b''.join(mgr.written)
 
 
@@ -532,7 +539,7 @@ def head():
 def test_a_preset_file_without_bank_b_stays_stock(mgr):
     assert appended(mgr) == b''
     mgr.written.clear()
-    mgr.call('snaps_file_toc', STREAM, HEADER)
+    mgr.engine('pk_toc', STREAM, HEADER)
     assert mgr.written == [], 'and its count is left alone'
 
 
@@ -556,10 +563,10 @@ def test_the_maps_count_counts_key_0x64(mgr, flag, count):
     mgr.press(0)
     appended(mgr)
     mgr.written.clear()
-    mgr.call('snaps_file_toc', STREAM, HEADER)
+    mgr.engine('pk_toc', STREAM, HEADER)
     assert mgr.written == [bytes([count])]
     mgr.written.clear()
-    mgr.call('snaps_file_toc', STREAM, HEADER)
+    mgr.engine('pk_toc', STREAM, HEADER)
     assert mgr.written == [], 'once a save'
 
 
@@ -590,6 +597,37 @@ def test_a_load_without_a_whole_bank_b_starts_bank_b_anew(mgr, section):
     mgr.inits.clear()
     mgr.press(0)
     assert mgr.inits == [b'SNAPSHOT 4', b'SNAPSHOT 5', b'SNAPSHOT 6']
+
+
+FIXTURE = os.path.join(os.path.dirname(__file__), 'data', 'more_snapshots_bank_b_v1.bin')
+FIXTURE_NAMES = b'\x0c\x92\xa3abc\xc0'
+
+
+def test_bank_b_files_are_the_bytes_before_the_preset_file_engine(mgr):
+    """tests/data/more_snapshots_bank_b_v1.bin: the map's count byte, then section 10 (two names, key 0x64), as more_snapshots.s
+    wrote them before src/m4/preset_keys.s took the file's sites (made from its source on next 7ac75f8, bank B in the shadow,
+    key 12 present). Through the engine a save writes the same bytes, and a load of them stages the same bank B."""
+    with open(FIXTURE, 'rb') as f:
+        data = f.read()
+    count, section = data[:1], data[1:]
+    assert section.startswith(FIXTURE_NAMES)
+    key = section[len(FIXTURE_NAMES):]
+    records = key[12:]
+    assert len(records) == 3 * REC
+    data_at = CODE + mgr.sym['snaps_data']
+    mgr.flag = 1
+    mgr.m.write(CODE + mgr.sym['snaps_shadow'], records)
+    mgr.m.u8(data_at + 1, 1)
+    assert appended(mgr) == key
+    mgr.written.clear()
+    mgr.engine('pk_toc', STREAM, HEADER)
+    assert mgr.written == [count]
+    mgr.m.u8(data_at + 1, 0)
+    mgr.m.write(CODE + mgr.sym['snaps_staged'], bytes(3 * REC))
+    mgr.section = section
+    assert mgr.read_section() == len(section)
+    assert mgr.m.read(CODE + mgr.sym['snaps_staged'], 3 * REC) == records
+    assert mgr.m.read(data_at + 6, 1) == b'\x01', 'bank B read from the file'
 
 
 def with_bank_b(mgr):
@@ -783,12 +821,16 @@ def test_feature_flag():
 @pytest.mark.firmware
 def test_build_sends_the_snapshot_footswitch_to_the_module_and_wraps_load_and_save(m4emu):
     code, sym = m4emu.assemble('src/m4/more_snapshots.s', MODS, IDS, inc=INC)
+    _, esym = m4emu.assemble('src/m4/preset_keys.s', MODS, IDS, inc={'preset_keys.inc': pm.preset_keys_inc({ms.FILE_KEY: ('', 0, 0)})})
     read, on = built({'HX_MORE_SNAPSHOTS': '1'})
     assert 'more_snapshots' in on
     module = branch_target(ms.FS_SELECT_CALLS[0], read(ms.FS_SELECT_CALLS[0], 4)) - sym['snaps_select']
     assert read(module, len(code)) == code
     assert [branch_target(s, read(s, 4)) for s in ms.FS_SELECT_CALLS] == [module + sym['snaps_select']] * 2
-    assert [branch_target(s, read(s, 4)) for s, _, _ in ms.FILE_CALLS] == [module + sym[h] for _, _, h in ms.FILE_CALLS]
+    engine = branch_target(pm.PRESET_FILE_CALLS[0][0], read(pm.PRESET_FILE_CALLS[0][0], 4)) - esym['pk_serialize']
+    assert [branch_target(s, read(s, 4)) for s, _, _ in pm.PRESET_FILE_CALLS] == [engine + esym[h] for _, _, h in pm.PRESET_FILE_CALLS]
+    tables = struct.unpack('<2I', read(engine + esym['pk_writers'], 8))
+    assert tables == ((module + sym['snaps_key_write']) | 1, (module + sym['snaps_key_found']) | 1), 'key 0x64 on the preset file engine'
     hooks = ((ms.NEXT_CUR, 'snaps_next_cur'), (ms.PREV_CUR, 'snaps_prev_cur'), (ms.CC_SELECT, 'snaps_cc_select'),
              (ms.CC_VALUE_CALL, 'snaps_cc_value'), *((s, 'snaps_cc_wrap') for s in ms.CC_WRAP_CALLS))
     assert [branch_target(s, read(s, 4)) for s, _ in hooks] == [module + sym[h] for _, h in hooks]
@@ -929,7 +971,7 @@ def test_without_the_flag_the_sites_stay_stock():
     assert read(ms.NEXT_CUR, 4) == pm.bl(ms.NEXT_CUR, ms.CUR_GET) and read(ms.PREV_CUR, 4) == pm.bl(ms.PREV_CUR, ms.CUR_GET)
     assert all(read(s, 4) == pm.bl(s, ms.MANAGER_GET) for s in (*ms.CC_WRAP_CALLS, ms.CC_VALUE_CALL))
     assert read(ms.CC_RANGE, 2) == ms.CC_RANGE_STOCK
-    assert all(read(s, 4) == pm.bl(s, fn) for s, fn, _ in ms.FILE_CALLS)
+    assert all(read(s, 4) == pm.bl(s, fn) for s, fn, _ in pm.PRESET_FILE_CALLS)
     assert read(ms.PARSE, 4) == ms.PARSE_STOCK and all(read(fn, 4) == stock for fn, stock in ms.SERIALIZERS)
     assert struct.unpack('<I', read(ms.TOP_PAINT_LIT, 4))[0] == ms.TOP_PAINT
 

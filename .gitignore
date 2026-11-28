@@ -10,6 +10,7 @@ __pycache__/
 .venv/
 .pytest_cache/
 !tools/ramboot/*.bin
+!tests/data/*.bin
 tools/*.hex
 /m4cache.json
 # Screen-mirror recordings show the HX Stomp's own UI: hosted outside the repo, never committed
@@ -23,3 +24,5 @@ tools/*.hex
 .impeccable/
 .wrangler/
 assets/features/
+# Your own files (notes, downloads, manual text): never committed
+/local/

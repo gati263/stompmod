@@ -74,6 +74,9 @@ VIRTUAL = (   # (virtual ID, container ID, first bit, bits, the '<feature>.<key>
     (0xe2, 114, 0, 2, 'dsp_meter.blocks', 'a fresh container: 107 holds the retired dsp_meter.disp, whose old values would read as Off'),
     (0xe3, 114, 2, 2, 'dsp_meter.browser', ''),
     (0xe4, 114, 4, 2, 'dsp_meter.total', ''),
+    (0xe6, 115, 0, 2, 'usb_monitor.path_a', 'hxtra 1.2.1 has it at 0xe0 (container 112), which StompMod gave Model Pictures'),
+    (0xe7, 115, 2, 4, 'preset_color.color', 'hxtra 1.2.1 has it at 0xe1 (container 113), which StompMod gave Snapshot Names'),
+    (0xe8, 115, 6, 4, 'preset_color.this', 'hxtra 1.2.1 has it at 0xe2'),
 )
 
 

@@ -1,6 +1,6 @@
 # Resource limits: how much more fits on the HX Stomp
 
-**Read this before planning a feature.** It says which of the HX Stomp's resources are nearly full, what typical changes cost, and where the remaining room is. Measured on 2026-11-03 against stock 3.80.0, the default `build.py` image (NAM A2 Lite, 3 slots) and the GR-meter image (`HX_GR=1 HX_FRAMEPROBE=1`, branch `gr-meter-experiment`). Setting IDs, glyph slots and M4 code were re-measured on 2026-11-04 on main, with an all-features build (`HX_BPM=1 HX_DSP_METER=1`, plus `--splash-text` with an emoji). Status tags are as in [research/conventions.md](research/conventions.md). The HX Stomp XL has the same Entries 2, 3 and 4, so it has the same DSP and model limits.
+**Read this before planning a feature.** It says which of the HX Stomp's resources are nearly full, what typical changes cost, and where the remaining room is. Measured on 2026-11-03 against stock 3.80.0, the default `build.py` image (NAM A2 Lite, 3 slots) and the GR-meter image (`HX_GR=1 HX_FRAMEPROBE=1`, branch `gr-meter-experiment`). Setting IDs, glyph slots and M4 code were re-measured on 2026-11-04 on main, with an all-features build (`HX_BPM=1 HX_DSP_METER=1`, plus `--splash-text` with an emoji). Status tags are as in [research/conventions.md](research/conventions.md).
 
 ## The short version
 
@@ -14,7 +14,7 @@ The HX Stomp has two processors. The **M4** (LPC4350, the CPU) runs the screen, 
 
 | Resource | Left now | Spent by | Status |
 | --- | --- | --- | --- |
-| SHARC internal RAM | **568 words** (NAM, 3 slots); 2,720 (2 slots) | DSP code, DSP state | verified offline |
+| SHARC internal RAM (Block 3 room, `tools/block3.py`) | **512 words** beside 3 NAM slots; 2,528 (2), 7,290 (1), 14,239 (no NAM) | DSP code, DSP state: Metronome 213, FX Loop gate 291, GR meter 780 | verified offline |
 | Preset model IDs (1..832) | **8** | each new model | verified offline |
 | Entry 2 partition (DSP boot stream, 512 KiB) | **9.5 KB** (NAM build); **2.3 KB** with `HX_GR=1 HX_CLICK=1` | DSP code and tables | verified offline |
 | Entry 3 (model database) | **between 1 KB and 11 KB** past the default build's `0xf0d00` bytes: `0xf10f0` is known to work, and by `0xf3888` the unit drops every amp and preamp (the partition itself has 53 KB) | models (~1.8 KB), knobs (~1 KB per model) | verified on unit |
@@ -22,12 +22,12 @@ The HX Stomp has two processors. The **M4** (LPC4350, the CPU) runs the screen, 
 | DSP time per preset | M4 admits up to 90%; 15% always taken | blocks in a preset | verified offline |
 | M4 code space (segment 6) | **1.73 MB** before the RAM-run hook at `0x29000000`; ~3.1 MB installed (4 MiB image cap) | caves, relocated tables | verified offline |
 | Global Settings IDs | **5** int IDs (63, 74, 78, 120, 132) | settings | verified on unit |
-| DSP → M4 frame words | words 200..252 used by the GR meter | values measured on the DSP | verified on unit |
+| DSP → M4 frame words | words 200, 216..218, 250, 251 used by the GR meter; 201..215, 219..249 and 252 free | values measured on the DSP | verified on unit |
 
 ## Checklist for a new feature
 
 1. **M4-only feature?** It almost certainly fits. Put code in a segment 6 cave. Use a free Global Settings ID (claim it on its line in `tools/setting_ids.py`) or a per-block knob for configuration.
-2. **Needs DSP code or DSP state?** Count its 48-bit instructions (1.5 words each) plus its data words against the 568 words free. If it doesn't fit, choose a way out below *before* writing it. Also check Entry 2's 9.5 KB.
+2. **Needs DSP code or DSP state?** Count its 48-bit instructions (1.5 words each) plus its data words against the Block 3 room `python3 tools/block3.py` prints for each NAM slot count, less what the other DSP features take. Add it to `block3.FEATURES` with `WEB = 'dsp'`, so `build.py` places it and the setup page counts it. If it doesn't fit beside 2 NAM slots, choose a way out below *before* writing it. Also check Entry 2's 9.5 KB.
 3. **Adds a block model?** It uses one of the 8 preset IDs, ~46 KB of Entry 0, ~1.8 KB of Entry 3, ~15 KB of Entry 4 and ~3,250 Blob 0 words.
 4. **Adds knobs to existing models?** About 1 KB of Entry 3 and 8 KB of Entry 4 per model (`patch_comp.py`: 3 knobs × 6 models = 6 KB + 50 KB).
 5. **Wraps a stock DSP primitive?** The wrapper's cycles are charged to the stock block's declared cost, so the M4's 90% check never sees them. Keep the wrapper cheap, and remember that some models contain a core several times (the 3-Band Comp has six `0x271a` cores).
@@ -39,7 +39,7 @@ The HX Stomp has two processors. The **M4** (LPC4350, the CPU) runs the screen, 
 
 - Stock fills internal Blocks 0 (`0x92000..0x9e000`) and 1 (`0xb2000..0xbe000`). It leaves only Block 2's tail (`0xc7674..0xc8000`, 2,444 words) and Block 3 above `0xe4842` (14,270 words).
 - NAM takes those gaps: 13 words are left in Block 2. Block 3 has 555 words left at 3 slots and 2,707 at 2.
-- **The GR meter's DSP side** (`frame_probe.asm`: 600 instructions + 336 words) sits in Block 3 right above NAM's slots, so `HX_GR=1` builds NAM with two slots (`build.py` `GR_SLOTS`); `patch_comp.dsp_place()` puts it there and fails the build if it reaches the Metronome's kernel. About 1,070 words stay free between them.
+- **The DSP features share one room** in Block 3, between NAM's slots and its cold code (with no NAM, `0xe4850` up to the cold code's end). `tools/block3.py` packs those that are on from the top down (Metronome, FX Loop gate, GR meter), each in whole instruction pairs, so each costs the same whatever else is on, and fails the build when they overflow. `HX_NAM_SLOTS` (3, 2, 1, 0) sets the room; unset, `build.py` takes the most NAM slots that leave room, so `HX_GR=1` alone builds NAM with two.
 - DDR2 (external RAM) is plentiful. Heap 4 is `0x328000..0xed7000` (12.2M words; decoded by hand from VISA immediates near Entry 2 word 41908). The other regions are listed in `patch_amp.py` (`HEAP6_MOVED`, `SHARC_BLOB0_*`, `SLOT_SDRAM`).
 
 ### Models [verified offline]

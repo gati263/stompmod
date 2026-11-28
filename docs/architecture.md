@@ -34,7 +34,7 @@ The [research notes](research/INDEX.md) have the details: addresses, the M4-to-D
 
 ```
 build.py                      one-step build from the stock .hxf
-docs/features.md              every feature and setting, for players
+web/features.html             every feature and setting, with its demos, for players (the features page)
 docs/building.md              building from the command line, the browser build, RAM runs
 docs/research/INDEX.md        what is known about the 3.80.0 firmware: the index of the research notes
 tools/patch_menu.py           HXtra: the feature engine, the Global Settings section and its caves (HX Stomp)
@@ -58,6 +58,7 @@ tools/sharc/nam_lite.py       the model format (converter), test model, shared t
 tools/sharc/nam_pack.py       .nam loader, layer order
 tools/sharc/entry4_blob.py    DSP graph library parser
 tools/sharc/sasm.py, ssim.py  SHARC assembler and simulator
+tools/sharc/visa_dis.py       SHARC disassembler for Entry 2: 48-bit ISA and VISA (docs/research/sharc/visa.md)
 src/sharc/nam_a2.asm          reference NAM A2 implementation for the check
 src/ramboot/                  the RAM loader and its eMMC overlay hook (C, Cortex-M4; make -C src/ramboot)
 web/                          the setup page: build, RAM run and converter in the browser (deployed per release as a Cloudflare Worker: deploy/stompmod, tools/release_site.py)

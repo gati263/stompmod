@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import block3
 import features
 import nam_multi
 import patch_amp as pa
@@ -32,12 +33,12 @@ IN1, OUT, IN3, PMW = 0x7000, 0x7100, 0x7200, 0x7300     # the core's buffers (I1
 SCALE = 0.25                                            # the stand-in core: I2 = I1 * SCALE
 
 
-def probe():
-    """(sim, symbol lookup) of frame_probe.asm, with a stand-in core and control function and the scan over one frame."""
+def probe(span=256):
+    """(sim, symbol lookup) of frame_probe.asm, with a stand-in core and control function and the scan over `span` words from FRAME."""
     src = pc.dsp_asm(0xe4850, 0xc4ef8)
     for k, v in (('ORIG', CORE), ('ORIG_2719', CORE), ('ORIG_CTRL_271A', CTRL), ('ORIG_CTRL_2719', CTRL),
-                 ('ORIG_CTRL_2710', CTRL), ('SCAN_A', FRAME), ('SCAN_B', FRAME + 256), ('SCAN_C', FRAME + 256),
-                 ('SCAN_D', FRAME + 256)):
+                 ('ORIG_CTRL_2710', CTRL), ('SCAN_A', FRAME), ('SCAN_B', FRAME + span), ('SCAN_C', FRAME + span),
+                 ('SCAN_D', FRAME + span)):
         src, n = re.subn(r'(\.equ %s,\s*)0x[0-9a-fA-F]+' % k, r'\g<1>%#x' % v, src)
         assert n == 1, k
     ret = 'fc_ret:\n    I12 = DM(M7, I6);\n    JUMP (M14, I12) (DB);\n    NOP;\n    RFRAME;'
@@ -110,6 +111,29 @@ def test_probe_keeps_the_core_output_and_registers():
     assert [wrapped.u[r] for r in range(8)] == [alone.u[r] for r in range(8)]
 
 
+@pytest.mark.parametrize('entry', ['ENTRY_271A', 'ENTRY_2719', 'ENTRY_2710'])
+@pytest.mark.parametrize('metered', [False, True])
+def test_probe_other_cores_go_straight_to_the_stock_code(entry, metered):
+    """Issue #84: two 3-Band Comps (nine 0x271a cores) in a preset near the DSP limit froze the unit, so a core the meter does
+    not show costs a few instructions over the stock core alone, during the frame scan too, and leaves its output and registers as the core's."""
+    alone, sym = probe(span=4096)
+    for r in range(8):
+        alone.u[r] = 0x100 + r
+    c0 = alone.cycles
+    block(alone, sym, 'FAKE_CORE', 0x97000, 0.5)
+    stock = alone.cycles - c0
+    s, sym = probe(span=4096)
+    if metered:
+        knobs(s, sym, 'CTRL_271A', 0x96000, 0, 0, 20)
+    for r in range(8):
+        s.u[r] = 0x100 + r
+    c0 = s.cycles
+    block(s, sym, entry, 0x97000, 0.5)
+    assert s.cycles - c0 - stock <= 16
+    assert [s.rd(OUT + k) for k in range(16)] == [alone.rd(OUT + k) for k in range(16)]
+    assert [s.u[r] for r in range(8)] == [alone.u[r] for r in range(8)]
+
+
 def test_probe_window_peaks_and_frame_tail():
     """After 64 blocks the frame carries the window peaks of input (216) and output (217), the knobs (218) and the window count (250)."""
     s, sym = probe()
@@ -125,13 +149,13 @@ def test_probe_window_peaks_and_frame_tail():
 
 
 def test_probe_measures_only_the_metered_core():
-    """Another core's blocks (another compressor, an amp sharing the core) move no window; the meter goes off 64 blocks after its core."""
-    s, sym = probe()
+    """Another core's blocks (another compressor, an amp sharing the core) neither scan nor write a frame; the M4 times the meter out."""
+    s, sym = probe(span=4096)
     knobs(s, sym, 'CTRL_2719', 0x96000, 0, 0, 20)
     for _ in range(65):
         block(s, sym, 'ENTRY_2719', 0x97000, 0.5)
-    assert s.rd(FRAME + 250) == 0
-    assert s.rd(FRAME + 218) == 0
+    assert s.rd(sym('FP_CUR')) == 0
+    assert [s.rd(FRAME + w) for w in (200, 216, 217, 218, 250, 251)] == [0] * 6
     block(s, sym, 'ENTRY_2719', 0x96000, 0.5)
     assert s.rd(FRAME + 218) == 0x6B000014
 
@@ -158,43 +182,94 @@ def test_probe_deluxe_reads_the_core_gain():
     assert u2f(s.rd(FRAME + 217)) == 1.0
 
 
-def test_probe_kinky_meter_uses_its_attack_and_release():
-    """Kinky Comp Attack (pid 2) and Release (3) in ms become the window's coefficients: words 252 and 251."""
+def test_probe_kinky_meter_uses_its_release():
+    """Kinky Comp Release (pid 3) in ms becomes the window's coefficient, word 251; Attack (pid 2) only reaches the core."""
     s, sym = probe()
     knobs(s, sym, 'CTRL_2710', 0x96000, 0, 0, 20)
     ctrl(s, sym, 'CTRL_2710', 0x96000, 2, f2u(10.0))
+    assert s.rd(sym('FAKE_CTRL')) == 0x777, 'Attack reaches the stock control function'
+    s.wr(sym('FAKE_CTRL'), 0)
     ctrl(s, sym, 'CTRL_2710', 0x96000, 3, f2u(100.0))
-    assert s.rd(sym('FAKE_CTRL')) == 0x777, 'Attack and Release reach the stock control function'
+    assert s.rd(sym('FAKE_CTRL')) == 0x777, 'Release reaches the stock control function'
     for _ in range(64):
         block(s, sym, 'ENTRY_2710', 0x96000, 0.5)
-    att, rel = 1 - 2 * math.pi / 48 / 10, 1 - 2 * math.pi / 48 / 100
+    rel = 1 - 2 * math.pi / 48 / 100
     assert u2f(s.rd(FRAME + 251)) == pytest.approx(rel ** 1024, rel=1e-3)
-    assert u2f(s.rd(FRAME + 252)) == pytest.approx(att ** 512, rel=1e-2)
+    assert s.rd(FRAME + 252) == 0, 'word 252 is no longer written'
 
 
-
-def test_probe_opto_meter_takes_la_attack_without_one():
-    """The Ampeg Opto Comp's knobs send its core only Release (pid 3): Attack stays the LA Studio Comp's 10 ms."""
+def test_probe_opto_meter_takes_its_release():
+    """The Ampeg Opto Comp's knobs send its core Release (pid 3): the meter's coefficient follows it."""
     s, sym = probe()
     knobs(s, sym, 'CTRL_2710', 0x96000, 0, 0, 20)
     ctrl(s, sym, 'CTRL_2710', 0x96000, 3, f2u(100.0))
     for _ in range(64):
         block(s, sym, 'ENTRY_2710', 0x96000, 0.5)
-    att, rel = u2f(s.rd(sym('LA_ATT'))), 1 - 2 * math.pi / 48 / 100
+    rel = 1 - 2 * math.pi / 48 / 100
     assert u2f(s.rd(FRAME + 251)) == pytest.approx(rel ** 1024, rel=1e-3)
-    assert u2f(s.rd(FRAME + 252)) == pytest.approx(att ** 512, rel=1e-2)
 
 
-
-def test_probe_red_squeeze_meter_takes_la_times_without_any():
-    """No Red Squeeze knob reaches its core: Attack and Release stay the LA Studio Comp's 10 ms and 500 ms."""
+def test_probe_red_squeeze_meter_takes_la_release_without_any():
+    """No Red Squeeze knob reaches its core: Release stays the LA Studio Comp's 500 ms."""
     s, sym = probe()
     knobs(s, sym, 'CTRL_2710', 0x96000, 0, 0, 20)
     for _ in range(64):
         block(s, sym, 'ENTRY_2710', 0x96000, 0.5)
-    att, rel = u2f(s.rd(sym('LA_ATT'))), u2f(s.rd(sym('LA_REL')))
+    rel = u2f(s.rd(sym('LA_REL')))
     assert u2f(s.rd(FRAME + 251)) == pytest.approx(rel ** 1024, rel=1e-3)
-    assert u2f(s.rd(FRAME + 252)) == pytest.approx(att ** 512, rel=1e-2)
+
+
+def test_probe_writes_only_the_words_the_m4_reads():
+    """Frame words 200, 216..218, 250 and 251 (src/m4/gr_meter.s's); the rest of the tail is left as it was."""
+    s, sym = probe()
+    for k in range(1, 255):
+        s.wr(FRAME + k, 0x5A5A0000 + k)
+    knobs(s, sym, 'CTRL_2719', 0x96000, 2, 1, 20)
+    for _ in range(64):
+        block(s, sym, 'ENTRY_2719', 0x96000, 0.5)
+    written = {200, 216, 217, 218, 250, 251}
+    assert all(s.rd(FRAME + k) == 0x5A5A0000 + k for k in range(1, 255) if k not in written)
+    assert s.rd(FRAME + 200) == 0x600DF00D and s.rd(FRAME + 250) == 1
+
+
+def test_probe_keeps_only_whole_frames():
+    """A first word without its last word 255 on is no frame: neither listed nor written."""
+    s, sym = probe(span=1024)
+    s.wr(FRAME + 512, 0xFACEF00D)                         # no D00FECAF at +255
+    s.wr(FRAME + 600, 0xF00DFACE)                         # the halfword-swapped frame, closed
+    s.wr(FRAME + 600 + 255, 0xECAFD00F)
+    knobs(s, sym, 'CTRL_2719', 0x96000, 0, 0, 20)
+    for _ in range(64):
+        block(s, sym, 'ENTRY_2719', 0x96000, 0.5)
+    assert s.rd(sym('FP_N')) == 2
+    assert s.rd(FRAME + 200) == 0x600DF00D and s.rd(FRAME + 600 + 200) == 0xF00D600D
+    assert s.rd(FRAME + 512 + 200) == 0
+
+
+def test_probe_full_core_table_replaces_entries_in_turn():
+    s, sym = probe()
+    for k in range(18):
+        ctrl(s, sym, 'CTRL_271A', 0x90000 + k, 100, 1)
+    states = [s.rd(sym('CORES') + 6 * e) for e in range(16)]
+    assert states == [0x90010, 0x90011] + [0x90000 + k for k in range(2, 16)]
+
+
+def test_probe_output_in_i1_for_a_core_that_says_so():
+    """pid 103 = 1: the core's output overwrites its first input, so B is I1 after the call."""
+    s, sym = probe()
+    knobs(s, sym, 'CTRL_2719', 0x96000, 0, 0, 20)
+    ctrl(s, sym, 'CTRL_2719', 0x96000, 103, 1)
+    for _ in range(64):
+        block(s, sym, 'ENTRY_2719', 0x96000, 0.5)
+    assert u2f(s.rd(FRAME + 217)) == pytest.approx(0.5)  # the stand-in core leaves I1 as it was
+
+
+def test_dsp_stays_small():
+    """The GR meter's room in Block 3 (normal words): other DSP features need what is left."""
+    secs, _ = sasm.assemble(pc.dsp_asm(*pc.dsp_place()), 'frame_probe.asm')
+    n_dm, n_pm = (sum(len(x.words) for x in secs if x.kind == k) for k in ('dm', 'pm'))
+    assert n_dm + (n_pm + (n_pm & 1)) * 3 // 2 <= 800
+
 
 # ---- --wrap-prim
 
@@ -223,8 +298,8 @@ def test_wrap_prim_refuses_a_stock_address_that_differs():
 # ---- the DSP wrapper's place, beside NAM A2 Lite's kernel and the Metronome's
 
 def dsp_ranges():
-    """[start, end) normal-word ranges of the wrapper's data and code, from pc.dsp_place()."""
-    dm, pm = pc.dsp_place()
+    """[start, end) normal-word ranges of the wrapper's data and code, beside two NAM slots."""
+    dm, pm = block3.place('HX_GR', {})
     secs, _ = sasm.assemble(pc.dsp_asm(dm, pm), 'frame_probe.asm')
     (n_dm,), (n_pm,) = ([len(s.words) for s in secs if s.kind == k] for k in ('dm', 'pm'))
     return (dm, dm + n_dm), (pc.nw(pm), pc.nw(pm + n_pm + (n_pm & 1)))
@@ -234,26 +309,26 @@ def overlap(a, b):
     return a[0] < b[1] and b[0] < a[1]
 
 
-def test_dsp_sits_right_above_nams_two_slots():
-    lay = patch_click.nam_layout(gr=True)
+def test_dsp_sits_in_the_room_nam_leaves():
+    lo, hi = block3.room(2)
     (data, code) = dsp_ranges()
-    assert lay.slots == 2 and data[0] == lay.b3_to and data[1] <= code[0]
-    assert not any(overlap(r, c) for r in (data, code) for c in lay.claims())
+    assert lo <= data[0] and data[1] <= code[0] and code[1] <= hi
+    assert not any(overlap(r, c) for r in (data, code) for c in block3.layout(2).claims())
 
 
-def test_dsp_sits_under_the_metronome_and_nams_cold_code():
-    lay = patch_click.nam_layout(gr=True)
-    click = patch_click.pm_base(patch_click.kernel_size(), lay)
-    _, code = dsp_ranges()
-    assert code[1] <= pc.nw(click) < pc.nw(lay.cold_pm)
-    _, pm = pc.dsp_place()
-    assert 0x0e302c <= pm and pc.nw(pm) + (code[1] - code[0]) <= nam_multi.NW3 + 0x8000
+def test_dsp_sits_under_the_metronome():
+    env = {'HX_CLICK': '1', 'HX_GR': '1'}
+    click = block3.place('HX_CLICK', env)[1]
+    dm, pm = block3.place('HX_GR', env)
+    n_pm = pc.dsp_size()[1]
+    assert pc.nw(pm + n_pm + (n_pm & 1)) <= pc.nw(click) and 0x0e302c <= pm
 
 
 def test_dsp_does_not_fit_beside_three_slots():
-    lay = patch_click.nam_layout(gr=False)
-    (data, code) = dsp_ranges()
-    assert lay.slots == 3 and lay.cold_nw - lay.b3_to < (data[1] - data[0]) + (code[1] - code[0])
+    assert block3.cost('HX_GR') > block3.words(3)
+    assert block3.slots({'HX_GR': '1'}) == 2
+    with pytest.raises(SystemExit, match='3 NAM slots leave 512'):
+        block3.slots({'HX_GR': '1', 'HX_NAM_SLOTS': '3'})
 
 
 def test_wraps_call_the_stock_code_the_wrapper_calls():
@@ -269,6 +344,13 @@ def stock_l6ia():
     if not stock:
         pytest.skip('HX_STOMP_HXF is not set')
     return pa.load_l6ia_from_any(stock)[0]
+
+
+def test_gr_knob_names_and_values_fit_the_screen():
+    # stock short names run to 8 characters ("Hi Shelf"); the 9-character "Meter Thk" did not display
+    for _, _, short, labels, _ in pc.GR_KNOBS:
+        assert len(short) <= 8 and all(len(v) <= 8 for v in labels)
+    assert pc.GR_KNOBS[2][2:4] == ('Mtr Size', ('Off', 'S', 'M', 'L', 'XL'))
 
 
 @pytest.fixture(scope='module')
@@ -289,6 +371,8 @@ def test_comp_models_get_the_three_knobs(comp_patched, model, prim):
     # integer lists: their raw words, which the parser reads as floats
     assert [tuple(f2u(p[k]) for k in ('min', 'max', 'default')) for p in m['params'][n:]] == [(0, len(k[3]) - 1, k[4]) for k in pc.GR_KNOBS]
     assert [p['name'] for p in m['params'][:n]] == [p['name'] for p in old_m['params']]
+    size = m['params'][n + 2]['meta']
+    assert (size['displayNameShort'], size['0'], size['4'], size.get('5')) == ('Mtr Size', 'Off', 'XL', None)
 
     e4 = pa.get_entry_swapped(new, 4)
     w4 = struct.unpack(f'<{len(e4) // 4}I', e4)
@@ -392,6 +476,27 @@ def test_comp_patch_puts_the_strings_back_in_the_stock_tables_place(added_then_c
     assert len(after) < len(before) - 0x10000
 
 
+@pytest.fixture(scope='module')
+def gated_then_comp():
+    """(Entry 3 after patch_gate, after patch_comp too), with no add-model first: a NAM-off build with no Metronome."""
+    import patch_gate
+    gated = patch_gate.patch_gate(stock_l6ia(), log=lambda *_: None)
+    return pa.get_entry_swapped(gated, 3), pa.get_entry_swapped(pc.patch_comp(gated, log=lambda *_: None), 3)
+
+
+@pytest.mark.firmware
+def test_comp_patch_grows_a_tail_string_section_in_place(gated_then_comp):
+    # The v1.2.0 release's HX_NAM_SLOTS=0 HX_GR HX_FX_GATE build failed here: the section was at the tail, the model table home
+    before, after = gated_then_comp
+    h0, h1 = struct.unpack_from('<10I', before, 0), struct.unpack_from('<10I', after, 0)
+    assert h0[3] > pc.STOCK_E3_END and h0[6] < h0[3] and (h1[3], h1[6]) == (h0[3], h0[6]) and h1[5] > h0[5]
+    assert len(after) < DEFAULT_E3
+    comps = {m for m, _ in pc.COMP_MODELS}
+    view = lambda e3: [pc.models_view({'models': [m]}) for m in pa.parse_entry3_full(e3)['models'] if m['name'] not in comps]
+    assert view(before) == view(after)
+    assert pc.slot_lists(before) == pc.slot_lists(after)
+
+
 @pytest.mark.firmware
 def test_comp_patch_keeps_every_other_model_and_slot_list(added_then_comp):
     before, after = added_then_comp
@@ -411,8 +516,8 @@ def test_comp_patch_refuses_a_second_run(comp_patched):
 # ---- the whole GR build, pinned as tests/test_firmware.py pins the default one
 
 GR_BUILT_MD5 = {
-    'HX_GR': 'b667de3d018b5eef3e43b59294875e10',
-    'HX_GR HX_CLICK': '747bb463fe9f993d913708390be3ede4',    # patch_click.py adds a model, which would drop knobs written before it
+    'HX_GR': '58c63d2dbc0b3ad7a0e866fb22f9b2be',
+    'HX_GR HX_CLICK': '40d3c0e61c427897d332e317c428d535',    # patch_click.py adds a model, which would drop knobs written before it
 }
 
 
@@ -432,7 +537,7 @@ def test_gr_build(tmp_path, flags):
     assert r.returncode == 0, r.stdout + r.stderr
     shown = 'gr, metronome, splash; Entry 7; Entry 8' if 'HX_CLICK' in flags else 'gr, splash; Entry 8'     # the Metronome's off icon; the boot picture
     assert 'ALL OK' in r.stdout and f'Entry 0: features {shown}\n' in r.stdout
-    assert r.stdout.count(': Mtr Position, Mtr Direction, Mtr Thickness on slots') == len(pc.COMP_MODELS)
+    assert r.stdout.count(': Mtr Position, Mtr Direction, Mtr Size on slots') == len(pc.COMP_MODELS)
     assert hashlib.md5(out.read_bytes()).hexdigest() == GR_BUILT_MD5[flags]
     assert len(pa.get_entry_swapped(pa.load_l6ia_from_any(str(out))[0], 3)) <= DEFAULT_E3
 
@@ -461,13 +566,6 @@ def build_steps(tmp_path, monkeypatch, unit, env):
     return ran
 
 
-@pytest.mark.parametrize('unit', ['HX_Stomp_XL', 'HX_Effects'])
-def test_gr_is_for_the_hx_stomp_only(tmp_path, monkeypatch, unit):
-    ran = build_steps(tmp_path, monkeypatch, unit, {'HX_GR': '1'})
-    assert '--slots' not in next(a for a in ran if a[0] == 'tools/sharc/nam_multi.py')
-    assert not any(a[0] == 'tools/patch_comp.py' for a in ran)
-
-
 @pytest.mark.parametrize('env', [{}, {'HX_CLICK': '1'}])
 def test_gr_keeps_nam_on_two_slots_and_patches_last(tmp_path, monkeypatch, env):
     ran = build_steps(tmp_path, monkeypatch, 'HX_Stomp', {'HX_GR': '1'} | env)
@@ -486,7 +584,7 @@ def test_without_gr_nam_keeps_three_slots(tmp_path, monkeypatch):
 # ---- the feature: its hooks on the stock firmware
 
 @pytest.mark.firmware
-def test_gr_feature_chains_its_three_hooks():
+def test_gr_feature_chains_its_five_hooks():
     import features.gr as gr
     e0 = pa.get_entry_swapped(stock_l6ia(), 0)
     mods = features.load()
@@ -500,7 +598,8 @@ def test_gr_feature_chains_its_three_hooks():
         o = pa._e0_vaddr_to_foff(s, va, 4)
         return struct.unpack('<I', e[o:o + 4])[0]
 
-    for lit, stock in ((gr.RX_CB_LIT, gr.RX_CB), (gr.HOME_PAINT_LIT, gr.HOME_PAINT)):
+    for lit, stock in ((gr.RX_CB_LIT, gr.RX_CB), (gr.HOME_PAINT_LIT, gr.HOME_PAINT), (gr.EDIT_PAINT_LIT, gr.EDIT_PAINT),
+                       (gr.VIEW_PAINT_LIT, gr.VIEW_PAINT)):
         assert u32(plain, psegs, lit) == stock
         stub = u32(new, segs, lit)
         assert stub != stock and stub & 1
@@ -508,9 +607,24 @@ def test_gr_feature_chains_its_three_hooks():
     assert new[o:o + 4] != pm.bl(gr.HOME_CTOR_CALL, gr.HOME_CTOR)
 
 
+@pytest.mark.firmware
+def test_comp_names_are_the_models_in_the_model_table():
+    """The names the Edit view looks for are the stock Entry 3's, and each is a model the cost table prices by it."""
+    import features.gr as gr
+    names = gr.comp_names(pa.get_entry_swapped(stock_l6ia(), 3))
+    assert tuple(names) == COMP_NAMES
+    e0 = pa.get_entry_swapped(stock_l6ia(), 0)
+    segs = pa._parse_e0_segments(e0)
+    base = struct.unpack_from('<I', e0, pa._e0_vaddr_to_foff(segs, 0x28e01c08, 4))[0]     # the Static Model Table
+    o = pa._e0_vaddr_to_foff(segs, base, 12 * 823)
+    keys = {struct.unpack_from('<I', e0, o + 12 * i)[0] for i in range(823)}
+    assert set(names) <= keys
+
+
 # ---- the M4 meter, in unicorn
 
 MODULE, FRAME_VA = 0x28e60000, 0x28e80000                # where the module and a frame sit in the emulator's SDRAM
+COMP_NAMES = (671, 2699, 656, 2700, 1317, 2985, 1981, 3085, 1508, 3010, 669, 2701)     # gr.comp_names() of the stock Entry 3
 SET_COLOR, SET_POS, SET_SIZE, GET_VALUE, REDRAW = 0x28e24b98, 0x28e24af0, 0x28e24b28, 0x28e1f844, 0x28db8508
 LOCK, UNLOCK = 0x28e24970, 0x28e24ae8
 SETTERS = (SET_COLOR, SET_POS, SET_SIZE)
@@ -531,7 +645,8 @@ class Meter:
     """gr_meter.s in tests/m4emu.py: the stock widget setters write the widget as the firmware's do."""
 
     def __init__(self, m4emu):
-        code, self.sym = m4emu.assemble('src/m4/gr_meter.s', [], {})
+        import features.gr as gr
+        code, self.sym = m4emu.assemble('src/m4/gr_meter.s', [], {}, inc=gr.inc(COMP_NAMES))
         m = self.m = m4emu.M4(code, MODULE)
         m.stub(SET_COLOR, lambda m: m.u32(m.reg('r0'), m.reg('r1')))
         m.stub(SET_POS, lambda m: m.write(m.reg('r0') + 4, struct.pack('<2I', m.reg('r1'), m.reg('r2'))))
@@ -553,7 +668,7 @@ class Meter:
         """The widget setters the last frame called."""
         return [at for at, _ in self.m.log if at in SETTERS]
 
-    def frame(self, a_peak, b_peak, window, pos=0, dir_=0, thk=20, release=0.5, knobs=True):
+    def frame(self, a_peak, b_peak, window, pos=0, dir_=0, thk=4, release=0.5, knobs=True):
         w = [0] * 256
         w[200] = 0xf00d600d
         w[218] = rot16(0x6B000000 | pos << 16 | dir_ << 8 | thk) if knobs else 0
@@ -684,6 +799,14 @@ def test_m4_off_without_knobs_or_at_thickness_0(m4emu):
     assert lit(m) == 0
 
 
+@pytest.mark.parametrize('thk, px', [(1, 5), (2, 10), (3, 15), (4, 20), (7, 20)])
+def test_m4_mtr_size_steps_are_5_px(m4emu, thk, px):
+    # 7: a preset saved when the knob was Mtr Thk 0..20
+    m = Meter(m4emu)
+    m.frame(1.0, 0.1, window=1, pos=1, thk=thk)
+    assert m.m.u32(MODULE + m.sym['widgets'] + 16) == px
+
+
 def test_m4_handlers_through_the_chain_stubs(m4emu):
     """On their shared hooks the stock callback and paint still run, once, with the hook's arguments: every erase before the
     stock paint, every draw after it, as the stock paint does."""
@@ -705,3 +828,225 @@ def test_m4_handlers_through_the_chain_stubs(m4emu):
     order = [at for at, _ in m.log if at in (erase, draw, gr.HOME_PAINT & ~1)]
     assert order == [erase] * 46 + [gr.HOME_PAINT & ~1] + [draw] * 46
     assert m.calls(gr.HOME_PAINT) == [(0x1234, home, 5, 6)]
+
+
+# ---- the Edit view's lights, straight into the framebuffer
+
+FB = 0x28a00000                                         # a framebuffer: 320 columns of 240 pixels, bottom-up
+LIST_A, LIST_B = 0x281f35b8, 0x281f3d2c
+EDIT_A, EDIT_B, BROWSER = 0x28128270, 0x281282f8, 0x281299d0
+NODES, DSP, BLOCKS, SELECTED = 0x28b00000, 0x28b10000, 0x28b20000, 0x28df0280
+DSP_LOCK, DSP_UNLOCK = 0x28e07844, 0x28e0785c
+
+
+def rgb565(c):
+    return (c >> 3 & 31) << 11 | (c >> 10 & 63) << 5 | (c >> 19 & 31)
+
+
+def rects(pos, t):
+    """Each slot's (x, bottom row, w, h), as layout places the Home widgets."""
+    out = []
+    for j in range(10):
+        if pos == 0:
+            out.append((32 * j, 0x76 + (t + 1) // 2 - t, 30, t))
+        elif pos in (1, 3):
+            out.append((32 * j, 240 - t if pos == 1 else 0, 30, t))
+        else:
+            out.append((0 if pos == 2 else 320 - t, 216 - 24 * j, t, 21))
+    return out
+
+
+class Edit(Meter):
+    """The meter with an Edit view on screen: list A shows its bottom half, list B its top half, and block record 2 (ID 3) is selected."""
+
+    def __init__(self, m4emu):
+        super().__init__(m4emu)
+        m = self.m
+        self.id, self.name = 3, COMP_NAMES[0]
+        m.stub(SELECTED, lambda m: m.reg('r0', self.id))
+        m.stub(DSP_LOCK)
+        m.stub(DSP_UNLOCK)
+        self.views(EDIT_A, EDIT_B)
+        m.u32(0x28449e78, DSP)
+        m.u32(DSP + 0x4400, BLOCKS)
+        self.pattern = bytes((x * 7 + y * 3) & 0xff for x in range(320) for y in range(480))
+        m.write(FB, self.pattern)
+
+    def views(self, a, b):
+        """List A's first active node paints a, list B's b; an inactive node goes first in each."""
+        for k, (head, view) in enumerate(((LIST_A, a), (LIST_B, b))):
+            node, off = NODES + 0x40 * 2 * k, NODES + 0x40 * (2 * k + 1)
+            self.m.write(off, struct.pack('<6I', 0, 0x1234, 0, 0x99, 0, node))
+            self.m.write(node, struct.pack('<6I', 1, 0x1235, 0, view, 0, 0))
+            self.m.u32(head, off)
+
+    def block(self, record, name, handle=7):
+        self.m.u32(DSP + 0x14 + 0x54 * record, handle)
+        obj = 0x28b30000 + 0x100 * record
+        self.m.u32(BLOCKS + 0x24 + 4 * handle, obj)
+        self.m.write(obj + 5, b'\x01')
+        self.m.u32(obj + 0x54, name)
+
+    def paint(self, half=EDIT_B):
+        rows = {i: i - 1 for i in range(1, 9)} | {i: i - 3 for i in range(11, 19)}
+        self.block(rows.get(self.id, 2), self.name)         # a compressor in record 2 for an ID that is no block
+        self.m.log.clear()
+        self.call('edit_top' if half == EDIT_B else 'edit_params', FB, half)
+
+    def px(self, x, y):
+        return struct.unpack('<H', self.m.read(FB + 2 * (240 * x + y), 2))[0]
+
+    def stock(self, x, y):
+        return struct.unpack_from('<H', self.pattern, 2 * (240 * x + y))[0]
+
+    def screen(self):
+        return self.m.read(FB, 320 * 480)
+
+
+def lights(e, pos, t, n, dir_=0):
+    """n Edit-view lights are lit, each in its colour over every pixel of its rectangle; the unlit ones leave the screen as it was."""
+    for j, (x, y, w, h) in enumerate(rects(pos, t)):
+        i = 9 - j if dir_ else j
+        got = [e.px(x + dx, y + dy) for dx in range(w) for dy in range(h)]
+        want = [rgb565(e.word('colours', i))] * (w * h) if i < n else [e.stock(x + dx, y + dy) for dx in range(w) for dy in range(h)]
+        assert got == want, (j, x, y)
+
+
+@pytest.mark.parametrize('pos', range(5))
+def test_edit_lights_follow_mtr_pos(m4emu, pos):
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-4.5 / 20), window=1, pos=pos, thk=3)
+    e.paint()
+    lights(e, pos, 15, 4)
+    inside = {(x + dx, y + dy) for x, y, w, h in rects(pos, 15) for dx in range(w) for dy in range(h)}
+    assert all(e.px(x, y) == e.stock(x, y) for x in range(0, 320, 3) for y in range(0, 240, 3) if (x, y) not in inside)
+
+
+def test_edit_lights_follow_mtr_dir_and_size(m4emu):
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-4.5 / 20), window=1, pos=2, dir_=1, thk=4)
+    e.paint()
+    lights(e, 2, 20, 4, dir_=1)
+
+
+def test_edit_lights_go_and_leave_the_screen_as_it_was(m4emu):
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.paint()
+    assert e.screen() != e.pattern
+    e.frame(1.0, 10 ** (-12 / 20), window=2, pos=1, thk=0)          # Mtr Size Off
+    e.paint()
+    assert e.screen() == e.pattern
+
+
+def test_edit_lights_keep_what_a_stock_paint_drew_under_them(m4emu):
+    """A knob value redrawn under a lit light shows when the light dims, and the dimmed light leaves the text alone after that."""
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=3, thk=4)
+    e.paint()
+    x, y = rects(3, 20)[2][:2]
+    e.m.write(FB + 2 * (240 * x + y), b'\x34\x12')                   # a stock paint draws over light 3
+    e.m.write(FB + 2 * (240 * (x + 1) + y), b'\x00\x00')             # and a stock erase leaves black
+    e.paint()
+    lights(e, 3, 20, 7)
+    e.frame(1.0, 10 ** (-1.5 / 20), window=2, pos=3, thk=4)         # fewer lights lit
+    e.paint()
+    assert e.px(x, y) == 0x1234 and e.px(x + 1, y) == 0 and e.px(x + 2, y) == e.stock(x + 2, y)
+    e.m.write(FB + 2 * (240 * (x + 3) + y), b'\x78\x56')             # text redrawn under the unlit light
+    e.paint()
+    assert e.px(x + 3, y) == 0x5678
+
+
+def test_edit_lights_leave_what_a_stock_paint_drew_since(m4emu):
+    """The paint that selects another block may draw under a lit light before the lights go: those pixels stay."""
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.paint()
+    x, y = rects(1, 20)[0][:2]
+    e.m.write(FB + 2 * (240 * x + y), b'\xbc\x9a')
+    e.id, e.name = 5, 1234
+    e.paint()
+    assert e.px(x, y) == 0x9abc and e.px(x + 1, y) == e.stock(x + 1, y)
+
+
+def test_edit_unlit_lights_never_touch_the_screen(m4emu):
+    """Text under an unlit light is never covered, though it changes while the meter shows."""
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.paint()
+    e.frame(1.0, 10 ** (-1.5 / 20), window=2, pos=1, thk=4)        # one light lit: light 6 has saved pixels to give back
+    e.paint()
+    x, y, w, h = rects(1, 20)[5]
+    text = struct.pack(f'<{h}H', *[0 if k % 2 else 0x4321 for k in range(h)])    # black between strokes
+    e.m.write(FB + 2 * (240 * x + y), text)
+    e.paint()
+    assert e.m.read(FB + 2 * (240 * x + y), 2 * h) == text
+
+
+def test_edit_lights_move_with_mtr_pos(m4emu):
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.paint()
+    e.frame(1.0, 10 ** (-12 / 20), window=2, pos=4, thk=4)
+    e.paint()
+    lights(e, 4, 20, 7)
+    for x, y, w, h in rects(1, 20):
+        assert all(e.px(x + dx, y + dy) == e.stock(x + dx, y + dy) for dx in range(w) for dy in range(h) if x + dx < 300)
+
+
+@pytest.mark.parametrize('block_id, record', [(1, 0), (8, 7), (11, 8), (18, 15)])
+def test_edit_lights_for_a_compressor_on_either_row(m4emu, block_id, record):
+    e = Edit(m4emu)
+    e.id, e.name = block_id, COMP_NAMES[-1]
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.paint()
+    lights(e, 1, 20, 7)
+    assert e.m.calls(DSP_LOCK) and len(e.m.calls(DSP_LOCK)) == len(e.m.calls(DSP_UNLOCK))
+
+
+@pytest.mark.parametrize('block_id, name', [(3, 1234), (0, COMP_NAMES[0]), (9, COMP_NAMES[0]), (10, COMP_NAMES[0]),
+                                            (19, COMP_NAMES[0])])
+def test_edit_no_lights_for_another_block(m4emu, block_id, name):
+    # IDs 0, 9, 10 and 19 are the input, output, split and merge: no block record
+    e = Edit(m4emu)
+    e.id, e.name = block_id, name
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.paint()
+    assert e.screen() == e.pattern
+
+
+@pytest.mark.parametrize('a, b', [(EDIT_A, BROWSER), (0x2812a05c, 0x2812aae0)])
+def test_edit_no_lights_unless_both_halves_are_the_edit_view(m4emu, a, b):
+    e = Edit(m4emu)
+    e.views(a, b)
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.paint(EDIT_A)
+    assert e.screen() == e.pattern
+
+
+def test_edit_params_skips_every_other_view(m4emu):
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.m.log.clear()
+    e.call('edit_params', FB, 0x2812a05c)
+    assert e.screen() == e.pattern and not e.m.log
+    e.paint(EDIT_A)
+    lights(e, 1, 20, 7)
+
+
+def test_edit_handlers_through_the_chain_stubs(m4emu):
+    """The stock paints still run once with their arguments, and the lights go on after them."""
+    import features.gr as gr
+    e = Edit(m4emu)
+    e.frame(1.0, 10 ** (-12 / 20), window=1, pos=1, thk=4)
+    e.block(2, COMP_NAMES[0])
+    m, cave = e.m, 0x28e70000
+    for k, (stock, sym, view) in enumerate(((gr.EDIT_PAINT, 'edit_top', EDIT_B), (gr.VIEW_PAINT, 'edit_params', EDIT_A))):
+        m.stub(stock)
+        at = cave + 0x100 * k
+        m.load(at, pm.chain_cave(at, stock & ~1, [], [MODULE + e.sym[sym]]))
+        m.write(FB, e.pattern)
+        m.log.clear()
+        m.call(at, FB, view, 5, 6)
+        assert m.calls(stock) == [(FB, view, 5, 6)]
+        lights(e, 1, 20, 7)

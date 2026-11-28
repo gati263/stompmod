@@ -8,8 +8,8 @@ Run after tools/patch_amp.py patch (build.py does it for HX_CLICK=1 builds). It 
     of the mono effect host whose one member is the primitive 0x0128, with the knobs Time,
     Level, Accent and Thru, and Time's tempo sync (Time's note list SyncSelect1 and its
     switch TempoSync1, hidden as on every stock delay);
-  - the kernel src/sharc/click.asm (Entry 2), in Block 3 between NAM A2 Lite's slots and
-    its cold code, as the primitive's process function.
+  - the kernel src/sharc/click.asm (Entry 2), in Block 3 where tools/block3.py places it,
+    as the primitive's process function.
 
 Time reaches the kernel as stock Simple Delay's Time reaches its delay line: its parameter
 map's sync node (op 0x2a) turns the note and the tempo into seconds, a clamp node (op 0x54)
@@ -18,7 +18,6 @@ add_model has no tempo sync (kit_patch_amp.SYNC_PARAMS), so this tool lays out t
 parameter map itself (click_blob) and uses the kit's Entry 0, 3 and 4 steps around it.
 """
 import argparse
-import importlib.util
 import os
 import struct
 import sys
@@ -27,9 +26,9 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 sys.path.insert(0, os.path.join(SCRIPT_DIR, 'sharc'))
 
+import block3
 import kit_patch_amp as kit
 import l6ia
-import nam_multi
 
 ASM = os.path.join(SCRIPT_DIR, '..', 'src', 'sharc', 'click.asm')
 NAME, DISPLAY, FOLDER = 'HD2_ClickMetronomeMono', 'Metronome', 'Metronome'
@@ -167,31 +166,20 @@ def replace_last_blob(e4, blob_index, words):
     return out
 
 
-def nam_layout(gr=None):
-    """nam_multi's Layout of build.py's HX Stomp kernel, with its build.kernel('HX_Stomp', gr) flags."""
-    spec = importlib.util.spec_from_file_location('customos_build', os.path.join(SCRIPT_DIR, '..', 'build.py'))
-    build = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(build)
-    return nam_multi.layout(build.kernel('HX_Stomp', gr)[1:])
-
-
 def kernel_size():
     """The kernel's instructions."""
     secs, _ = kit.sasm.assemble(open(ASM).read().replace('KIT_PM_BASE', '0xe0000'), 'click.asm')
     return sum(len(s.words) for s in secs if s.kind == 'pm')
 
 
-def pm_base(n_insns, lay=None):
-    """Where the kernel goes: right under NAM A2 Lite's cold code, above its slots
-    (lay, else nam_layout())."""
-    lay = lay or nam_layout()
-    n = n_insns + (n_insns & 1)
-    base = lay.cold_pm - n
-    nw = nam_multi.NW3 + (base - nam_multi.NW3) * 3 // 2
-    if nw < lay.b3_to:
-        raise SystemExit(f'the click kernel ({n} instructions) does not fit between NAM\'s slots '
-                         f'({lay.b3_to:#x}) and its cold code ({lay.cold_pm:#x})')
-    return base
+def dsp_size():
+    """(data words, instructions) of the kernel: it keeps its data in the block's own DM."""
+    return 0, kernel_size()
+
+
+def pm_base():
+    """Where the kernel goes (tools/block3.py)."""
+    return block3.place('HX_CLICK')[1]
 
 
 def add_click(l6ia_bytes, log=print):
@@ -246,7 +234,7 @@ def add_click(l6ia_bytes, log=print):
     e2_raw, _ = kit.expand_sharc_blob0_buffer(e2_raw)
     out, _, _ = l6ia.rebuild_archive(l6ia_bytes, {0: bytes(new_e0), 2: l6ia.swap32(e2_raw), 3: new_e3, 4: new_e4})
 
-    base = pm_base(kernel_size())
+    base = pm_base()
     out, kinfo = kit.patch_kernel(out, open(ASM).read(), 'click.asm', prim=PRIM, pm_base=base, relocate=False, log=log)
     return out, {'model_id': model_id, 'blob': blob, 'composite': comp, 'preset_id': pid, 'pm_base': base,
                  'entry': kinfo['entry'], 'params': params}

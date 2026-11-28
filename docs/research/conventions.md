@@ -10,6 +10,8 @@ Every claim carries a status:
 - **[verified offline]**: checked in the simulator, by disassembly, or by a checksum, not on a unit.
 - **[hypothesis]**: reasoned, not yet checked. Treat with suspicion.
 
+`local/` at the repo root is gitignored, for your own files. `local/adi-manuals/` holds the text of ADI's SHARC manuals (the ADSP-2136x/2137x/214xx Programming Reference rev 2.4 and the ADSP-214xx Hardware Reference rev 1.1), extracted from the PDFs by its `pdf_text.py`. Grep it; never commit it (ADI's copyright).
+
 No Line 6 code or data is in this repository. Addresses in these notes are facts about the stock 3.80.0 file you supply yourself (`HX_Stomp_v3.80.0_0x103966115.hxf`, MD5 `a2cd8f4ae56f49415380270ebc484bf1`, gitignored). Every patch asserts the stock bytes it replaces before writing.
 
 Write "HX Stomp" in full, never "Stomp" or "the HX".

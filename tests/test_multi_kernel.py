@@ -8,7 +8,7 @@ import nam_multi
 pytestmark = [pytest.mark.slow, pytest.mark.nam]
 
 
-@pytest.mark.parametrize("slots", [3, 2])
+@pytest.mark.parametrize("slots", [3, 2, 1])
 def test_kernel(weights, slots):
     asm, lay = nam_multi.build(slots)
     ok, res, _ = nam_multi.check(asm, lay, weights)

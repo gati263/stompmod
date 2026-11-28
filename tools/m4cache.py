@@ -39,6 +39,12 @@ def web_flags():
     return _web(True)
 
 
+def web_dsp():
+    """The switch of every feature the page offers among its DSP features (WEB 'dsp'): none on this fork's page, which builds USB
+    Monitor always and the other DSP features never."""
+    return _web('dsp')
+
+
 def web_options():
     """The switch of every feature the page offers as a checkbox, off until ticked (WEB 'opt-in'), in feature order."""
     return _web('opt-in')

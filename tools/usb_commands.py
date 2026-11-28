@@ -14,6 +14,7 @@ FREE = (0x13, 0x1d, 0x1f, 0x20, 0x26, 0x2c, 0x36, 0x37, 0x4f, 0x50, 0x51, 0x52, 
 
 COMMANDS = (   # (command, the feature using it or None, what it does)
     (0x50, 'more_snapshots', 'the six snapshots: read their names and colours, or set one (src/m4/more_snapshots.s)'),
+    (0x51, 'usb_input', 'UI events from the host into the key queue, as the controls give them (src/m4/usb_input.s)'),
     (0x52, 'screen_mirror', 'the frame on the LCD, run-length coded (src/m4/screen_mirror.s)'),
 )
 

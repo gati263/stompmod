@@ -15,6 +15,9 @@ Everything HXtra adds to the HX Stomp, where to find it, and every setting. The 
 | [More snapshots](#more-snapshots) | The snapshot footswitches, with Footswitch Mode on Snapshot · no settings | `HX_MORE_SNAPSHOTS=1` |
 | [Metronome](#metronome) | Model browser: Looper > Metronome > Metronome · the block's knobs | `HX_CLICK=1` |
 | [GR meter](#gr-meter) | Home screen, lit by a compressor · knobs on six compressors | `HX_GR=1` |
+| [Preset LED color](#preset-led-color) | Preset footswitch mode: each preset's footswitch ring and Home icon in its own colour · Global Settings > Displays, Preset LED and This Preset | `HX_PRESET_COLOR=1` |
+| [USB monitor](#usb-monitor) | Path A's output to the Send jacks and USB 3/4, for monitoring through a DAW · Global Settings > Ins/Outs, Path A Out | `HX_USB_MONITOR=1` |
+| [USB input](#usb-input) | Nothing on the unit: a computer presses and turns its controls over USB (`tools/hx_input.py`) | `HX_USB_INPUT=1` |
 | [Model pictures](#model-pictures) | Edit view and model browser: a picture of the model · Global Settings > Displays, Model Pictures | `HX_MODEL_PICTURES=1` |
 | [Boot screen](#boot-screen-hx-stomp-only) | The screen at power-on · set when you build | `--splash`, `--splash-text` |
 | [Boot animation](#boot-animation-hx-stomp-only) | The screen at power-on: the boot picture, then frames in turn · set when you build | `HX_BOOT_ANIM=frames` |
@@ -188,6 +191,37 @@ A gain-reduction meter on the Home screen, lit by the compressor you turn it on 
 
 - **Which compressors:** Deluxe, LA Studio, Kinky, Ampeg Opto, Rochester and Red Squeeze.
 - **With NAM:** in a build with the GR meter, NAM A2 Lite runs up to two blocks instead of three.
+
+## Preset LED color
+
+*From upstream hxtra 1.2.1.* In Preset footswitch mode the footswitches light in red for the current preset as stock does; with
+Preset LED Color each preset can have its own colour, for its ring and its switch icon on the Home screen.
+
+- **Global Settings > Displays:** **Preset LED** is the colour of a preset that has none of its own (Red by default, as stock).
+  **This Preset** gives the current preset its own colour, kept in its file: it lights while the preset is selected and dims while
+  it is not. **None** goes back to Preset LED's colour, lit only while selected, as stock.
+- **The colours** are Tap LED Color's, the stock footswitch palette.
+- **Stock firmware** opens a preset with a colour as usual and lights it red.
+
+## USB monitor
+
+*From upstream hxtra 1.2.1.* **Global Settings > Ins/Outs > Path A Out** picks where path A's Output block goes:
+
+- **Main L/R** (the default): as stock.
+- **Send/USB:** the Send jacks and USB 3/4 to the computer, so a DAW records and monitors the processed sound while Main and the
+  phones play only what it sends back on USB 1/2 (software monitoring).
+- **USB Only:** USB 3/4 alone, the Send jacks silent.
+- **Main+Snd:** Main L/R, and the Send jacks and USB 3/4 too.
+
+The stock firmware lets only path B reach the Send bus. A preset saved while Path A Out is not Main L/R holds Send for path A,
+which a stock firmware refuses on load, leaving path A on Main. Its DSP code shares Block 3 with NAM A2 Lite's slots
+(`tools/block3.py`) and fits beside all three.
+
+## USB input
+
+*From upstream hxtra 1.2.1.* HX Edit's editor service takes one more command, whose parameter is UI events, and the HX Stomp
+queues them as its own footswitches, knobs and buttons queue theirs: so a computer can press and turn the controls
+(`tools/hx_input.py`), and the on-device tests drive the unit with them (`tools/hx_devtest.py`). Nothing changes on the unit itself.
 
 ## Model pictures
 

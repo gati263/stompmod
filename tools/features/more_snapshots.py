@@ -30,11 +30,7 @@ PARSE, PARSE_STOCK = 0x28de42c4, bytes.fromhex('2de9 f04f')     # the preset's s
 # live values as its current snapshot's. 0x28dea8c4 (push.w {r4-r8,lr}) is the one a save on the unit took [verified on unit],
 # 0x28deacf4 (push.w {r4-r11,lr}) the other save path's and HX Edit's (0x28e1c5b2). They are the writer's only callers.
 SERIALIZERS = ((0x28dea8c4, bytes.fromhex('2de9 f041')), (0x28deacf4, bytes.fromhex('2de9 f04f')))
-# The preset file (0x28df2060): bank B goes after the map as key 0x64, and the map's count, written up front, is rewritten after the
-# TOC; the load reads it back with section 10, the bytes from the end of key 10 to the end of the file, which stock parses only
-# as far as key 12's names
-FILE_CALLS = ((0x28df20f2, 0x28deacf4, 'snaps_file_serialize'), (0x28df210a, 0x28deabdc, 'snaps_file_toc'),
-              (0x28deb53c, 0x28def9a8, 'snaps_file_section'))
+FILE_KEY = 0x64                     # bank B's key in the preset file, through tools/patch_menu.py's preset keys
 TOP_PAINT_LIT, TOP_PAINT = 0x28d96d90, 0x28dca359              # the top view's paint (preset number, name, snapshot icon), as registered
 HOME_PAINT_LIT, HOME_PAINT = 0x28d96e28, 0x28dc8d39            # the Home view's paint (footswitch labels), as registered
 ICON_DRAW_CALL, IMG_DRAW = 0x28dca406, 0x28e24a00              # the top view paint's draw of its snapshot icon
@@ -69,8 +65,7 @@ def apply(p):
     p.expect(CC_RANGE, CC_RANGE_STOCK, "MIDI CC 69's range of snapshot values")
     p.put(CC_RANGE, CC_RANGE_SIX, "MIDI CC 69's values 3..5, snapshots 4..6")
     p.chain_entry(PARSE, PARSE_STOCK, before=m['snaps_loaded'])
-    for site, stock, handler in FILE_CALLS:
-        p.own_call(site, stock, f'the call at {site:#x} of {stock:#x}', m[handler])
+    p.preset_key(FILE_KEY, m['snaps_key_write'], m['snaps_key_found'])
     for fn, stock in SERIALIZERS:
         p.chain_entry(fn, stock, before=m['snaps_saving'], after=m['snaps_saved'])
     p.chain_ptr(TOP_PAINT_LIT, TOP_PAINT, after=m['snaps_paint'])

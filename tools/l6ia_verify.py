@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Verify every integrity field inside an L6IA archive (HX .hxf payload)."""
+"""Verify every integrity field inside an L6IA archive (HX .hxf payload).
+
+usage: l6ia_verify.py <L6IA> [--e3-max N]   (--e3-max: Entry 3's payload may be N bytes at most)"""
 import sys, struct, zlib
 import numpy as np
 A = open(sys.argv[1], 'rb').read()
+E3_MAX = int(sys.argv[sys.argv.index('--e3-max') + 1], 0) if '--e3-max' in sys.argv else None
 be = lambda o: struct.unpack_from('>I', A, o)[0]
 
 def fletcher_words(buf):                      # a += w ; b += a   (mod 2^32), BE words
@@ -40,6 +43,9 @@ for n in range(be(0x14)):
         line += f" blobs(n={nblobs}, words={twords:#x}) size={'OK' if twords*4==len(swapped) else 'BAD'}"
         ok &= (twords * 4 == len(swapped))
     ok &= (a, b) == (h1, h2) and crc == crc_stored
+    if n == 3 and E3_MAX is not None:
+        line += f" size {plen:#x} {'OK' if plen <= E3_MAX else f'TOO BIG (> {E3_MAX:#x})'}"
+        ok &= plen <= E3_MAX
     print(line)
     off += 0x24 + words*4
 print('ALL OK' if ok else 'MISMATCH')

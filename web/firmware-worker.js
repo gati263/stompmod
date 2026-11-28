@@ -33,11 +33,13 @@ var STOCK_MD5 = {
   "a2cd8f4ae56f49415380270ebc484bf1": "HX_Stomp",
 };
 var BUILT_MD5 = {
-  "HX_Stomp": "195682572258a3347d94ca7610a697b8",
+  "HX_Stomp": "9d804d5e99f19b0223f2f3d866e60807",
 };
 
-// build.py's KERNEL and STEPS for the HX Stomp (tests/test_web_build.py keeps them equal): the kernel
+// build.py's KERNEL, STEPS and E3_MAX (tests/test_web_build.py keeps them equal): the kernel
 // command and the patch_amp.py steps, each "patch_amp.py CMD IN OUT ARGS..." on the previous output.
+// build.py's kernel(unit, slots) adds "--slots" to the kernel's command for fewer than 3 NAM slots.
+var E3_MAX = 0xf10f0;
 var KERNEL = {"HX_Stomp": ["tools/sharc/nam_multi.py", "--mid-sweep"]};
 var STEPS = {
   "HX_Stomp": [
@@ -58,9 +60,13 @@ var SOURCES = [
   "tools/hxf_ram.py",
   "tools/l6ia_verify.py",
   "tools/patch_amp.py",
+  "tools/block3.py",
   "tools/effects.py",
   "tools/patch_menu.py",
   "tools/patch_click.py",
+  "tools/patch_gate.py",
+  "tools/patch_sidechain.py",
+  "tools/patch_usbmon.py",
   "tools/patch_comp.py",
   "tools/m4asm.py",
   "tools/image_store.py",
@@ -74,17 +80,23 @@ var SOURCES = [
   "tools/features/bpm.py",
   "tools/features/breathing_line.py",
   "tools/features/dsp_meter.py",
+  "tools/features/fx_gate.py",
+  "tools/features/gate_sidechain.py",
   "tools/features/gr.py",
+  "tools/features/label_color.py",
   "tools/features/long_press.py",
   "tools/features/metronome.py",
   "tools/features/model_pictures.py",
   "tools/features/more_snapshots.py",
+  "tools/features/preset_color.py",
   "tools/features/real_names.py",
   "tools/features/screen_mirror.py",
   "tools/features/splash.py",
   "tools/features/tap_color.py",
   "tools/features/tap_command.py",
   "tools/features/tuner.py",
+  "tools/features/usb_input.py",
+  "tools/features/usb_monitor.py",
   "tools/kit_patch_amp.py",
   "tools/sharc/entry4_blob.py",
   "tools/sharc/nam_lite.py",
@@ -100,20 +112,29 @@ var SOURCES = [
   "src/m4/breathing_line.s",
   "src/m4/dsp_meter.s",
   "src/m4/gr_meter.s",
+  "src/m4/label_color.s",
   "src/m4/long_press.s",
   "src/m4/metronome.s",
   "src/m4/model_pictures.s",
   "src/m4/more_snapshots.s",
+  "src/m4/preset_color.s",
+  "src/m4/preset_keys.s",
   "src/m4/screen_mirror.s",
   "src/m4/strip.s",
   "src/m4/tap_color.s",
   "src/m4/tap_command.s",
   "src/m4/tuner.s",
+  "src/m4/usb_input.s",
+  "src/m4/usb_monitor.s",
   "src/m4/virtual_settings.s",
   "src/sharc/click.asm",
   "src/sharc/frame_probe.asm",
   "assets/boot/signal_chain.png",     // the Full build's boot picture (m4cache.json's env: HX_SPLASH), when the user gives none
   "assets/model_pictures/nam_a2_lite.png",   // model pictures: NAM A2 Lite's, which HX Edit lacks (features/model_pictures.py OWN)
+  "src/sharc/fx_gate.asm",
+  "src/sharc/gate_sc.asm",
+  "src/sharc/usb_monitor.asm",
+  "src/sharc/main_send.asm",
 ];
 // The release's M4 code for the features (tools/m4cache.py); a page from a checkout has none, and offers no features.
 var CACHE = "m4cache.json";
@@ -211,7 +232,9 @@ async function build(stock, flags, splash, hxedit) {
   // The cache's features always build; the options (flags) are the ones ticked. A page without a cache builds NAM only.
   flags = cache ? cache.features.concat((flags || []).filter(function (f) { return cache.features.indexOf(f) < 0; })) : [];
   flags.forEach(function (f) {
-    if (cache.features.indexOf(f) < 0 && (cache.options || []).indexOf(f) < 0) throw new Error("This release has no feature " + f + ".");
+    if (cache.features.indexOf(f) < 0 && (cache.options || []).indexOf(f) < 0 && dsp.features.indexOf(f) < 0) {
+      throw new Error("This release has no feature " + f + ".");
+    }
   });
   var extra = {};
   if (flags.indexOf("HX_MODEL_PICTURES") >= 0) {
@@ -234,7 +257,7 @@ async function build(stock, flags, splash, hxedit) {
   try {
     step(3, "Building the NAM kernel…", KERNEL[unit].concat(["-o", "build/nam_lite.asm"]));
     var base = "build/stock.hxf";
-    STEPS[unit].forEach(function (s, k) {
+    (slots ? STEPS[unit] : []).forEach(function (s, k) {
       var out = "build/nam_lite_" + k + ".l6ia";
       step(4, "Adding NAM A2 Lite…", ["tools/patch_amp.py", s[0], base, out].concat(s.slice(1)));
       if (base !== "build/stock.hxf") p.FS.unlink("/repo/" + base);
@@ -246,9 +269,15 @@ async function build(stock, flags, splash, hxedit) {
     step(5, "Adding the kernel to the DSP program…",
          ["tools/patch_amp.py", "patch", base, "build/nam_lite.l6ia", "--asm", "build/nam_lite.asm"]);
     p.FS.unlink("/repo/" + base);
+    // build.py's DSP steps: of the features that add code to the DSP program, the Full build has USB Monitor only
+    [["HX_USB_MONITOR", "tools/patch_usbmon.py"]].forEach(function (s) {
+      if (flags.indexOf(s[0]) < 0) return;
+      step(5, "Adding the kernel to the DSP program…", [s[1], "build/nam_lite.l6ia", "build/nam_lite_dsp.l6ia"]);
+      p.FS.rename("/repo/build/nam_lite_dsp.l6ia", "/repo/build/nam_lite.l6ia");
+    });
     var report = step(6, "Checking every checksum and packing the file…",
-                      ["tools/l6ia_verify.py", "build/nam_lite.l6ia"]);
-    if (report.indexOf("ALL OK") < 0) throw new Error("The built image failed its checksum check.");
+                      ["tools/l6ia_verify.py", "build/nam_lite.l6ia", "--e3-max", "0x" + E3_MAX.toString(16)]);
+    if (report.indexOf("ALL OK") < 0) throw new Error("The built image failed its check.");
     var file = unit + "_v3.80.0_StompMod.hxf";
     step(6, "Checking every checksum and packing the file…",
          ["tools/hxf.py", "pack", "build/nam_lite.l6ia", "build/" + file, "--donor", "build/stock.hxf"]);

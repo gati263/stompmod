@@ -45,7 +45,7 @@ def test_cached_module(tmp_path, monkeypatch):
 def test_web_flags_are_the_full_build():
     """This fork's Full build (README, docs/research/web-app-plan.md): the page always builds these, nothing else but the options."""
     assert set(m4cache.web_flags()) == {"HX_TUNER", "HX_BPM", "HX_DSP_METER", "HX_LONG_PRESS", "HX_MORE_SNAPSHOTS", "HX_TAP_COLOR",
-                                        "HX_CC_TAP", "HX_REAL_NAMES"}
+                                        "HX_CC_TAP", "HX_REAL_NAMES", "HX_PRESET_COLOR", "HX_USB_MONITOR", "HX_USB_INPUT"}
 
 
 def test_web_options_are_the_opt_in_features():
@@ -69,7 +69,12 @@ def test_build_env_is_every_input_of_a_pinned_build(monkeypatch):
     assert m4cache.build_env(["HX_MODEL_PICTURES"])["HX_MODEL_PICTURES"] == "1", "its usual place"
 
 
-def test_make_pins_every_option_combination(monkeypatch):
+def test_web_dsp_are_the_features_sharing_block_3():
+    assert m4cache.web_dsp() == []      # this fork's page (tools/m4cache.py web_dsp): no DSP checkboxes
+
+
+def test_make_pins_every_combination_that_fits(monkeypatch):
+    import block3
     monkeypatch.delenv(m4asm.CACHE, raising=False)
     monkeypatch.setattr(m4cache, "web_flags", lambda: ["HX_B", "HX_A"])
     monkeypatch.setattr(m4cache, "web_options", lambda: ["HX_X", "HX_MODEL_PICTURES"])

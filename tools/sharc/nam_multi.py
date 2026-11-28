@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """NAM A2 Lite's kernel: up to three blocks at once, each with its own capture.
 
-usage: nam_multi.py [model.nam] [-o out.asm] [--slots 2|3] [--staging b2|b3] [--no-tone | --mid-sweep] [--effects] [--check]
+usage: nam_multi.py [model.nam] [-o out.asm] [--slots 1|2|3] [--staging b2|b3] [--no-tone | --mid-sweep] [--effects] [--check]
 
 --mid-sweep: the ten-knob build's tone stack (Bass 150 Hz shelf, Mid a peak at Mid Freq with Q,
 Treble a 2.5 kHz peak, High Cut). --effects: the HX Effects 3.80.0's User IR store.
@@ -97,7 +97,7 @@ J = dict(J_TYPE=0, J_READY=1, J_ROW=2, J_CHAIN=3, J_FLAG=4, J_CP=5, J_N=6)
 SIGCHK_N = 64                     # the kernel's model-check period (nam_multi_kernel.asm .equ)
 P = dict(P_SLOT=12, P_SEEN=13, P_MET=14, P_PHASE=15, P_SIGN=18)   # P_PHASE: the Polarity knob (patch_amp
 # pid 15); P_SIGN: calls to the model's next check (16, 17: the meter test images')
-FAR_D = {2: 41, 3: 17}            # with 3 slots the d = 17 rings go to SDRAM too, to fit
+FAR_D = {1: 41, 2: 41, 3: 17}      # with 3 slots the d = 17 rings go to SDRAM too, to fit
 # DM rings: the smallest far layers' rings (up to DM_LAYERS of them) go instead into the
 # instance's own DM block above the stock words (I0 + 0x92, even, to I0 + dm_words): no DMA
 # staging for them. The stock graph carves that block from the slot's DM budget per the
@@ -1248,6 +1248,8 @@ class KernelCheck:
             inst.pipe.knobs(inst.eq)
 
     def play(self, inst, label, n=1):
+        if inst is None:                 # (A, with one slot: B has it)
+            return
         for _ in range(n):
             b = inst.player.b
             self.expect(inst, inst.sig[b], f"{label} block {b}", inst.player.next())
@@ -1261,17 +1263,18 @@ class KernelCheck:
     def two_models_load(self):
         """A (Model 1, the test model in User IR slot 1, made with no level: no input trim) and B (Model 3, another capture
         in User IR slot 3, made at 15 dBu: its input x 10^((STOMP_DBU - 15)/20), other
-        knobs) each claim a slot and load their model on their first call."""
+        knobs) each claim a slot and load their model on their first call. With one slot there is no A."""
         r = self.rig
-        self.A = r.inst("A", 0)
+        self.A = r.inst("A", 0) if self.lay.slots > 1 else None
         self.B = r.inst("B", 1)
-        self.A.knobs(model=1)
         self.B.knobs(drive=0.62, vol=0.7, model=3, eq=(0.3, 0.7, 0.45, 0.9))
-        self.start(self.A, self.w, self.sig("A", 80), "A")
+        if self.A:
+            self.A.knobs(model=1)
+            self.start(self.A, self.w, self.sig("A", 80), "A")
         self.start(self.B, self.w2, self.sig("B", 12), "B")
-        rep = r.rep()
-        if rep[REPW["R_CLAIMS"]] != 2 or rep[REPW["R_LOADS"]] != 2:
-            raise CheckFailed(f"claims {rep[5]}, loads {rep[4]}: want 2 and 2")
+        rep, n = r.rep(), 1 + bool(self.A)
+        if rep[REPW["R_CLAIMS"]] != n or rep[REPW["R_LOADS"]] != n:
+            raise CheckFailed(f"claims {rep[5]}, loads {rep[4]}: want {n} and {n}")
 
     def two_models_play(self):
         """A and B interleaved, each bit for bit nam_a2.asm on its own model, input x its
@@ -1280,11 +1283,11 @@ class KernelCheck:
         for b in range(self.nblk):
             self.play(self.A, "A")
             self.play(self.B, "B")
-        for p in (self.A.player, self.B.player):
+        for p in [x.player for x in (self.A, self.B) if x]:
             peak = max(peak, max(abs(ssim.b2f(v)) for v in p.words[:16 * self.nblk]))
         if peak < 1e-3:
             raise CheckFailed("the test signal is too quiet to show anything")
-        if self.A.player.words[:64] == self.B.player.words[:64]:
+        if self.A and self.A.player.words[:64] == self.B.player.words[:64]:
             raise CheckFailed("A and B play the same: the test shows nothing")
 
     def model_change_crossfades(self):
@@ -1351,7 +1354,11 @@ class KernelCheck:
 
     def takeover(self):
         """A removed (no longer called): D's next call finds A's slot unused since its
-        own last call, takes it, loads its model and plays it from the silence state."""
+        own last call, takes it, loads its model and plays it from the silence state.
+        With one slot (no A) D is removed instead: B keeps the slot."""
+        if not self.A:
+            self.D = None
+            return
         self.start(self.D, self.w2, self.sig("D2", 14), "D takes A's slot")
         if self.rig.sim.rd(self.D.i0 + P["P_SLOT"]) != self.rig.sim.rd(self.A.i0 + P["P_SLOT"]):
             raise CheckFailed("D did not take A's slot")
@@ -1383,7 +1390,8 @@ class KernelCheck:
         r = self.rig
         r.dma.mode = "stall"
         to = r.rep()[REPW["R_TIMEOUTS"]]
-        got = self.D.call(self.sig("D2", 14)[0], "D, DMA stalls")
+        x = self.D or self.B
+        got = x.call(self.sig("D2", 14)[0], f"{x.name}, DMA stalls")
         r.dma.mode = "ok"
         if got != self.zero:
             raise CheckFailed("a stalled DMA: the block is not silent")

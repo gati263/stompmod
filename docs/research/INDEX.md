@@ -33,13 +33,16 @@ Before writing anything, read [conventions.md](conventions.md): the status tags,
 | [m4/text-and-fonts.md](m4/text-and-fonts.md) | the six fonts and their glyph tables, the text widget, anchors, glyph colour, the float formatter | drawing text |
 | [m4/boot-screen.md](m4/boot-screen.md) | the stock boot picture, drawn by the bootloader then by the app | changing the boot screen |
 | [m4/dsp-cost.md](m4/dsp-cost.md) | per-model DSP costs, block records and block objects, block IDs and slots, the preset total and its 90% limit | anything about DSP load, or finding a block's object from its slot |
+| [m4/block-limit.md](m4/block-limit.md) | the 8-block limit: block IDs and columns, the free-slot counter, the nine typed block objects a path, why a 9th block fails, what was tried | anyone asks for more than 8 blocks, or adding a block fails |
 | [m4/model-browser.md](m4/model-browser.md) | the model browser's view, rows, levels, categories and items | changing the model list, or adding a model to a category |
 | [m4/tempo-and-leds.md](m4/tempo-and-leds.md) | the tempo settings (IDs 14..16), the tap tempo screen, the footswitch LEDs and LED task, the stock beat, the µs clock | anything tempo-synced, or lighting the LEDs |
+| [m4/controls.md](m4/controls.md) | every front-panel control's key code, the stock shortcuts and button combinations (Save = VIEW + ACTION, Menu = PAGE◀ + PAGE▶, All Bypass, the tuner, footswitch-mode combos, action panels), and how to send each over USB | driving the UI from a script or a test, or reaching a screen the devtest doesn't |
 | [m4/footswitches.md](m4/footswitches.md) | footswitch functions, key events and holds, the event handler and key task, bypass assignment, controllers, MIDI CC bypass | changing what a footswitch does |
 | [m4/command-center.md](m4/command-center.md) | the Command Center's object and slots, its command types and their tables, the Command knob's choice lists, how a footswitch press and a snapshot recall fire a command | adding or changing a Command Center command |
 | [m4/snapshots.md](m4/snapshots.md) | the snapshot manager and records, select and its callers, the snapshot footswitch mode, the snapshot icon | anything about snapshots |
 | [m4/presets.md](m4/presets.md) | the eMMC stores (presets, globals, IRs) and the preset file's layout | storing data in a preset, or reading preset files |
 | [m4/dsp-link.md](m4/dsp-link.md) | the SPI frames between the DSP and the M4, and sending DSP values in a frame's tail | getting a value from the DSP to the screen |
+| [m4/split-routing.md](m4/split-routing.md) | a preset's split and merge in the edit buffer, how they are applied, why an empty path B is refused, the routing switches (`splitToLower`, `joinToLower`) the M4 sends | changing what path B, the split or the merge do |
 | [m4/usb-editor.md](m4/usb-editor.md) | HX Edit's editor service on the M4: the command table, a command's request and reply, the reply functions, the free command numbers | adding a USB command, or reading the unit from a computer |
 
 ## The SHARC (DSP) side
@@ -47,7 +50,10 @@ Before writing anything, read [conventions.md](conventions.md): the status tags,
 | note | covers | read it when |
 |---|---|---|
 | [sharc/registry.md](sharc/registry.md) | the SHARC assembler and simulator, the primitive registry, wrapping a primitive (`--wrap-prim`), custom kernels, VISA code and the control-function ABI | writing DSP code, or intercepting a primitive or its parameters |
+| [sharc/visa.md](sharc/visa.md) | Entry 2's VISA code: where it loads, the parcel order, instruction lengths, the 16/32-bit forms, the compiled C calling convention; `visa_dis.py` | reading SHARC code outside the 48-bit PM block, or disassembling Entry 2 |
 | [sharc/model-blobs.md](sharc/model-blobs.md) | a model's parameters in Entry 3, Entry 4's parameter maps and node trees, the Entry 0 info row, tempo sync | adding a block parameter or a model |
+| [sharc/cores/gates.md](sharc/cores/gates.md) | the gate core `0x2720` and the return reader `0x2618`; the composite format (buffers, member records), sub-bindings and the node tree, op `0x2b`; why a new bound member kills a block; the FX Loop gate's wrapper | adding a gate or any member to a block, wrapping a primitive |
+| [sharc/usb-routing.md](sharc/usb-routing.md) | the app graph `HelixStomp_App`: input/output select, USB trim, phones and volume routing parameters; the M4's load-time rewrite of Output select; what reaches USB; blob 1 cannot change; how parameter maps turn values into DSP calls; the app's members in blob 0 | anything about where audio goes: outputs, Send, USB channels, monitoring; before touching blob 1 or the app's parameters |
 | [sharc/cores/compressors.md](sharc/cores/compressors.md) | the compressor cores `0x271a`, `0x2719`, `0x2710`: which block uses which, wiring, pids, init values, the Deluxe core's loop | metering or changing a compressor |
 
 ## Features
@@ -63,11 +69,17 @@ Before writing anything, read [conventions.md](conventions.md): the status tags,
 | [features/tuner-page.md](features/tuner-page.md) | the tuner settings view and the page HXtra adds to it | changing the tuner's settings view |
 | [features/long-press.md](features/long-press.md) | holds per footswitch, FS6..FS10 on CC 20..24, CC text, the footswitch probes | working on long press, or footswitch holds |
 | [features/more-snapshots.md](features/more-snapshots.md) | bank B (snapshots 4..6), the bank marker, saving and the preset file key, next and previous across the banks | working on more snapshots |
+| [features/fx-gate.md](features/fx-gate.md) | the FX Loop gate (#69): decisions, the two designs and the boots, builds and their MD5s, what the unit has not checked | working on the gate in the FX Loop and Return blocks |
+| [features/gate-sidechain.md](features/gate-sidechain.md) | Noise Gate Input Sidechain (#131): design, the two dropped designs, cost, unit results, builds | working on the Noise Gate's sidechain, or on the gate core |
 | [features/metronome.md](features/metronome.md) | the Metronome block: model, browser folder, look, kernel | working on the Metronome, or adding an effect model |
 | [features/tap-color.md](features/tap-color.md) | Tap LED Color: the TAP ring, icon and label in a palette colour | working on the TAP footswitch's look |
+| [features/label-color.md](features/label-color.md) | HXtra settings' and block parameters' labels in Teal; where Global Settings, the Edit view and the tuner page colour their labels; why Rainbow was dropped | working on label colours, or Global Settings' slot paint |
 | [features/tap-command.md](features/tap-command.md) | the Tap command in the Command Center (#108): type 9, the knob's list, the press, the ring on the stock beat | working on the Tap command, or on the stock beat |
+| [features/preset-color.md](features/preset-color.md) | Preset LED Color: the current preset's ring and icon in Preset mode, the stock Preset LED case and Home builder | working on Preset mode's look |
 | [features/boot-splash.md](features/boot-splash.md) | a custom boot picture, the boot line's text, colour emoji | working on the boot screen |
+| [features/usb-monitor.md](features/usb-monitor.md) | USB monitoring: Path A Out in Ins/Outs, the owned destination send, applying a change at once, USB Only's mode riding on USB Input Trim | working on USB monitoring, or on path A's output |
 | [features/screen-mirror.md](features/screen-mirror.md) | the screen on a computer: the command, the frame coding, the Mac viewer and recorder | working on the screen mirror, or recording a demo |
+| [features/usb-input.md](features/usb-input.md) | footswitches, knobs and buttons pressed from a computer: the command, the key queue, `tools/hx_input.py` | driving the unit from a script or a test |
 
 ## Other docs
 
@@ -93,5 +105,6 @@ Measurements and studies from building NAM A2 Lite into the stock firmware, copi
 | [KIT_UNIT_MEASUREMENTS.md](KIT_UNIT_MEASUREMENTS.md) | the DSP call rate and load word |
 | [KIT_EP_DMA.md](KIT_EP_DMA.md) | external-port DMA on the SHARC |
 | [STOCK_BITEXACT_OPT.md](STOCK_BITEXACT_OPT.md) | stock models' declared cost against their measured cycles |
+| [SHARC_VISA.md](SHARC_VISA.md) | upstream's copy of [sharc/visa.md](sharc/visa.md); read ours |
 | [KIT_NAM_A2_FULL.md](KIT_NAM_A2_FULL.md), [NAM_A2_FULL_STOCK_UNIT.md](NAM_A2_FULL_STOCK_UNIT.md) | NAM A2 Full, studied and stopped |
 | [HELIX_FLOOR_FEASIBILITY.md](HELIX_FLOOR_FEASIBILITY.md), [HELIX_FLOOR_KERNEL_COST.md](HELIX_FLOOR_KERNEL_COST.md), [HELIX_FLOOR_RECALL.md](HELIX_FLOOR_RECALL.md) | the Helix Floor / LT |
