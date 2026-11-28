@@ -232,7 +232,7 @@ async function build(stock, flags, splash, hxedit) {
   // The cache's features always build; the options (flags) are the ones ticked. A page without a cache builds NAM only.
   flags = cache ? cache.features.concat((flags || []).filter(function (f) { return cache.features.indexOf(f) < 0; })) : [];
   flags.forEach(function (f) {
-    if (cache.features.indexOf(f) < 0 && (cache.options || []).indexOf(f) < 0 && dsp.features.indexOf(f) < 0) {
+    if (cache.features.indexOf(f) < 0 && (cache.options || []).indexOf(f) < 0) {
       throw new Error("This release has no feature " + f + ".");
     }
   });
@@ -257,7 +257,7 @@ async function build(stock, flags, splash, hxedit) {
   try {
     step(3, "Building the NAM kernel…", KERNEL[unit].concat(["-o", "build/nam_lite.asm"]));
     var base = "build/stock.hxf";
-    (slots ? STEPS[unit] : []).forEach(function (s, k) {
+    STEPS[unit].forEach(function (s, k) {
       var out = "build/nam_lite_" + k + ".l6ia";
       step(4, "Adding NAM A2 Lite…", ["tools/patch_amp.py", s[0], base, out].concat(s.slice(1)));
       if (base !== "build/stock.hxf") p.FS.unlink("/repo/" + base);

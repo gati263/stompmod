@@ -114,6 +114,18 @@ def test_worker_verifies_with_the_recipe_the_cache_pins():
     assert 'm.verify === "exact"' in page and 'm.verify === "picture"' in page and "m.verify === null" in page
 
 
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+@pytest.mark.parametrize("flags", [[], ["HX_MODEL_PICTURES"]], ids=["full", "model pictures"])
+def test_the_worker_runs_a_whole_build(flags):
+    # build() itself, against a stand-in Pyodide (tests/worker_fake.js): a name left undefined stops here, not on the page
+    r = subprocess.run(["node", str(ROOT / "tests/worker_fake.js"), str(ROOT / "web/firmware-worker.js"), json.dumps(flags)],
+                       capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0, r.stderr
+    report = json.loads(r.stdout)
+    assert report["error"] is None and report["done"]
+    assert "tools/patch_usbmon.py" in report["steps"] and "tools/patch_amp.py" in report["steps"]
+
+
 def test_sources_have_every_m4_source():
     # m4asm.key hashes every source next to a module, so the page needs all of them, as at the release
     m4 = {f"src/m4/{f.name}" for f in (ROOT / "src/m4").iterdir() if f.suffix in m4asm.SOURCE_TYPES}
