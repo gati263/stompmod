@@ -852,10 +852,12 @@
 
   <main class="main">
   <section class="news" id="whats-new" aria-labelledby="hnew">
-    <h2 id="hnew" data-i18n="new.title">What's new in 1.1.0</h2>
+    <h2 id="hnew" data-i18n="new.title">What's new in 1.2.0</h2>
     <ul class="plain">
-      <li data-i18n="new.web"><b>Edit snapshots on this page.</b> Name and colour all six from Chrome or Edge. <a href="#snapshot-web">Try it</a>.</li>
-      <li data-i18n="new.2"><b>BPM dot.</b> The dot after the tempo is a little bigger, as tall as the tempo; Left, Right and Both are smaller, clear of the preset name.</li>
+      <li data-i18n="new.plc"><b>Preset LED color.</b> Each preset's footswitch can have its own colour.</li>
+      <li data-i18n="new.usbm"><b>USB monitor.</b> Ins/Outs &gt; Path A Out sends path A to USB 3/4 for monitoring through a DAW.</li>
+      <li data-i18n="new.usbi"><b>Control over USB.</b> A computer can press and turn the HX Stomp's controls.</li>
+      <li data-i18n="new.fix"><b>Fix from hxtra 1.2.1.</b> A footswitch with a looper on it keeps its stock press and hold.</li>
     </ul>
     <p class="note" data-i18n="new.how">To get them, build StompMod again on this page and install it.</p>
   </section>
@@ -1230,6 +1232,22 @@
           </div>
         </details>
       </article>
+      <article class="card">
+        <h4 data-i18n="c.plc.t">Preset LED color</h4>
+        <p data-i18n="c.plc.p">In Preset footswitch mode, give each preset's footswitch its own colour, for its ring and its icon on the Home screen.</p>
+        <p class="where" data-i18n="c.plc.w"><b>Where:</b> Global Settings &gt; Displays &gt; Preset LED and This Preset.</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p data-i18n="c.plc.m">Preset LED colours the presets that have no colour of their own; This Preset gives the current one its own, kept when you save the preset. On stock firmware the preset opens as usual and lights red.</p>
+        </details>
+      </article>
+      <article class="card">
+        <h4 data-i18n="c.usbi.t">Control over USB</h4>
+        <p data-i18n="c.usbi.p">A computer can press the footswitches and buttons and turn the knobs of the HX Stomp over USB.</p>
+        <p class="where" data-i18n="c.usbi.w"><b>Where:</b> nothing on the HX Stomp. It is used from the computer, with the repository's command-line tool.</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p data-i18n="c.usbi.m">The tool is <code>tools/hx_input.py</code>, for scripts and testing. Close HX Edit first.</p>
+        </details>
+      </article>
       </div>
     </div>
     <div class="fgroup">
@@ -1248,6 +1266,14 @@
         <p class="where" data-i18n="c.tuner.w"><b>Where:</b> open the tuner, then page right past Trails, Offsets and String 6.</p>
         <details class="more"><summary data-i18n="more">More</summary>
           <p data-i18n="c.tuner.m">Activate set to Press opens the tuner with one press instead of a hold, and Lock stops the tuner's other settings from changing by accident.</p>
+        </details>
+      </article>
+      <article class="card">
+        <h4 data-i18n="c.usbm.t">USB monitor</h4>
+        <p data-i18n="c.usbm.p">Send path A's output to the Send jacks and USB 3/4, so a DAW can record and monitor the processed sound.</p>
+        <p class="where" data-i18n="c.usbm.w"><b>Where:</b> Global Settings &gt; Ins/Outs &gt; Path A Out.</p>
+        <details class="more"><summary data-i18n="more">More</summary>
+          <p data-i18n="c.usbm.m">Main L/R is stock. Send/USB feeds the Send jacks and USB 3/4, USB Only keeps the Send jacks silent, and Main+Snd adds them to Main L/R. A preset saved with anything but Main L/R opens on stock firmware with path A on Main.</p>
         </details>
       </article>
       </div>
@@ -1519,8 +1545,11 @@ var LANGS = {
     "nav.se": "Chỉnh snapshot",
     "nav.rec": "Khôi phục",
     "nav.faq": "Câu hỏi thường gặp",
-    "new.title": "Có gì mới trong 1.1.0",
-    "new.2": "<b>Chấm BPM.</b> Chấm sau số tempo to hơn một chút, cao bằng số tempo; Left, Right và Both nhỏ lại, không còn đè lên tên preset.",
+    "new.title": "Có gì mới trong 1.2.0",
+    "new.plc": "<b>Màu LED preset.</b> Footswitch của mỗi preset có thể mang màu riêng.",
+    "new.usbm": "<b>USB monitor.</b> Ins/Outs &gt; Path A Out đưa đường A ra USB 3/4 để nghe qua DAW.",
+    "new.usbi": "<b>Điều khiển qua USB.</b> Máy tính có thể bấm và vặn các nút của HX Stomp.",
+    "new.fix": "<b>Sửa lỗi từ hxtra 1.2.1.</b> Footswitch đang gán Looper giữ nguyên cách bấm và giữ như bản gốc.",
     "new.how": "Để có các thay đổi này, hãy build lại StompMod trên trang này và cài đặt.",
     "safe.title": "Có an toàn không?",
     "safe.protect": "Điều bảo vệ bạn",
@@ -1667,6 +1696,18 @@ var LANGS = {
     "c.long.m": "FS6 đến FS10 là các footswitch ảo có cùng chức năng với FS3 đến FS5, thêm GlobalEQ, mở Global EQ.",
     "c.long.cap2": "Giữ FS3 đến FS5",
     "c.long.cap3": "Chức năng FS6 đến FS8",
+    "c.plc.t": "Màu LED preset",
+    "c.plc.p": "Ở chế độ footswitch Preset, đặt màu riêng cho footswitch của từng preset, cho vòng sáng và biểu tượng của nó trên màn hình Home.",
+    "c.plc.w": "<b>Ở đâu:</b> Global Settings &gt; Displays &gt; Preset LED và This Preset.",
+    "c.plc.m": "Preset LED là màu cho các preset chưa có màu riêng; This Preset đặt màu riêng cho preset hiện tại, được giữ lại khi bạn lưu preset. Trên firmware gốc, preset vẫn mở bình thường và sáng màu đỏ.",
+    "c.usbi.t": "Điều khiển qua USB",
+    "c.usbi.p": "Máy tính có thể bấm footswitch, nút và vặn núm của HX Stomp qua USB.",
+    "c.usbi.w": "<b>Ở đâu:</b> không có gì trên HX Stomp. Dùng từ máy tính, bằng công cụ dòng lệnh trong repository.",
+    "c.usbi.m": "Công cụ là <code>tools/hx_input.py</code>, dành cho script và kiểm thử. Đóng HX Edit trước.",
+    "c.usbm.t": "USB monitor",
+    "c.usbm.p": "Đưa ngõ ra của đường A tới cổng Send và USB 3/4, để DAW thu và nghe tiếng đã qua xử lý.",
+    "c.usbm.w": "<b>Ở đâu:</b> Global Settings &gt; Ins/Outs &gt; Path A Out.",
+    "c.usbm.m": "Main L/R là như bản gốc. Send/USB đưa ra cổng Send và USB 3/4, USB Only giữ cổng Send im lặng, còn Main+Snd phát thêm ra Main L/R. Preset lưu với lựa chọn khác Main L/R, khi mở trên firmware gốc sẽ để đường A ở Main.",
     "gsnd": "Âm thanh",
     "c.nam.t": "NAM A2 Lite",
     "c.nam.p": "Chạy các capture Neural Amp Modeler như một block amp trên HX Stomp. Chuyển capture của bạn trên trang này, rồi thêm chúng trong HX Edit.",
@@ -1871,7 +1912,6 @@ var LANGS = {
     "sw.send": "Gửi tới HX Stomp",
     "sw.revert": "Hoàn tác",
     "sw.note": "Thay đổi hiện trên HX Stomp ngay. Lưu preset trên máy để giữ lại.",
-    "new.web": "<b>Chỉnh snapshot ngay trên trang này.</b> Đặt tên và màu cho cả sáu từ Chrome hoặc Edge. <a href=\"#snapshot-web\">Dùng thử</a>.",
     "sw.noUsb": "Trình duyệt này không có WebUSB: hãy dùng Chrome hoặc Edge trên máy tính.",
     "sw.connecting": "Đang kết nối...",
     "sw.sent": "Đã gửi. Lưu preset trên HX Stomp để giữ tên và màu.",

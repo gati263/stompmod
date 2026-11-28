@@ -2,7 +2,7 @@
 
 Custom firmware for the Line 6 HX Stomp 3.80.0, built in your browser from your own copy of Line 6's firmware.
 
-**Build it at [gatistudio.com/stompmod](https://gatistudio.com/stompmod).** Version 1.1.0, free.
+**Build it at [gatistudio.com/stompmod](https://gatistudio.com/stompmod).** Version 1.2.0, free.
 
 StompMod is a fork of [hxtra](https://github.com/wisemandenny/hxtra) by wisemandenny, under the same licence (GPL-3.0-or-later, see [LICENSE](LICENSE) and [NOTICE](NOTICE)). It keeps hxtra's features and adds the ones listed under [What StompMod adds](#what-stompmod-adds). No Line 6 firmware or HX Edit files are in this repository.
 
